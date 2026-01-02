@@ -60,15 +60,8 @@ export function ProfileCard({ profile, onEdit, onDelete }) {
         </p>
       )}
 
-      {profile.avatar && (
-        <div className="mt-3 pt-3 border-t border-gray-100">
-          <span className="text-xs font-medium text-gray-500 block mb-1">Ideal Client:</span>
-          <p className="text-xs text-gray-700 line-clamp-2">{profile.avatar}</p>
-        </div>
-      )}
-
       {profile.income_method && (
-        <div className="mt-2 pt-2 border-t border-gray-100">
+        <div className="mt-3 pt-3 border-t border-gray-100">
           <span className="text-xs text-gray-500">Income method: </span>
           <span className="text-xs text-gray-700">{profile.income_method}</span>
         </div>

@@ -1,6 +1,6 @@
 // /src/components/audiences/AudienceForm.jsx
 // Form for creating and editing target audiences
-// Handles array fields for pain points and desires
+// Simple form with name and description
 // RELEVANT FILES: src/hooks/useAudiences.js, src/pages/Audiences.jsx, src/components/ui/Input.jsx
 
 import { useState, useEffect } from 'react'
@@ -8,7 +8,6 @@ import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
 import { useAudiences } from '../../hooks/useAudiences'
 import { useToast } from '../ui/Toast'
-import { Plus, X } from 'lucide-react'
 
 export function AudienceForm({ audience, onClose, onSuccess }) {
   const { createAudience, updateAudience } = useAudiences()
@@ -17,8 +16,6 @@ export function AudienceForm({ audience, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    pain_points: [''],
-    desires: [''],
   })
 
   useEffect(() => {
@@ -26,8 +23,6 @@ export function AudienceForm({ audience, onClose, onSuccess }) {
       setFormData({
         name: audience.name || '',
         description: audience.description || '',
-        pain_points: audience.pain_points?.length ? audience.pain_points : [''],
-        desires: audience.desires?.length ? audience.desires : [''],
       })
     }
   }, [audience])
@@ -37,44 +32,16 @@ export function AudienceForm({ audience, onClose, onSuccess }) {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
-  const handleArrayChange = (field, index, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].map((item, i) => i === index ? value : item)
-    }))
-  }
-
-  const addArrayItem = (field) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: [...prev[field], '']
-    }))
-  }
-
-  const removeArrayItem = (field, index) => {
-    if (formData[field].length <= 1) return
-    setFormData(prev => ({
-      ...prev,
-      [field]: prev[field].filter((_, i) => i !== index)
-    }))
-  }
-
   const handleSubmit = async (e) => {
     e.preventDefault()
     setLoading(true)
 
-    const dataToSave = {
-      ...formData,
-      pain_points: formData.pain_points.filter(p => p.trim()),
-      desires: formData.desires.filter(d => d.trim()),
-    }
-
     try {
       if (audience) {
-        await updateAudience(audience.id, dataToSave)
+        await updateAudience(audience.id, formData)
         addToast('Audience updated successfully', 'success')
       } else {
-        await createAudience(dataToSave)
+        await createAudience(formData)
         addToast('Audience created successfully', 'success')
       }
       onSuccess?.()
@@ -97,77 +64,22 @@ export function AudienceForm({ audience, onClose, onSuccess }) {
         required
       />
 
-      <Input
-        label="Description"
-        name="description"
-        type="textarea"
-        value={formData.description}
-        onChange={handleChange}
-        placeholder="Describe who this audience is..."
-      />
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Pain Points
+      <div className="flex flex-col gap-1">
+        <label className="text-sm font-medium text-gray-700">
+          Description *
         </label>
-        {formData.pain_points.map((point, index) => (
-          <div key={index} className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={point}
-              onChange={(e) => handleArrayChange('pain_points', index, e.target.value)}
-              placeholder="e.g., Not enough time"
-              className="input-field flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => removeArrayItem('pain_points', index)}
-              className="p-2 text-gray-400 hover:text-red-600"
-              disabled={formData.pain_points.length <= 1}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => addArrayItem('pain_points')}
-          className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-        >
-          <Plus className="w-4 h-4" /> Add pain point
-        </button>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Desires
-        </label>
-        {formData.desires.map((desire, index) => (
-          <div key={index} className="flex gap-2 mb-2">
-            <input
-              type="text"
-              value={desire}
-              onChange={(e) => handleArrayChange('desires', index, e.target.value)}
-              placeholder="e.g., More freedom"
-              className="input-field flex-1"
-            />
-            <button
-              type="button"
-              onClick={() => removeArrayItem('desires', index)}
-              className="p-2 text-gray-400 hover:text-red-600"
-              disabled={formData.desires.length <= 1}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => addArrayItem('desires')}
-          className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
-        >
-          <Plus className="w-4 h-4" /> Add desire
-        </button>
+        <textarea
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="Describe your ideal client in detail: Who are they? What are their pain points? What do they desire? What keeps them up at night? What transformation do they want?"
+          required
+          rows={6}
+          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        />
+        <p className="text-xs text-gray-500 mt-1">
+          Include pain points, desires, goals, and demographics. The more detail, the better the AI output.
+        </p>
       </div>
 
       <div className="flex gap-3 pt-4">

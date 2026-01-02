@@ -18,7 +18,6 @@ export function ProfileForm({ profile, onClose, onSuccess }) {
     name: '',
     business_name: '',
     niche: '',
-    avatar: '',
     income_method: '',
     tagline: '',
     vibe: '',
@@ -33,7 +32,6 @@ export function ProfileForm({ profile, onClose, onSuccess }) {
         name: profile.name || '',
         business_name: profile.business_name || '',
         niche: profile.niche || '',
-        avatar: profile.avatar || '',
         income_method: profile.income_method || '',
         tagline: profile.tagline || '',
         vibe: profile.vibe || '',
@@ -125,29 +123,11 @@ export function ProfileForm({ profile, onClose, onSuccess }) {
           name="niche"
           value={formData.niche}
           onChange={handleChange}
-          placeholder="Describe your niche and specialty. E.g., Executive coaching for tech leaders transitioning to C-suite roles. I help ambitious professionals develop strategic leadership skills..."
+          placeholder="Describe your niche and specialty. E.g., Executive coaching for tech leaders transitioning to C-suite roles..."
           required
           rows={3}
           className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
-      </div>
-
-      <div className="flex flex-col gap-1">
-        <label className="text-sm font-medium text-gray-700">
-          Ideal Client Avatar *
-        </label>
-        <textarea
-          name="avatar"
-          value={formData.avatar}
-          onChange={handleChange}
-          placeholder="Describe your ideal client in detail: Who are they? What are their goals? What are their fears and frustrations? What keeps them up at night? What transformation do they want?"
-          required
-          rows={4}
-          className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-        />
-        <p className="text-xs text-gray-500 mt-1">
-          The more detail you provide, the better the AI will tailor your funnels and lead magnets.
-        </p>
       </div>
 
       <Input
