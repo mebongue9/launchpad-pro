@@ -8,7 +8,6 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute'
 import { DashboardLayout } from './components/layout/DashboardLayout'
 
 import Login from './pages/Login'
-import Signup from './pages/Signup'
 import Dashboard from './pages/Dashboard'
 import Profiles from './pages/Profiles'
 import Audiences from './pages/Audiences'
@@ -24,7 +23,6 @@ export default function App() {
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<Signup />} />
 
       {/* Protected routes with dashboard layout */}
       <Route

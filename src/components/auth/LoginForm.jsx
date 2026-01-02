@@ -4,7 +4,6 @@
 // RELEVANT FILES: src/hooks/useAuth.js, src/pages/Login.jsx, src/components/ui/Input.jsx
 
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -60,13 +59,6 @@ export function LoginForm({ onSuccess }) {
       <Button type="submit" loading={loading} className="w-full">
         Sign In
       </Button>
-
-      <p className="text-center text-sm text-gray-600">
-        Don't have an account?{' '}
-        <Link to="/signup" className="text-blue-600 hover:underline">
-          Sign up
-        </Link>
-      </p>
     </form>
   )
 }
