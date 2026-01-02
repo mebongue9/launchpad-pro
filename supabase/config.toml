@@ -1,0 +1,13 @@
+# Supabase Local Dev Configuration
+# https://supabase.com/docs/guides/local-development
+
+[api]
+enabled = true
+port = 54321
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
