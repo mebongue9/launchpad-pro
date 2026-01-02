@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   name TEXT NOT NULL,
   business_name TEXT,
   niche TEXT,
+  avatar TEXT,
   income_method TEXT,
   tagline TEXT,
   vibe TEXT,
