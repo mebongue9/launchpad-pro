@@ -5,6 +5,8 @@
 
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+import { parseClaudeJSON } from '../utils/sanitize-json.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -15,7 +17,65 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
 const LOG_TAG = '[BATCHED-GENERATORS]';
+const SECTION_SEPARATOR = '===SECTION_BREAK===';
+
+// Cosine similarity for vector search
+function cosineSimilarity(a, b) {
+  let dotProduct = 0;
+  let normA = 0;
+  let normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dotProduct += a[i] * b[i];
+    normA += a[i] * a[i];
+    normB += b[i] * b[i];
+  }
+  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+// Search knowledge base
+async function searchKnowledge(query, limit = 8) {
+  if (!process.env.OPENAI_API_KEY) {
+    console.log(`⚠️ ${LOG_TAG} Skipping knowledge search - no OpenAI key`);
+    return '';
+  }
+
+  try {
+    const embedding = await openai.embeddings.create({
+      model: 'text-embedding-ada-002',
+      input: query
+    });
+
+    const queryVector = embedding.data[0].embedding;
+    const { data: chunks } = await supabase
+      .from('knowledge_chunks')
+      .select('content, embedding');
+
+    if (!chunks || chunks.length === 0) return '';
+
+    const results = chunks
+      .map(c => ({
+        content: c.content,
+        score: cosineSimilarity(queryVector, JSON.parse(c.embedding))
+      }))
+      .filter(r => r.score > 0.6)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+
+    if (results.length === 0) return '';
+
+    return "\n\n=== CREATOR'S KNOWLEDGE ===\n" +
+      results.map((r, i) => `[${i + 1}] ${r.content}`).join('\n\n---\n\n') +
+      '\n=== END KNOWLEDGE ===\n';
+  } catch (err) {
+    console.error(`❌ ${LOG_TAG} Knowledge search error:`, err);
+    return '';
+  }
+}
 
 // Helper: Get funnel data
 async function getFunnelData(funnelId) {
@@ -47,33 +107,204 @@ export async function generateLeadMagnetPart1(funnelId) {
   console.log(`📝 ${LOG_TAG} Generating lead magnet part 1 (cover + chapters 1-3)`);
 
   const funnel = await getFunnelData(funnelId);
-  const leadMagnet = funnel.lead_magnet;
+  const { lead_magnet, profile, audience, frontend } = funnel;
 
-  // TODO: Implement batched generation
-  // For now, return placeholder
-  console.log(`⏳ ${LOG_TAG} Lead magnet part 1 - STUB IMPLEMENTATION`);
+  // Search knowledge base
+  const knowledgeQuery = `${lead_magnet.title} ${lead_magnet.subtitle} content for chapters`;
+  const knowledge = await searchKnowledge(knowledgeQuery, 10);
 
-  return {
-    cover: { title: leadMagnet.title, generated: true },
-    chapter1: { content: 'Chapter 1 content...', generated: true },
-    chapter2: { content: 'Chapter 2 content...', generated: true },
-    chapter3: { content: 'Chapter 3 content...', generated: true }
-  };
+  // Batched prompt for cover + 3 chapters
+  const prompt = `${knowledge}
+
+Generate the COVER PAGE and FIRST 3 CHAPTERS for this lead magnet.
+
+LEAD MAGNET INFO:
+- Title: ${lead_magnet.title}
+- Subtitle: ${lead_magnet.subtitle}
+- Author: ${profile.name}
+- Target Audience: ${audience.name}
+- Bridge Product: ${frontend.name}
+
+INSTRUCTIONS:
+Generate 4 sections separated by exactly: ${SECTION_SEPARATOR}
+
+Section 1 - COVER PAGE (JSON):
+{
+  "type": "cover",
+  "title": "${lead_magnet.title}",
+  "subtitle": "${lead_magnet.subtitle}",
+  "author": "By ${profile.name}",
+  "tagline": "Short tagline (5-8 words)"
+}
+
+${SECTION_SEPARATOR}
+
+Section 2 - CHAPTER 1 (JSON):
+{
+  "type": "chapter",
+  "number": 1,
+  "title": "Chapter 1: [Compelling Title]",
+  "content": "[Full chapter content with value, examples, actionable tips - 400-600 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 3 - CHAPTER 2 (JSON):
+{
+  "type": "chapter",
+  "number": 2,
+  "title": "Chapter 2: [Compelling Title]",
+  "content": "[Full chapter content - 400-600 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 4 - CHAPTER 3 (JSON):
+{
+  "type": "chapter",
+  "number": 3,
+  "title": "Chapter 3: [Compelling Title]",
+  "content": "[Full chapter content - 400-600 words]"
+}
+
+IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section.`;
+
+  console.log(`🔄 ${LOG_TAG} Calling Claude API for batched generation...`);
+
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 16000,
+    system: 'You are a lead magnet content writer. Use the creator\'s knowledge to create valuable, specific content. Return valid JSON for each section separated by the exact separator.',
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  // Parse response into sections
+  const fullResponse = response.content[0].text;
+  const sections = fullResponse.split(SECTION_SEPARATOR).map(s => s.trim());
+
+  console.log(`✅ ${LOG_TAG} Got ${sections.length} sections from API`);
+
+  // Parse each JSON section
+  const cover = parseClaudeJSON(sections[0]);
+  const chapter1 = parseClaudeJSON(sections[1]);
+  const chapter2 = parseClaudeJSON(sections[2]);
+  const chapter3 = parseClaudeJSON(sections[3]);
+
+  // Save to database
+  await supabase
+    .from('lead_magnets')
+    .update({
+      cover_data: cover,
+      chapters: [chapter1, chapter2, chapter3],
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', lead_magnet.id);
+
+  console.log(`✅ ${LOG_TAG} Lead magnet part 1 saved to database`);
+
+  return { cover, chapter1, chapter2, chapter3 };
 }
 
 // Task 2: Lead Magnet Part 2 (Chapters 4-5 + Bridge + CTA)
 export async function generateLeadMagnetPart2(funnelId) {
   console.log(`📝 ${LOG_TAG} Generating lead magnet part 2 (chapters 4-5 + bridge + CTA)`);
 
-  // TODO: Implement batched generation
-  console.log(`⏳ ${LOG_TAG} Lead magnet part 2 - STUB IMPLEMENTATION`);
+  const funnel = await getFunnelData(funnelId);
+  const { lead_magnet, profile, audience, frontend } = funnel;
 
-  return {
-    chapter4: { content: 'Chapter 4 content...', generated: true },
-    chapter5: { content: 'Chapter 5 content...', generated: true },
-    bridge: { content: 'Bridge content...', generated: true },
-    cta: { content: 'CTA content...', generated: true }
-  };
+  // Get existing chapters for context
+  const { data: existingData } = await supabase
+    .from('lead_magnets')
+    .select('chapters')
+    .eq('id', lead_magnet.id)
+    .single();
+
+  const previousChapters = existingData?.chapters || [];
+
+  const knowledge = await searchKnowledge(`${lead_magnet.title} final chapters bridge cta`, 10);
+
+  const prompt = `${knowledge}
+
+Generate the FINAL 2 CHAPTERS, BRIDGE, and CTA for this lead magnet.
+
+LEAD MAGNET INFO:
+- Title: ${lead_magnet.title}
+- Subtitle: ${lead_magnet.subtitle}
+- Front-End Product: ${frontend.name} ($${frontend.price}) - ${frontend.description}
+
+PREVIOUS CHAPTERS:
+${previousChapters.map(c => `- ${c.title}`).join('\n')}
+
+Generate 4 sections separated by: ${SECTION_SEPARATOR}
+
+Section 1 - CHAPTER 4 (JSON):
+{
+  "type": "chapter",
+  "number": 4,
+  "title": "Chapter 4: [Title]",
+  "content": "[400-600 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 2 - CHAPTER 5 (JSON):
+{
+  "type": "chapter",
+  "number": 5,
+  "title": "Chapter 5: [Title]",
+  "content": "[400-600 words - wrap up the lead magnet]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 3 - BRIDGE (JSON):
+{
+  "type": "bridge",
+  "title": "What Happens Next...",
+  "content": "[Natural transition from lead magnet to front-end product - NO hard sell, just mention next step]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 4 - CTA (JSON):
+{
+  "type": "cta",
+  "title": "Ready to [Outcome]?",
+  "content": "[Brief CTA for ${frontend.name}]",
+  "button_text": "Get ${frontend.name} Now"
+}
+
+Use creator's knowledge. Return valid JSON.`;
+
+  const response = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 16000,
+    messages: [{ role: 'user', content: prompt }]
+  });
+
+  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+
+  const chapter4 = parseClaudeJSON(sections[0]);
+  const chapter5 = parseClaudeJSON(sections[1]);
+  const bridge = parseClaudeJSON(sections[2]);
+  const cta = parseClaudeJSON(sections[3]);
+
+  // Update with all chapters
+  const allChapters = [...previousChapters, chapter4, chapter5];
+
+  await supabase
+    .from('lead_magnets')
+    .update({
+      chapters: allChapters,
+      bridge_data: bridge,
+      cta_data: cta,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', lead_magnet.id);
+
+  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved`);
+
+  return { chapter4, chapter5, bridge, cta };
 }
 
 // Task 3: Front-End Part 1 (Cover + Chapters 1-3)
