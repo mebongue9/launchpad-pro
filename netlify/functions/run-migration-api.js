@@ -104,6 +104,9 @@ END $$;
 CREATE INDEX IF NOT EXISTS idx_bundles_funnel_id ON bundles(funnel_id);
 CREATE INDEX IF NOT EXISTS idx_bundles_user_id ON bundles(user_id);
 
+-- EXISTING PRODUCTS TABLE ADDITIONS (for cross-promo TLDR)
+ALTER TABLE existing_products ADD COLUMN IF NOT EXISTS tldr TEXT;
+
 SELECT 'Migration complete!' as status;
 `;
 

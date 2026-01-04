@@ -53,17 +53,28 @@ const anthropic = new Anthropic({
 // ============================================
 
 async function updateJobStatus(jobId, updates) {
+  console.log('🔄 [PROCESS-GENERATION-BG] Updating job status:', {
+    jobId,
+    updates: Object.keys(updates)
+  });
+
   const { error } = await supabase
     .from('generation_jobs')
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq('id', jobId);
 
   if (error) {
-    console.error('Failed to update job status:', error);
+    console.error('❌ [PROCESS-GENERATION-BG] Failed to update job status:', error.message);
   }
 }
 
 async function saveChunkToJob(jobId, chunkIndex, chunkData, currentChunks) {
+  console.log('💾 [PROCESS-GENERATION-BG] Saving chunk to job:', {
+    jobId,
+    chunkIndex,
+    chunkTitle: chunkData?.title || 'unknown'
+  });
+
   const updatedChunks = [...currentChunks];
   updatedChunks[chunkIndex] = chunkData;
 
@@ -80,10 +91,19 @@ async function saveChunkToJob(jobId, chunkIndex, chunkData, currentChunks) {
 // ============================================
 
 async function generateWithRetry(prompt, systemPrompt, jobId, chunkName, maxTokens = 2000) {
+  console.log('🔄 [PROCESS-GENERATION-BG] generateWithRetry called:', {
+    jobId,
+    chunkName,
+    maxTokens,
+    promptLength: prompt?.length || 0
+  });
+
   let lastError = null;
 
   for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
     try {
+      console.log(`🔄 [PROCESS-GENERATION-BG] Attempt ${attempt}/${RETRY_CONFIG.maxRetries} for: ${chunkName}`);
+
       // Update status to show current attempt
       await updateJobStatus(jobId, {
         current_chunk_name: attempt > 1
@@ -92,6 +112,7 @@ async function generateWithRetry(prompt, systemPrompt, jobId, chunkName, maxToke
       });
 
       // Make API call
+      console.log('🔄 [PROCESS-GENERATION-BG] Calling Claude API...');
       const response = await anthropic.messages.create({
         model: 'claude-sonnet-4-20250514',
         max_tokens: maxTokens,
@@ -99,24 +120,31 @@ async function generateWithRetry(prompt, systemPrompt, jobId, chunkName, maxToke
         messages: [{ role: 'user', content: prompt }]
       });
 
+      console.log('✅ [PROCESS-GENERATION-BG] Claude API success:', {
+        outputTokens: response.usage?.output_tokens || 'unknown',
+        responseLength: response.content[0]?.text?.length || 0
+      });
+
       // Success!
-      return parseClaudeJSON(response.content[0].text);
+      const parsed = parseClaudeJSON(response.content[0].text);
+      console.log('✅ [PROCESS-GENERATION-BG] JSON parsed successfully for:', chunkName);
+      return parsed;
 
     } catch (error) {
       lastError = error;
       const statusCode = error.status || 500;
 
-      console.error(`Attempt ${attempt} failed (${statusCode}):`, error.message);
+      console.error(`❌ [PROCESS-GENERATION-BG] Attempt ${attempt} failed (${statusCode}):`, error.message);
 
       // Check if error is retryable
       if (RETRY_CONFIG.permanentFailureCodes.includes(statusCode)) {
-        console.error('Permanent failure - not retrying');
+        console.error('❌ [PROCESS-GENERATION-BG] Permanent failure - not retrying');
         throw error;
       }
 
       // Check if we have retries left
       if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error('Max retries exhausted');
+        console.error('❌ [PROCESS-GENERATION-BG] Max retries exhausted');
         throw error;
       }
 
@@ -126,7 +154,7 @@ async function generateWithRetry(prompt, systemPrompt, jobId, chunkName, maxToke
         RETRY_CONFIG.maxDelay
       );
 
-      console.log(`Waiting ${delay/1000}s before retry ${attempt + 1}...`);
+      console.log(`⏳ [PROCESS-GENERATION-BG] Waiting ${delay/1000}s before retry ${attempt + 1}...`);
       await updateJobStatus(jobId, {
         current_chunk_name: `${chunkName} - Rate limited, retrying in ${delay/1000}s...`,
         last_error_code: statusCode,
@@ -173,9 +201,17 @@ Write engaging, actionable content. Output ONLY valid JSON with this structure:
 // ============================================
 
 async function generateProductContent(jobId, inputData) {
+  console.log('📦 [PROCESS-GENERATION-BG] generateProductContent started:', {
+    jobId,
+    product: inputData?.product?.name,
+    profile: inputData?.profile?.name,
+    audience: inputData?.audience?.name
+  });
+
   const { product, profile, audience, next_product } = inputData;
 
   // Step 1: Generate outline
+  console.log('🔄 [PROCESS-GENERATION-BG] Step 1: Generating outline for product:', product?.name);
   await updateJobStatus(jobId, {
     status: 'processing',
     current_chunk_name: 'Generating outline...'
@@ -207,6 +243,11 @@ Based on the price ($${product.price}), create an appropriate outline.
     1000
   );
 
+  console.log('✅ [PROCESS-GENERATION-BG] Outline generated:', {
+    title: outline?.title,
+    chaptersCount: outline?.chapters?.length || 0
+  });
+
   // Update with outline info
   const totalChunks = outline.chapters.length;
   await updateJobStatus(jobId, {
@@ -216,6 +257,7 @@ Based on the price ($${product.price}), create an appropriate outline.
   });
 
   // Step 2: Generate each chapter
+  console.log('🔄 [PROCESS-GENERATION-BG] Step 2: Generating', totalChunks, 'chapters...');
   let chunks = [];
   for (let i = 0; i < outline.chapters.length; i++) {
     const chapter = outline.chapters[i];
@@ -261,6 +303,11 @@ Write 200-400 words of engaging, actionable content.
   }
 
   // Step 3: Assemble final result
+  console.log('✅ [PROCESS-GENERATION-BG] Product content generation complete:', {
+    title: outline.title,
+    sectionsCount: chunks.length
+  });
+
   return {
     title: outline.title,
     subtitle: outline.subtitle,
@@ -273,9 +320,18 @@ Write 200-400 words of engaging, actionable content.
 // ============================================
 
 async function generateLeadMagnetContent(jobId, inputData) {
+  console.log('📄 [PROCESS-GENERATION-BG] generateLeadMagnetContent started:', {
+    jobId,
+    lead_magnet: inputData?.lead_magnet?.title,
+    profile: inputData?.profile?.name,
+    audience: inputData?.audience?.name,
+    language: inputData?.language || 'English'
+  });
+
   const { lead_magnet, profile, audience, front_end_product, language = 'English' } = inputData;
 
   // Step 1: Generate outline
+  console.log('🔄 [PROCESS-GENERATION-BG] Step 1: Generating outline for lead magnet:', lead_magnet?.title);
   await updateJobStatus(jobId, {
     status: 'processing',
     current_chunk_name: 'Generating outline...'
@@ -308,6 +364,11 @@ Output JSON outline with chapters array.
     1000
   );
 
+  console.log('✅ [PROCESS-GENERATION-BG] Outline generated:', {
+    title: outline?.title,
+    chaptersCount: outline?.chapters?.length || 0
+  });
+
   const totalChunks = outline.chapters.length;
   await updateJobStatus(jobId, {
     total_chunks: totalChunks,
@@ -316,10 +377,13 @@ Output JSON outline with chapters array.
   });
 
   // Step 2: Generate each chapter
+  console.log('🔄 [PROCESS-GENERATION-BG] Step 2: Generating', totalChunks, 'chapters...');
   let chunks = [];
   for (let i = 0; i < outline.chapters.length; i++) {
     const chapter = outline.chapters[i];
     const chunkName = `Generating ${chapter.title} (${i + 1}/${totalChunks})`;
+
+    console.log('🔄 [PROCESS-GENERATION-BG] Generating chapter:', chunkName);
 
     await updateJobStatus(jobId, {
       current_chunk_name: chunkName,
@@ -362,6 +426,7 @@ ${getLanguagePromptSuffix(language)}`;
   }
 
   // Step 3: Generate promotion kit
+  console.log('🔄 [PROCESS-GENERATION-BG] Step 3: Generating promotion kit...');
   await updateJobStatus(jobId, {
     current_chunk_name: 'Generating promotion kit...'
   });
@@ -392,6 +457,12 @@ Return JSON:
     800
   );
 
+  console.log('✅ [PROCESS-GENERATION-BG] Lead magnet content generation complete:', {
+    title: outline.title || lead_magnet.title,
+    sectionsCount: chunks.length,
+    hasPromotionKit: !!promotionKit
+  });
+
   return {
     title: outline.title || lead_magnet.title,
     subtitle: outline.subtitle,
@@ -406,8 +477,17 @@ Return JSON:
 // ============================================
 
 async function generateFunnel(jobId, inputData) {
+  console.log('🎯 [PROCESS-GENERATION-BG] generateFunnel started:', {
+    jobId,
+    profile: inputData?.profile?.name,
+    audience: inputData?.audience?.name,
+    existingProduct: inputData?.existing_product?.name || 'none',
+    language: inputData?.language || 'English'
+  });
+
   const { profile, audience, existing_product, language = 'English' } = inputData;
 
+  console.log('🔄 [PROCESS-GENERATION-BG] Generating funnel architecture...');
   await updateJobStatus(jobId, {
     status: 'processing',
     total_chunks: 1,
@@ -530,6 +610,14 @@ Return ONLY valid JSON with 4 products (NO upsell_3):
     3000
   );
 
+  console.log('✅ [PROCESS-GENERATION-BG] Funnel generated:', {
+    funnelName: funnel?.funnel_name,
+    frontEnd: funnel?.front_end?.name,
+    bump: funnel?.bump?.name,
+    upsell1: funnel?.upsell_1?.name,
+    upsell2: funnel?.upsell_2?.name
+  });
+
   await updateJobStatus(jobId, { completed_chunks: 1 });
 
   // NOTE: TLDRs and cross-promos are now generated AFTER the user saves the funnel
@@ -544,8 +632,18 @@ Return ONLY valid JSON with 4 products (NO upsell_3):
 // ============================================
 
 async function generateLeadMagnetIdeas(jobId, inputData) {
+  console.log('💡 [PROCESS-GENERATION-BG] generateLeadMagnetIdeas started:', {
+    jobId,
+    profile: inputData?.profile?.name,
+    audience: inputData?.audience?.name,
+    frontEndProduct: inputData?.front_end_product?.name,
+    excludedTopicsCount: inputData?.excluded_topics?.length || 0,
+    language: inputData?.language || 'English'
+  });
+
   const { profile, audience, front_end_product, excluded_topics, language = 'English' } = inputData;
 
+  console.log('🔄 [PROCESS-GENERATION-BG] Generating lead magnet ideas...');
   await updateJobStatus(jobId, {
     status: 'processing',
     total_chunks: 1,
@@ -670,6 +768,11 @@ Return ONLY valid JSON:
     2000
   );
 
+  console.log('✅ [PROCESS-GENERATION-BG] Lead magnet ideas generated:', {
+    ideasCount: ideas?.ideas?.length || 0,
+    titles: ideas?.ideas?.map(i => i.title) || []
+  });
+
   await updateJobStatus(jobId, { completed_chunks: 1 });
 
   return ideas;
@@ -680,6 +783,13 @@ Return ONLY valid JSON:
 // ============================================
 
 async function generateTLDR(jobId, productData, language = 'English') {
+  console.log('📝 [PROCESS-GENERATION-BG] generateTLDR called:', {
+    jobId,
+    productName: productData?.name,
+    price: productData?.price,
+    language
+  });
+
   const { name, description, format, price } = productData;
 
   const tldrPrompt = `
@@ -703,13 +813,16 @@ ${getLanguagePromptSuffix(language)}`;
 
   const tldrSystemPrompt = `You are a marketing copywriter. Create concise, compelling TLDR summaries that help customers quickly understand product value. Be specific and benefit-focused. Return ONLY valid JSON.`;
 
-  return await generateWithRetry(
+  const tldr = await generateWithRetry(
     tldrPrompt,
     tldrSystemPrompt,
     jobId,
     'Generating TLDR',
     1000
   );
+
+  console.log('✅ [PROCESS-GENERATION-BG] TLDR generated for:', productData?.name);
+  return tldr;
 }
 
 // ============================================
@@ -717,7 +830,16 @@ ${getLanguagePromptSuffix(language)}`;
 // ============================================
 
 async function generateCrossPromo(jobId, productData, existingProduct, profile, language = 'English') {
+  console.log('🔗 [PROCESS-GENERATION-BG] generateCrossPromo called:', {
+    jobId,
+    productName: productData?.name,
+    existingProduct: existingProduct?.name || 'none',
+    profile: profile?.name,
+    language
+  });
+
   if (!existingProduct) {
+    console.log('⚠️ [PROCESS-GENERATION-BG] No existing product, skipping cross-promo');
     return null; // No cross-promo without destination product
   }
 
@@ -748,6 +870,7 @@ ${getLanguagePromptSuffix(language)}`;
   const crossPromoSystemPrompt = `You are a conversion copywriter specializing in natural, non-pushy cross-promotions. Write promotional copy that feels like a helpful recommendation from a friend, not a sales pitch. Output only the promotional paragraph text, no JSON.`;
 
   try {
+    console.log('🔄 [PROCESS-GENERATION-BG] Calling Claude API for cross-promo...');
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 500,
@@ -755,9 +878,13 @@ ${getLanguagePromptSuffix(language)}`;
       messages: [{ role: 'user', content: crossPromoPrompt }]
     });
 
+    console.log('✅ [PROCESS-GENERATION-BG] Cross-promo generated:', {
+      length: response.content[0]?.text?.length || 0
+    });
+
     return response.content[0].text.trim();
   } catch (error) {
-    console.error('Cross-promo generation failed:', error);
+    console.error('❌ [PROCESS-GENERATION-BG] Cross-promo generation failed:', error.message);
     return null;
   }
 }
@@ -767,17 +894,28 @@ ${getLanguagePromptSuffix(language)}`;
 // ============================================
 
 export async function handler(event) {
+  console.log('🚀 [PROCESS-GENERATION-BG] Function invoked');
   // Background functions should return quickly
   // The actual work happens async
+
+  console.log('🔧 [PROCESS-GENERATION-BG] Environment check:', {
+    ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+    SUPABASE_URL: !!process.env.SUPABASE_URL,
+    VITE_SUPABASE_URL: !!process.env.VITE_SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  });
 
   try {
     const { job_id } = JSON.parse(event.body || '{}');
 
+    console.log('📥 [PROCESS-GENERATION-BG] Received job_id:', job_id);
+
     if (!job_id) {
+      console.log('❌ [PROCESS-GENERATION-BG] Missing job_id');
       return { statusCode: 400, body: JSON.stringify({ error: 'job_id required' }) };
     }
 
-    console.log(`[Background] Processing job: ${job_id}`);
+    console.log('🔄 [PROCESS-GENERATION-BG] Fetching job from database:', job_id);
 
     // Get job from database
     const { data: job, error: fetchError } = await supabase
@@ -787,13 +925,20 @@ export async function handler(event) {
       .single();
 
     if (fetchError || !job) {
-      console.error('Job not found:', fetchError);
+      console.error('❌ [PROCESS-GENERATION-BG] Job not found:', fetchError?.message);
       return { statusCode: 404, body: JSON.stringify({ error: 'Job not found' }) };
     }
 
+    console.log('✅ [PROCESS-GENERATION-BG] Job fetched:', {
+      job_id: job.id,
+      job_type: job.job_type,
+      status: job.status,
+      user_id: job.user_id
+    });
+
     // Skip if already processing or complete
     if (job.status === 'processing' || job.status === 'complete') {
-      console.log(`Job ${job_id} is already ${job.status}`);
+      console.log(`⚠️ [PROCESS-GENERATION-BG] Job ${job_id} is already ${job.status}, skipping`);
       return { statusCode: 200, body: JSON.stringify({ status: job.status }) };
     }
 
@@ -801,28 +946,36 @@ export async function handler(event) {
     try {
       let result;
 
+      console.log('🔄 [PROCESS-GENERATION-BG] Starting processing for job_type:', job.job_type);
+
       switch (job.job_type) {
         case 'lead_magnet_content':
+          console.log('📄 [PROCESS-GENERATION-BG] Generating lead magnet content...');
           result = await generateLeadMagnetContent(job_id, job.input_data);
           break;
 
         case 'funnel_product':
+          console.log('📦 [PROCESS-GENERATION-BG] Generating funnel product...');
           result = await generateProductContent(job_id, job.input_data);
           break;
 
         case 'funnel':
+          console.log('🎯 [PROCESS-GENERATION-BG] Generating funnel...');
           result = await generateFunnel(job_id, job.input_data);
           break;
 
         case 'lead_magnet_ideas':
+          console.log('💡 [PROCESS-GENERATION-BG] Generating lead magnet ideas...');
           result = await generateLeadMagnetIdeas(job_id, job.input_data);
           break;
 
         default:
+          console.error('❌ [PROCESS-GENERATION-BG] Unknown job type:', job.job_type);
           throw new Error(`Unknown job type: ${job.job_type}`);
       }
 
       // Mark complete
+      console.log('🔄 [PROCESS-GENERATION-BG] Marking job as complete...');
       await updateJobStatus(job_id, {
         status: 'complete',
         result,
@@ -830,18 +983,29 @@ export async function handler(event) {
         current_chunk_name: 'Complete!'
       });
 
-      console.log(`[Background] Job ${job_id} completed successfully`);
+      console.log('✅ [PROCESS-GENERATION-BG] Job completed successfully:', job_id);
       return { statusCode: 200, body: JSON.stringify({ status: 'complete' }) };
 
     } catch (error) {
-      console.error(`[Background] Job ${job_id} failed:`, error);
+      console.error('❌ [PROCESS-GENERATION-BG] Job failed:', {
+        job_id,
+        error: error.message,
+        stack: error.stack,
+        status: error.status || 'N/A'
+      });
 
       // Get current state for partial progress
+      console.log('🔄 [PROCESS-GENERATION-BG] Fetching current job state for partial progress...');
       const { data: currentJob } = await supabase
         .from('generation_jobs')
         .select('completed_chunks, chunks_data')
         .eq('id', job_id)
         .single();
+
+      console.log('📊 [PROCESS-GENERATION-BG] Partial progress:', {
+        completed_chunks: currentJob?.completed_chunks || 0,
+        chunks_count: currentJob?.chunks_data?.length || 0
+      });
 
       await updateJobStatus(job_id, {
         status: 'failed',
@@ -854,7 +1018,11 @@ export async function handler(event) {
     }
 
   } catch (error) {
-    console.error('[Background] Unexpected error:', error);
+    console.error('❌ [PROCESS-GENERATION-BG] Unexpected error:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
   }
 }

@@ -554,7 +554,7 @@ export default function LeadMagnetBuilder() {
                 <p className="text-xs text-blue-600 uppercase mb-1">{section.type}</p>
                 <h4 className="font-medium">{section.title}</h4>
                 {section.content && (
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-3">{section.content}</p>
+                  <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{section.content}</p>
                 )}
               </div>
             ))}

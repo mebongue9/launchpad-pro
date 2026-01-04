@@ -8,6 +8,11 @@ import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
 
 // Initialize clients
+console.log('🔧 [MARKETPLACE] Initializing Supabase client...');
+console.log('🔧 [MARKETPLACE] Environment check - SUPABASE_URL:', !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL));
+console.log('🔧 [MARKETPLACE] Environment check - SUPABASE_SERVICE_ROLE_KEY:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+console.log('🔧 [MARKETPLACE] Environment check - ANTHROPIC_API_KEY:', !!process.env.ANTHROPIC_API_KEY);
+
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -65,7 +70,11 @@ Return ONLY valid JSON. No markdown, no code blocks.
 All text must be within character limits.`;
 
 // Generate marketplace listing for a single product
-async function generateProductListing(product, profile, audience, language) {
+async function generateProductListing(product, profile, audience, language, productLevel) {
+  console.log('🔄 [MARKETPLACE] Generating listing for product:', product.name);
+  console.log('📋 [MARKETPLACE] Product format:', product.format, '| Price: $' + product.price);
+  console.log('📋 [MARKETPLACE] Product level:', productLevel);
+
   const prompt = `
 Create marketplace listings for this digital product:
 
@@ -96,53 +105,76 @@ CRITICAL:
 ${getLanguagePromptSuffix(language)}`;
 
   try {
+    console.log('🔄 [MARKETPLACE] Calling Claude API for listing generation...');
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 3000,
       system: MARKETPLACE_SYSTEM_PROMPT,
       messages: [{ role: 'user', content: prompt }]
     });
+    console.log('✅ [MARKETPLACE] Claude API response received');
 
+    console.log('🔄 [MARKETPLACE] Parsing Claude response...');
     const listing = parseClaudeJSON(response.content[0].text);
+    console.log('✅ [MARKETPLACE] Response parsed successfully');
 
     // Validate and trim if needed
     if (listing.marketplace_title && listing.marketplace_title.length > 140) {
+      console.log('⚠️ [MARKETPLACE] Title too long (' + listing.marketplace_title.length + ' chars), trimming to 140...');
       listing.marketplace_title = listing.marketplace_title.substring(0, 137) + '...';
     }
+    console.log('📋 [MARKETPLACE] Title length:', listing.marketplace_title?.length, 'chars');
 
     // Ensure exactly 13 tags
     if (listing.marketplace_tags) {
       const tags = listing.marketplace_tags.split(',').map(t => t.trim()).slice(0, 13);
+      const originalCount = tags.length;
       while (tags.length < 13) {
         tags.push('digital download');
       }
+      if (originalCount < 13) {
+        console.log('⚠️ [MARKETPLACE] Only', originalCount, 'tags generated, padded to 13');
+      }
       listing.marketplace_tags = tags.join(', ');
+      console.log('📋 [MARKETPLACE] Final tag count: 13');
     }
 
+    console.log('✅ [MARKETPLACE] Listing generated for:', product.name);
     return listing;
   } catch (error) {
-    console.error('Listing generation failed:', error);
+    console.error('❌ [MARKETPLACE] Listing generation failed for product:', product.name);
+    console.error('❌ [MARKETPLACE] Error:', error.message);
+    console.error('❌ [MARKETPLACE] Error stack:', error.stack);
     throw error;
   }
 }
 
 export async function handler(event) {
+  console.log('🚀 [MARKETPLACE] Function invoked');
+  console.log('📥 [MARKETPLACE] HTTP method:', event.httpMethod);
+
   if (event.httpMethod !== 'POST') {
+    console.log('❌ [MARKETPLACE] Method not allowed:', event.httpMethod);
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
   try {
+    console.log('📥 [MARKETPLACE] Parsing request body...');
     const { funnel_id, user_id, product_level, language = 'English' } = JSON.parse(event.body || '{}');
+    console.log('📥 [MARKETPLACE] Received funnel_id:', funnel_id);
+    console.log('📥 [MARKETPLACE] Received user_id:', user_id);
+    console.log('📥 [MARKETPLACE] Received product_level:', product_level || 'all');
+    console.log('📥 [MARKETPLACE] Received language:', language);
 
     if (!funnel_id || !user_id) {
+      console.log('❌ [MARKETPLACE] Missing required parameters - funnel_id:', !!funnel_id, 'user_id:', !!user_id);
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'funnel_id and user_id required' })
       };
     }
 
-    console.log(`[Marketplace] Generating for funnel: ${funnel_id}, product: ${product_level || 'all'}`);
-
+    console.log('🔄 [MARKETPLACE] Fetching funnel data from database...');
     // Get funnel data with related profile and audience - verify ownership
     const { data: funnel, error: funnelError } = await supabase
       .from('funnels')
@@ -151,31 +183,47 @@ export async function handler(event) {
       .eq('user_id', user_id)
       .single();
 
+    if (funnelError) {
+      console.error('❌ [MARKETPLACE] Database error fetching funnel:', funnelError.message);
+      console.error('❌ [MARKETPLACE] Error details:', JSON.stringify(funnelError));
+    }
+
     if (funnelError || !funnel) {
+      console.log('❌ [MARKETPLACE] Funnel not found or access denied for funnel_id:', funnel_id);
       return {
         statusCode: 404,
         body: JSON.stringify({ error: 'Funnel not found or access denied' })
       };
     }
 
+    console.log('✅ [MARKETPLACE] Funnel loaded:', funnel.name);
     const profile = funnel.profiles || { name: 'Creator' };
     const audience = funnel.audiences;
+    console.log('📋 [MARKETPLACE] Profile name:', profile.name);
+    console.log('📋 [MARKETPLACE] Audience:', audience?.name || 'Not set');
 
     // Determine which products to generate listings for
     const productLevels = product_level
       ? [product_level]
       : ['front_end', 'bump', 'upsell_1', 'upsell_2'];
+    console.log('📋 [MARKETPLACE] Product levels to process:', productLevels.join(', '));
 
     const updates = {};
     const results = {};
+    let processedCount = 0;
+    let skippedCount = 0;
 
     for (const level of productLevels) {
       const product = funnel[level];
-      if (!product) continue;
+      if (!product) {
+        console.log('⏭️ [MARKETPLACE] Skipping', level, '- no product data');
+        skippedCount++;
+        continue;
+      }
 
-      console.log(`[Marketplace] Generating listing for ${level}: ${product.name}`);
+      console.log('🔄 [MARKETPLACE] Processing', level, ':', product.name);
 
-      const listing = await generateProductListing(product, profile, audience, language);
+      const listing = await generateProductListing(product, profile, audience, language, level);
 
       // Map to database columns
       updates[`${level}_marketplace_title`] = listing.marketplace_title;
@@ -184,9 +232,14 @@ export async function handler(event) {
       updates[`${level}_marketplace_tags`] = listing.marketplace_tags;
 
       results[level] = listing;
+      processedCount++;
+      console.log('✅ [MARKETPLACE] Completed', level, '- Title:', listing.marketplace_title?.substring(0, 50) + '...');
     }
 
+    console.log('📊 [MARKETPLACE] Summary: Processed', processedCount, 'products, Skipped', skippedCount);
+
     // Update funnel with marketplace data (verify ownership)
+    console.log('🔄 [MARKETPLACE] Saving listings to database...');
     const { error: updateError } = await supabase
       .from('funnels')
       .update(updates)
@@ -194,14 +247,16 @@ export async function handler(event) {
       .eq('user_id', user_id);
 
     if (updateError) {
-      console.error('Failed to save marketplace listings:', updateError);
+      console.error('❌ [MARKETPLACE] Failed to save marketplace listings:', updateError.message);
+      console.error('❌ [MARKETPLACE] Update error details:', JSON.stringify(updateError));
       return {
         statusCode: 500,
         body: JSON.stringify({ error: 'Failed to save marketplace listings' })
       };
     }
 
-    console.log(`[Marketplace] Generated ${Object.keys(results).length} listings for funnel ${funnel_id}`);
+    console.log('✅ [MARKETPLACE] Saved', Object.keys(results).length, 'listings to database');
+    console.log('🏁 [MARKETPLACE] Function completed successfully for funnel:', funnel_id);
 
     return {
       statusCode: 200,
@@ -213,7 +268,9 @@ export async function handler(event) {
     };
 
   } catch (error) {
-    console.error('[Marketplace] Generation failed:', error);
+    console.error('❌ [MARKETPLACE] Unhandled error:', error.message);
+    console.error('❌ [MARKETPLACE] Error stack:', error.stack);
+    console.error('❌ [MARKETPLACE] Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message })

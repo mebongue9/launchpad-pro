@@ -1,9 +1,9 @@
 // /src/hooks/useFunnels.jsx
 // Hook for funnel CRUD operations and AI generation
-// Manages funnels data from Supabase
+// Manages funnels data from Supabase + document generation jobs
 // RELEVANT FILES: src/pages/FunnelBuilder.jsx, netlify/functions/generate-funnel.js
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 
@@ -13,11 +13,24 @@ export function useFunnels() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Document generation job tracking
+  const [documentJob, setDocumentJob] = useState(null) // { jobId, funnelId, status, progress, currentTask }
+  const pollIntervalRef = useRef(null)
+
   useEffect(() => {
     if (user) {
       fetchFunnels()
     }
   }, [user])
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+    }
+  }, [])
 
   async function fetchFunnels() {
     try {
@@ -50,7 +63,6 @@ export function useFunnels() {
       })
 
       if (!response.ok) {
-        // Handle non-JSON error responses (like HTML from 504 timeout)
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
           const errorData = await response.json()
@@ -66,9 +78,146 @@ export function useFunnels() {
     }
   }
 
+  // Poll job status
+  const pollJobStatus = useCallback(async (jobId, funnelId) => {
+    try {
+      const response = await fetch('/.netlify/functions/check-job-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: jobId })
+      })
+
+      if (!response.ok) {
+        console.error('Job status check failed')
+        return
+      }
+
+      const data = await response.json()
+      console.log('📊 [JOB] Status:', data.status, 'Progress:', data.progress + '%', 'Task:', data.current_chunk_name)
+
+      setDocumentJob({
+        jobId,
+        funnelId,
+        status: data.status,
+        progress: data.progress || 0,
+        currentTask: data.status === 'failed'
+          ? (data.error_message || 'Generation failed')
+          : (data.current_chunk_name || 'Processing...'),
+        completedChunks: data.completed_chunks || 0,
+        totalChunks: data.total_chunks || 7,
+        errorMessage: data.error_message
+      })
+
+      // Job complete - stop polling and refresh funnels
+      if (data.status === 'complete') {
+        console.log('🎉 [JOB] Document generation complete!')
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+
+        // Show complete state for 3 seconds then clear
+        setTimeout(() => {
+          setDocumentJob(null)
+          fetchFunnels() // Refresh to get the new TLDRs
+        }, 3000)
+      }
+
+      // Job failed - stop polling
+      if (data.status === 'failed') {
+        console.error('❌ [JOB] Document generation failed:', data.error_message)
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+        }
+
+        // Show error for 5 seconds then clear
+        setTimeout(() => {
+          setDocumentJob(null)
+        }, 5000)
+      }
+
+    } catch (err) {
+      console.error('Poll error:', err)
+    }
+  }, [])
+
+  // Start document generation job
+  async function startDocumentGeneration(funnelId) {
+    console.log('🚀 [DOC-GEN] Starting document generation for funnel:', funnelId)
+
+    // Set initial state
+    setDocumentJob({
+      jobId: null,
+      funnelId,
+      status: 'starting',
+      progress: 0,
+      currentTask: 'Starting document generation...',
+      completedChunks: 0,
+      totalChunks: 7
+    })
+
+    try {
+      const response = await fetch('/.netlify/functions/generate-supplementary-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          funnel_id: funnelId,
+          user_id: user.id
+        })
+      })
+
+      console.log('📥 [DOC-GEN] Response status:', response.status)
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('❌ [DOC-GEN] API error:', errorData)
+        setDocumentJob(prev => ({
+          ...prev,
+          status: 'failed',
+          currentTask: errorData.error || 'Failed to start generation'
+        }))
+        setTimeout(() => setDocumentJob(null), 5000)
+        return
+      }
+
+      const result = await response.json()
+      console.log('✅ [DOC-GEN] Job started:', result.job_id)
+
+      // Update state with job ID
+      setDocumentJob(prev => ({
+        ...prev,
+        jobId: result.job_id,
+        status: 'processing',
+        currentTask: 'Generating documents...'
+      }))
+
+      // Start polling for progress
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current)
+      }
+
+      // Poll every 2 seconds
+      pollIntervalRef.current = setInterval(() => {
+        pollJobStatus(result.job_id, funnelId)
+      }, 2000)
+
+      // Also poll immediately
+      pollJobStatus(result.job_id, funnelId)
+
+    } catch (err) {
+      console.error('❌ [DOC-GEN] Error:', err)
+      setDocumentJob(prev => ({
+        ...prev,
+        status: 'failed',
+        currentTask: err.message
+      }))
+      setTimeout(() => setDocumentJob(null), 5000)
+    }
+  }
+
   async function saveFunnel(funnelData, profileId, audienceId, existingProductId = null, language = 'English') {
     try {
-      // Only 4 products: front_end, bump, upsell_1, upsell_2 (user's existing product is final destination)
       const { data, error } = await supabase
         .from('funnels')
         .insert({
@@ -82,7 +231,6 @@ export function useFunnels() {
           upsell_1: funnelData.upsell_1,
           upsell_2: funnelData.upsell_2,
           language: language,
-          // No upsell_3 - user's existing product is the final destination
           status: 'draft'
         })
         .select()
@@ -90,44 +238,17 @@ export function useFunnels() {
 
       if (error) throw error
 
-      // Trigger supplementary content generation in the background
-      // This generates TLDRs and cross-promos only AFTER user accepts the funnel
-      // Saves tokens when user clicks "Start Over" instead of saving
-      if (data?.id) {
-        generateSupplementaryContent(data.id).catch(err => {
-          console.error('Supplementary content generation failed:', err)
-        })
-      }
+      console.log('🚀 [SAVE] Funnel saved with ID:', data.id)
 
+      // Refresh funnels list immediately
       await fetchFunnels()
+
+      // NOTE: Document generation (TLDRs, cross-promos) happens LATER
+      // when user selects this funnel in Lead Magnet flow and clicks "Generate"
+      // This is intentional - we don't consume tokens until user explicitly triggers generation
+
       return data
     } catch (err) {
-      throw err
-    }
-  }
-
-  // Generate TLDRs and cross-promos in background (called after save)
-  async function generateSupplementaryContent(funnelId) {
-    try {
-      const response = await fetch('/.netlify/functions/generate-supplementary-content', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          funnel_id: funnelId,
-          user_id: user.id
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error || 'Failed to generate supplementary content')
-      }
-
-      // Refresh funnels to get updated TLDRs/cross-promos
-      await fetchFunnels()
-      return await response.json()
-    } catch (err) {
-      console.error('Supplementary content error:', err)
       throw err
     }
   }
@@ -176,7 +297,6 @@ export function useFunnels() {
       })
 
       if (!response.ok) {
-        // Handle non-JSON error responses (like HTML from 504 timeout)
         const contentType = response.headers.get('content-type')
         if (contentType && contentType.includes('application/json')) {
           const errorData = await response.json()
@@ -201,6 +321,9 @@ export function useFunnels() {
     saveFunnel,
     updateFunnel,
     deleteFunnel,
-    generateProductContent
+    generateProductContent,
+    // Document generation job tracking
+    documentJob,
+    startDocumentGeneration
   }
 }

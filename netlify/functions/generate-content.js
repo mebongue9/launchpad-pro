@@ -6,6 +6,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
 
+const LOG_TAG = '[GENERATE-CONTENT]';
+
+console.log(`🔧 ${LOG_TAG} Module loaded`);
+console.log(`🔧 ${LOG_TAG} Environment check:`, {
+  ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY
+});
+
 const PRODUCT_BUILDER_PROMPT = `
 You are a product content creator specializing in digital products for coaches. You transform concepts into fully-written, actionable content.
 
@@ -84,20 +91,41 @@ Respond with ONLY valid JSON:
 `;
 
 export async function handler(event) {
+  console.log(`🚀 ${LOG_TAG} Function invoked`);
+  console.log(`📥 ${LOG_TAG} HTTP method:`, event.httpMethod);
+
   if (event.httpMethod !== 'POST') {
+    console.log(`❌ ${LOG_TAG} Method not allowed:`, event.httpMethod);
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
+    console.log(`📥 ${LOG_TAG} Parsing request body...`);
     const { product, profile, audience, next_product } = JSON.parse(event.body);
 
+    console.log(`📥 ${LOG_TAG} Received parameters:`, {
+      product: product ? {
+        name: product.name,
+        format: product.format,
+        price: product.price
+      } : null,
+      profile: profile ? { id: profile.id, name: profile.name } : null,
+      audience: audience ? { name: audience.name } : null,
+      next_product: next_product ? { name: next_product.name, price: next_product.price } : null
+    });
+
     if (!product || !profile) {
+      console.log(`❌ ${LOG_TAG} Missing required fields:`, {
+        product: !!product,
+        profile: !!profile
+      });
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Product and profile are required' })
       };
     }
 
+    console.log(`🔧 ${LOG_TAG} Initializing Anthropic client...`);
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -126,6 +154,10 @@ ${next_product ? `Name: ${next_product.name}\nPrice: $${next_product.price}\nDes
 Generate the complete product content now.
 `;
 
+    console.log(`🔄 ${LOG_TAG} Calling Claude API to generate product content...`);
+    console.log(`🔄 ${LOG_TAG} Using model: claude-sonnet-4-20250514, max_tokens: 8192`);
+    console.log(`🔄 ${LOG_TAG} Product details: "${product.name}" at $${product.price}`);
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 8192,
@@ -133,7 +165,30 @@ Generate the complete product content now.
       messages: [{ role: 'user', content: userMessage }]
     });
 
+    console.log(`✅ ${LOG_TAG} Claude API response received`);
+    console.log(`📊 ${LOG_TAG} Response usage:`, {
+      input_tokens: response.usage?.input_tokens,
+      output_tokens: response.usage?.output_tokens
+    });
+    console.log(`📊 ${LOG_TAG} Response stop reason:`, response.stop_reason);
+
+    console.log(`🔄 ${LOG_TAG} Parsing Claude response as JSON...`);
     const content = parseClaudeJSON(response.content[0].text);
+    console.log(`✅ ${LOG_TAG} JSON parsed successfully`);
+    console.log(`📊 ${LOG_TAG} Content structure:`, {
+      title: content.title,
+      subtitle: content.subtitle,
+      sections_count: content.sections?.length || 0
+    });
+
+    // Log section types for debugging
+    if (content.sections) {
+      const sectionTypes = content.sections.map(s => s.type);
+      console.log(`📊 ${LOG_TAG} Section types:`, sectionTypes);
+    }
+
+    console.log(`✅ ${LOG_TAG} Function completed successfully`);
+    console.log(`📤 ${LOG_TAG} Returning product content with ${content.sections?.length || 0} sections`);
 
     return {
       statusCode: 200,
@@ -141,7 +196,9 @@ Generate the complete product content now.
       body: JSON.stringify(content)
     };
   } catch (error) {
-    console.error('Generate content error:', error);
+    console.error(`❌ ${LOG_TAG} Error occurred:`, error.message);
+    console.error(`❌ ${LOG_TAG} Error stack:`, error.stack);
+    console.error(`❌ ${LOG_TAG} Full error object:`, JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

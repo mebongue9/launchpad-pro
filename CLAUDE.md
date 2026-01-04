@@ -17,6 +17,29 @@ This file contains instructions for Claude Code when building this project. Read
 
 ---
 
+## 🚨 ACTIVE MAJOR PROJECTS (January 2026)
+
+### Batched Generation System Redesign
+**Status:** 🟡 PLANNING PHASE - Awaiting Approval
+**Priority:** 🔴 CRITICAL
+**Documentation:** `docs/BATCHED-GENERATION-REDESIGN.md`
+**Plan:** `~/.claude/plans/optimized-singing-pike.md`
+
+**What:** Complete redesign of funnel generation from 51+ sequential API calls to 14 batched calls with automatic retry logic.
+
+**Impact:** This is a MAJOR system redesign. Success rate will improve from ~33% to 95%+. DO NOT modify generation-related code without checking this documentation first.
+
+**Timeline:**
+- Planning: January 4, 2026 ✅
+- Implementation: 3-4 days (awaiting approval)
+- Expected Completion: January 7-8, 2026
+
+**Before working on generation code, READ:**
+1. `docs/BATCHED-GENERATION-REDESIGN.md` - Full project documentation with timestamps
+2. `docs/README.md` - Documentation index and navigation guide
+
+---
+
 # ⛔ MANDATORY WORKFLOW — READ THIS FIRST
 
 ## The Problem This Solves

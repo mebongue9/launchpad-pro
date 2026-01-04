@@ -14,13 +14,20 @@ export function useExistingProducts() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    console.log('🚀 [EXISTING-PRODUCTS] Hook initialized, user:', user?.id || 'none')
     if (user) {
       fetchProducts()
     }
   }, [user])
 
   async function fetchProducts() {
+    if (!user) {
+      console.log('🔄 [EXISTING-PRODUCTS] Skipping fetch - no user authenticated')
+      return
+    }
+
     try {
+      console.log('🔄 [EXISTING-PRODUCTS] Fetching products for user:', user.id)
       setLoading(true)
       const { data, error } = await supabase
         .from('existing_products')
@@ -28,9 +35,14 @@ export function useExistingProducts() {
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [EXISTING-PRODUCTS] Fetch error:', error.message)
+        throw error
+      }
+      console.log('✅ [EXISTING-PRODUCTS] Fetched', data?.length || 0, 'products')
       setProducts(data || [])
     } catch (err) {
+      console.error('❌ [EXISTING-PRODUCTS] Fetch exception:', err.message)
       setError(err.message)
     } finally {
       setLoading(false)
@@ -38,6 +50,7 @@ export function useExistingProducts() {
   }
 
   async function createProduct(productData) {
+    console.log('📥 [EXISTING-PRODUCTS] Creating product:', productData.name)
     try {
       const { data, error } = await supabase
         .from('existing_products')
@@ -48,15 +61,21 @@ export function useExistingProducts() {
         .select()
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [EXISTING-PRODUCTS] Create error:', error.message)
+        throw error
+      }
+      console.log('✅ [EXISTING-PRODUCTS] Created product:', data.id)
       await fetchProducts()
       return data
     } catch (err) {
+      console.error('❌ [EXISTING-PRODUCTS] Create exception:', err.message)
       throw err
     }
   }
 
   async function updateProduct(id, updates) {
+    console.log('🔄 [EXISTING-PRODUCTS] Updating product:', id)
     try {
       const { error } = await supabase
         .from('existing_products')
@@ -64,14 +83,20 @@ export function useExistingProducts() {
         .eq('id', id)
         .eq('user_id', user.id)
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [EXISTING-PRODUCTS] Update error:', error.message)
+        throw error
+      }
+      console.log('✅ [EXISTING-PRODUCTS] Updated product:', id)
       await fetchProducts()
     } catch (err) {
+      console.error('❌ [EXISTING-PRODUCTS] Update exception:', err.message)
       throw err
     }
   }
 
   async function deleteProduct(id) {
+    console.log('🔄 [EXISTING-PRODUCTS] Deleting product:', id)
     try {
       const { error } = await supabase
         .from('existing_products')
@@ -79,9 +104,14 @@ export function useExistingProducts() {
         .eq('id', id)
         .eq('user_id', user.id)
 
-      if (error) throw error
+      if (error) {
+        console.error('❌ [EXISTING-PRODUCTS] Delete error:', error.message)
+        throw error
+      }
+      console.log('✅ [EXISTING-PRODUCTS] Deleted product:', id)
       await fetchProducts()
     } catch (err) {
+      console.error('❌ [EXISTING-PRODUCTS] Delete exception:', err.message)
       throw err
     }
   }

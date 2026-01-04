@@ -8,7 +8,17 @@ import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
 
+const LOG_TAG = '[LEAD-MAGNET-IDEAS]';
+
 // Initialize clients
+console.log(`🔧 ${LOG_TAG} Initializing API clients...`);
+console.log(`🔧 ${LOG_TAG} Environment check:`, {
+  ANTHROPIC_API_KEY: !!process.env.ANTHROPIC_API_KEY,
+  OPENAI_API_KEY: !!process.env.OPENAI_API_KEY,
+  SUPABASE_URL: !!(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+  SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
+
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
@@ -142,30 +152,38 @@ function cosineSimilarity(a, b) {
 
 // Search vector database for available knowledge topics
 async function getAvailableKnowledgeTopics(profileId) {
+  console.log(`🔍 ${LOG_TAG} Searching knowledge base for profile:`, profileId);
+
   try {
     // Get a broad query to find what topics exist in the knowledge base
     const query = "What topics, strategies, and teachings are available?";
+    console.log(`🔄 ${LOG_TAG} Creating embedding for knowledge search...`);
 
     const embeddingResponse = await openai.embeddings.create({
       model: 'text-embedding-ada-002',
       input: query
     });
+    console.log(`✅ ${LOG_TAG} Embedding created successfully`);
 
     const queryEmbedding = embeddingResponse.data[0].embedding;
 
     // Fetch chunks with embeddings
+    console.log(`🔄 ${LOG_TAG} Fetching knowledge chunks from Supabase...`);
     const { data: chunks, error } = await supabase
       .from('knowledge_chunks')
       .select('id, content, metadata, embedding');
 
     if (error) {
-      console.log('No knowledge chunks found or error:', error);
+      console.log(`⚠️ ${LOG_TAG} No knowledge chunks found or error:`, error);
       return [];
     }
 
     if (!chunks || chunks.length === 0) {
+      console.log(`⚠️ ${LOG_TAG} No knowledge chunks available in database`);
       return [];
     }
+
+    console.log(`📊 ${LOG_TAG} Found ${chunks.length} knowledge chunks, calculating similarities...`);
 
     // Calculate similarity and get top topics
     const results = chunks
@@ -173,11 +191,13 @@ async function getAvailableKnowledgeTopics(profileId) {
       .map(chunk => ({
         content: chunk.content,
         metadata: chunk.metadata,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
+        similarity: cosineSimilarity(queryEmbedding, JSON.parse(chunk.embedding))
       }))
       .filter(r => r.similarity >= 0.5)
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, 15); // Get top 15 relevant chunks
+
+    console.log(`✅ ${LOG_TAG} Found ${results.length} relevant chunks with similarity >= 0.5`);
 
     // Extract unique topics from the chunks
     const topics = results.map(r => {
@@ -188,20 +208,34 @@ async function getAvailableKnowledgeTopics(profileId) {
 
     return topics;
   } catch (err) {
-    console.error('Vector search error:', err);
+    console.error(`❌ ${LOG_TAG} Vector search error:`, err.message);
+    console.error(`❌ ${LOG_TAG} Full error:`, err);
     return [];
   }
 }
 
 export async function handler(event) {
+  console.log(`🚀 ${LOG_TAG} Function invoked`);
+  console.log(`📥 ${LOG_TAG} HTTP method:`, event.httpMethod);
+
   if (event.httpMethod !== 'POST') {
+    console.log(`❌ ${LOG_TAG} Method not allowed:`, event.httpMethod);
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
+    console.log(`📥 ${LOG_TAG} Parsing request body...`);
     const { profile, audience, front_end_product, excluded_topics } = JSON.parse(event.body);
 
+    console.log(`📥 ${LOG_TAG} Received parameters:`, {
+      profile: profile ? { id: profile.id, name: profile.name, niche: profile.niche } : null,
+      audience: audience ? { name: audience.name } : null,
+      front_end_product: front_end_product ? { name: front_end_product.name, price: front_end_product.price } : null,
+      excluded_topics: excluded_topics || []
+    });
+
     if (!profile || !front_end_product) {
+      console.log(`❌ ${LOG_TAG} Missing required fields - profile:`, !!profile, 'front_end_product:', !!front_end_product);
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Profile and target product are required' })
@@ -209,7 +243,9 @@ export async function handler(event) {
     }
 
     // Get available knowledge topics from vector database
+    console.log(`🔄 ${LOG_TAG} Fetching knowledge topics from vector database...`);
     const knowledgeTopics = await getAvailableKnowledgeTopics(profile.id);
+    console.log(`✅ ${LOG_TAG} Retrieved ${knowledgeTopics.length} knowledge topics`);
 
     // Build knowledge context
     let knowledgeContext = '';
@@ -255,6 +291,9 @@ Generate 3 lead magnet ideas now. Remember:
 - Each idea bridges to the target product
 `;
 
+    console.log(`🔄 ${LOG_TAG} Calling Claude API to generate ideas...`);
+    console.log(`🔄 ${LOG_TAG} Using model: claude-sonnet-4-20250514`);
+
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
@@ -262,7 +301,15 @@ Generate 3 lead magnet ideas now. Remember:
       messages: [{ role: 'user', content: userMessage }]
     });
 
+    console.log(`✅ ${LOG_TAG} Claude API response received`);
+    console.log(`📊 ${LOG_TAG} Response usage:`, {
+      input_tokens: response.usage?.input_tokens,
+      output_tokens: response.usage?.output_tokens
+    });
+
+    console.log(`🔄 ${LOG_TAG} Parsing Claude response as JSON...`);
     const ideas = parseClaudeJSON(response.content[0].text);
+    console.log(`✅ ${LOG_TAG} JSON parsed successfully, got ${ideas.ideas?.length || 0} ideas`);
 
     // Validate that all formats are PDF-friendly
     const pdfFormats = [
@@ -272,18 +319,24 @@ Generate 3 lead magnet ideas now. Remember:
     ];
 
     if (ideas.ideas) {
-      ideas.ideas = ideas.ideas.map(idea => {
+      console.log(`🔄 ${LOG_TAG} Validating PDF formats for ${ideas.ideas.length} ideas...`);
+      ideas.ideas = ideas.ideas.map((idea, index) => {
         // Warn if format doesn't match allowed list (but don't block)
         const formatLower = (idea.format || '').toLowerCase();
         const isValidFormat = pdfFormats.some(f => formatLower.includes(f.toLowerCase()));
 
         if (!isValidFormat) {
-          console.warn(`Warning: Format "${idea.format}" may not be PDF-compatible`);
+          console.warn(`⚠️ ${LOG_TAG} Idea ${index + 1}: Format "${idea.format}" may not be PDF-compatible`);
+        } else {
+          console.log(`✅ ${LOG_TAG} Idea ${index + 1}: "${idea.title}" - format valid`);
         }
 
         return idea;
       });
     }
+
+    console.log(`✅ ${LOG_TAG} Function completed successfully`);
+    console.log(`📤 ${LOG_TAG} Returning ${ideas.ideas?.length || 0} lead magnet ideas`);
 
     return {
       statusCode: 200,
@@ -291,7 +344,9 @@ Generate 3 lead magnet ideas now. Remember:
       body: JSON.stringify(ideas)
     };
   } catch (error) {
-    console.error('Generate lead magnet ideas error:', error);
+    console.error(`❌ ${LOG_TAG} Error occurred:`, error.message);
+    console.error(`❌ ${LOG_TAG} Error stack:`, error.stack);
+    console.error(`❌ ${LOG_TAG} Full error object:`, JSON.stringify(error, Object.getOwnPropertyNames(error)));
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },

@@ -14,8 +14,12 @@ export function useProfiles() {
   const [error, setError] = useState(null)
 
   const fetchProfiles = async () => {
-    if (!user) return
+    if (!user) {
+      console.log('🔄 [PROFILES] Skipping fetch - no user authenticated')
+      return
+    }
 
+    console.log('🔄 [PROFILES] Fetching profiles for user:', user.id)
     setLoading(true)
     setError(null)
 
@@ -26,34 +30,49 @@ export function useProfiles() {
       .order('created_at', { ascending: false })
 
     if (fetchError) {
+      console.error('❌ [PROFILES] Fetch error:', fetchError.message)
       setError(fetchError.message)
     } else {
+      console.log('✅ [PROFILES] Fetched', data?.length || 0, 'profiles')
       setProfiles(data || [])
     }
     setLoading(false)
   }
 
   useEffect(() => {
+    console.log('🚀 [PROFILES] Hook initialized, user:', user?.id || 'none')
     fetchProfiles()
   }, [user])
 
   const createProfile = async (profileData) => {
-    if (!user) throw new Error('Not authenticated')
+    if (!user) {
+      console.error('❌ [PROFILES] Create failed - not authenticated')
+      throw new Error('Not authenticated')
+    }
 
+    console.log('📥 [PROFILES] Creating profile:', profileData.name || profileData.business_name)
     const { data, error } = await supabase
       .from('profiles')
       .insert({ ...profileData, user_id: user.id })
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ [PROFILES] Create error:', error.message)
+      throw error
+    }
+    console.log('✅ [PROFILES] Created profile:', data.id)
     setProfiles(prev => [data, ...prev])
     return data
   }
 
   const updateProfile = async (id, profileData) => {
-    if (!user) throw new Error('Not authenticated')
+    if (!user) {
+      console.error('❌ [PROFILES] Update failed - not authenticated')
+      throw new Error('Not authenticated')
+    }
 
+    console.log('🔄 [PROFILES] Updating profile:', id)
     const { data, error } = await supabase
       .from('profiles')
       .update(profileData)
@@ -62,47 +81,71 @@ export function useProfiles() {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ [PROFILES] Update error:', error.message)
+      throw error
+    }
+    console.log('✅ [PROFILES] Updated profile:', id)
     setProfiles(prev => prev.map(p => p.id === id ? data : p))
     return data
   }
 
   const deleteProfile = async (id) => {
-    if (!user) throw new Error('Not authenticated')
+    if (!user) {
+      console.error('❌ [PROFILES] Delete failed - not authenticated')
+      throw new Error('Not authenticated')
+    }
 
+    console.log('🔄 [PROFILES] Deleting profile:', id)
     const { error } = await supabase
       .from('profiles')
       .delete()
       .eq('id', id)
       .eq('user_id', user.id)
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ [PROFILES] Delete error:', error.message)
+      throw error
+    }
+    console.log('✅ [PROFILES] Deleted profile:', id)
     setProfiles(prev => prev.filter(p => p.id !== id))
   }
 
   const uploadFile = async (bucket, file) => {
-    if (!user) throw new Error('Not authenticated')
+    if (!user) {
+      console.error('❌ [PROFILES] Upload failed - not authenticated')
+      throw new Error('Not authenticated')
+    }
 
     const fileExt = file.name.split('.').pop()
     const fileName = `${user.id}/${Date.now()}.${fileExt}`
 
+    console.log('📥 [PROFILES] Uploading file to bucket:', bucket, 'filename:', fileName)
     const { error: uploadError } = await supabase.storage
       .from(bucket)
       .upload(fileName, file)
 
-    if (uploadError) throw uploadError
+    if (uploadError) {
+      console.error('❌ [PROFILES] Upload error:', uploadError.message)
+      throw uploadError
+    }
 
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
       .getPublicUrl(fileName)
 
+    console.log('✅ [PROFILES] File uploaded, URL:', publicUrl)
     return publicUrl
   }
 
   // Update favorite languages for a profile
   const updateFavoriteLanguages = async (profileId, languages) => {
-    if (!user) throw new Error('Not authenticated')
+    if (!user) {
+      console.error('❌ [PROFILES] Update languages failed - not authenticated')
+      throw new Error('Not authenticated')
+    }
 
+    console.log('🔄 [PROFILES] Updating favorite languages for profile:', profileId, 'languages:', languages)
     const { data, error } = await supabase
       .from('profiles')
       .update({ favorite_languages: languages })
@@ -111,7 +154,11 @@ export function useProfiles() {
       .select()
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error('❌ [PROFILES] Update languages error:', error.message)
+      throw error
+    }
+    console.log('✅ [PROFILES] Updated languages for profile:', profileId)
     setProfiles(prev => prev.map(p => p.id === profileId ? data : p))
     return data
   }

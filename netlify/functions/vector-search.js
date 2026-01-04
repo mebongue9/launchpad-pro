@@ -65,7 +65,7 @@ export async function handler(event) {
         id: chunk.id,
         content: chunk.content,
         metadata: chunk.metadata,
-        similarity: cosineSimilarity(queryEmbedding, chunk.embedding)
+        similarity: cosineSimilarity(queryEmbedding, JSON.parse(chunk.embedding))
       }))
       .filter(r => r.similarity >= threshold)
       .sort((a, b) => b.similarity - a.similarity)

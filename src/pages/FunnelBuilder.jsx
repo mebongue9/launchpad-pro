@@ -35,6 +35,7 @@ import {
 } from 'lucide-react'
 import FunnelCard from '../components/funnel/FunnelCard'
 import FunnelFilters, { FunnelStats } from '../components/funnel/FunnelFilters'
+import DocumentGenerationProgress from '../components/funnel/DocumentGenerationProgress'
 
 // Progress bar component for generation
 function GenerationProgress({ progress, currentChunk, completedChunks, totalChunks }) {
@@ -103,7 +104,7 @@ export default function FunnelBuilder() {
   const { profiles, loading: profilesLoading } = useProfiles()
   const { audiences, loading: audiencesLoading } = useAudiences()
   const { products: existingProducts } = useExistingProducts()
-  const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading } = useFunnels()
+  const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading, documentJob } = useFunnels()
   const { addToast } = useToast()
 
   // Use job-based generation hook
@@ -842,6 +843,9 @@ export default function FunnelBuilder() {
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">Your Funnels</h2>
           </div>
+
+          {/* Document Generation Progress */}
+          <DocumentGenerationProgress job={documentJob} />
 
           {/* Filters */}
           <FunnelFilters
