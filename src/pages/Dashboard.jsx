@@ -20,7 +20,8 @@ import {
   Sparkles,
   Palette,
   TrendingUp,
-  Clock
+  Clock,
+  Zap
 } from 'lucide-react'
 
 export default function Dashboard() {
@@ -161,6 +162,34 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+
+      {/* Batched Generation Demo Card */}
+      <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200">
+        <div className="flex items-start gap-4">
+          <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center flex-shrink-0">
+            <Zap className="w-5 h-5 text-indigo-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-semibold text-gray-900">New: Batched Generation System</h3>
+            <p className="text-sm text-gray-600 mt-1">
+              Test the new 14-task batched generation with automatic retry. 73% faster with ~95% success rate!
+            </p>
+            <div className="flex items-center gap-4 mt-3">
+              <div className="text-xs text-gray-500">
+                ✓ Auto-retry (7 attempts) • ✓ Resume capability • ✓ Real-time progress
+              </div>
+            </div>
+            <Link
+              to="/batched-generation-demo"
+              className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              Try Demo
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </Card>
 
       {profiles.length === 0 && (
         <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
