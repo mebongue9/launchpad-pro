@@ -27,6 +27,7 @@ import {
   Globe
 } from 'lucide-react'
 import FavoriteLanguagesManager from '../components/settings/FavoriteLanguagesManager'
+import GenerationSettingsSection from '../components/settings/GenerationSettingsSection'
 
 export default function Settings() {
   const { user, signOut } = useAuth()
@@ -176,6 +177,9 @@ export default function Settings() {
           loading={savingLanguages}
         />
       </Card>
+
+      {/* Generation Settings */}
+      <GenerationSettingsSection />
 
       {/* Actions */}
       <Card>
