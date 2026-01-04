@@ -6,8 +6,8 @@
 
 import { generateCoverHTML } from '../templates/cover';
 import { generateReviewRequestHTML } from '../templates/review-request';
-import { generateFormatHTML } from '../templates/formats';
-import { getStyle } from '../templates/styles';
+import { generateFormatHTML } from '../templates/formats/index';
+import { getStyle } from '../templates/styles/index';
 
 // ==============================================
 // HTML DOCUMENT GENERATION

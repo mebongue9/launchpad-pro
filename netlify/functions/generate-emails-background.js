@@ -278,17 +278,18 @@ export async function handler(event) {
 
     console.log(`[Emails] Generating for funnel: ${funnel_id}`);
 
-    // Get funnel data
+    // Get funnel data - verify ownership with user_id
     const { data: funnel, error: funnelError } = await supabase
       .from('funnels')
       .select('*, profiles(name, business_name)')
       .eq('id', funnel_id)
+      .eq('user_id', user_id)
       .single();
 
     if (funnelError || !funnel) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ error: 'Funnel not found' })
+        body: JSON.stringify({ error: 'Funnel not found or access denied' })
       };
     }
 
@@ -304,11 +305,12 @@ export async function handler(event) {
       { ...frontEndSequence, user_id, funnel_id }
     ];
 
-    // Delete existing sequences for this funnel first
+    // Delete existing sequences for this funnel first (verify ownership)
     await supabase
       .from('email_sequences')
       .delete()
-      .eq('funnel_id', funnel_id);
+      .eq('funnel_id', funnel_id)
+      .eq('user_id', user_id);
 
     // Insert new sequences
     const { data: savedSequences, error: insertError } = await supabase

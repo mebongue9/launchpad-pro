@@ -5,6 +5,10 @@
 
 // Generate HTML for a branded cover page
 export function generateCoverHTML(product, profile, style = {}) {
+  // Add null safety for product and profile
+  product = product || { name: 'Untitled Product' };
+  profile = profile || { name: 'Creator' };
+
   const {
     fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif',
     primaryColor = '#1a1a1a',

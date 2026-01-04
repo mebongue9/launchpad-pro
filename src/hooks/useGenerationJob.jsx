@@ -198,38 +198,71 @@ export function useGenerationJob() {
     setCanResume(false)
   }, [])
 
+  // Ref to track wait intervals for cleanup
+  const waitIntervalRef = useRef(null)
+
+  // Cleanup wait interval on unmount
+  useEffect(() => {
+    return () => {
+      if (waitIntervalRef.current) {
+        clearInterval(waitIntervalRef.current)
+      }
+    }
+  }, [])
+
   // Wait for job completion (returns a promise)
   const waitForCompletion = useCallback(async (id) => {
     const jobIdToWait = id || jobId
     if (!jobIdToWait) return null
 
+    // Clear any existing wait interval
+    if (waitIntervalRef.current) {
+      clearInterval(waitIntervalRef.current)
+    }
+
     return new Promise((resolve, reject) => {
       const checkStatus = async () => {
-        const result = await pollJobStatus(jobIdToWait)
-        if (result) {
-          resolve(result)
-        } else if (status === 'failed') {
-          reject(new Error(error || 'Generation failed'))
+        try {
+          // Fetch current status from API instead of relying on stale closure
+          const response = await fetch('/.netlify/functions/check-job-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ job_id: jobIdToWait })
+          })
+
+          if (!response.ok) {
+            throw new Error('Failed to check job status')
+          }
+
+          const data = await response.json()
+
+          if (data.status === 'complete') {
+            if (waitIntervalRef.current) {
+              clearInterval(waitIntervalRef.current)
+              waitIntervalRef.current = null
+            }
+            resolve(data.result)
+          } else if (data.status === 'failed') {
+            if (waitIntervalRef.current) {
+              clearInterval(waitIntervalRef.current)
+              waitIntervalRef.current = null
+            }
+            reject(new Error(data.error_message || 'Generation failed'))
+          }
+          // If still processing, keep waiting
+        } catch (err) {
+          console.error('Wait check error:', err)
+          // Don't reject on network errors - might be temporary
         }
-        // If still processing, keep waiting (polling will continue)
       }
 
       // Initial check
       checkStatus()
 
-      // Set up interval for subsequent checks
-      const waitInterval = setInterval(async () => {
-        const result = await pollJobStatus(jobIdToWait)
-        if (result) {
-          clearInterval(waitInterval)
-          resolve(result)
-        } else if (status === 'failed') {
-          clearInterval(waitInterval)
-          reject(new Error(error || 'Generation failed'))
-        }
-      }, POLL_INTERVAL)
+      // Set up interval for subsequent checks (store ref for cleanup)
+      waitIntervalRef.current = setInterval(checkStatus, POLL_INTERVAL)
     })
-  }, [jobId, status, error, pollJobStatus])
+  }, [jobId])
 
   // Check if job is active (pending or processing)
   const isActive = status === 'pending' || status === 'processing'
@@ -268,7 +301,7 @@ export function useLeadMagnetContentJob() {
       front_end_product: frontEndProduct,
       language
     })
-  }, [job])
+  }, [job.startJob])
 
   return { ...job, generateContent }
 }
@@ -284,7 +317,7 @@ export function useLeadMagnetIdeasJob() {
       excluded_topics: excludedTopics,
       language
     })
-  }, [job])
+  }, [job.startJob])
 
   return { ...job, generateIdeas }
 }
@@ -299,7 +332,7 @@ export function useFunnelJob() {
       existing_product: existingProduct,
       language
     })
-  }, [job])
+  }, [job.startJob])
 
   return { ...job, generateFunnel }
 }
@@ -307,14 +340,15 @@ export function useFunnelJob() {
 export function useFunnelProductJob() {
   const job = useGenerationJob()
 
-  const generateProductContent = useCallback(async (product, profile, audience, nextProduct = null) => {
+  const generateProductContent = useCallback(async (product, profile, audience, nextProduct = null, language = 'English') => {
     return job.startJob('funnel_product', {
       product,
       profile,
       audience,
-      next_product: nextProduct
+      next_product: nextProduct,
+      language
     })
-  }, [job])
+  }, [job.startJob])
 
   return { ...job, generateProductContent }
 }

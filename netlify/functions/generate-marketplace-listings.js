@@ -143,17 +143,18 @@ export async function handler(event) {
 
     console.log(`[Marketplace] Generating for funnel: ${funnel_id}, product: ${product_level || 'all'}`);
 
-    // Get funnel data with related profile and audience
+    // Get funnel data with related profile and audience - verify ownership
     const { data: funnel, error: funnelError } = await supabase
       .from('funnels')
       .select('*, profiles(*), audiences(*)')
       .eq('id', funnel_id)
+      .eq('user_id', user_id)
       .single();
 
     if (funnelError || !funnel) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ error: 'Funnel not found' })
+        body: JSON.stringify({ error: 'Funnel not found or access denied' })
       };
     }
 
@@ -185,11 +186,12 @@ export async function handler(event) {
       results[level] = listing;
     }
 
-    // Update funnel with marketplace data
+    // Update funnel with marketplace data (verify ownership)
     const { error: updateError } = await supabase
       .from('funnels')
       .update(updates)
-      .eq('id', funnel_id);
+      .eq('id', funnel_id)
+      .eq('user_id', user_id);
 
     if (updateError) {
       console.error('Failed to save marketplace listings:', updateError);

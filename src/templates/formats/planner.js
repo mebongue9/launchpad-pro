@@ -107,13 +107,25 @@ export const plannerTemplate = {
       { label: 'Day 4' }
     ];
 
+    // Static class mapping for Tailwind JIT compatibility
+    const columnClasses = {
+      1: 'grid-cols-1',
+      2: 'grid-cols-2',
+      3: 'grid-cols-3',
+      4: 'grid-cols-4',
+      5: 'grid-cols-5',
+      6: 'grid-cols-6',
+      7: 'grid-cols-7'
+    };
+    const gridColsClass = columnClasses[content?.columns] || 'grid-cols-2';
+
     return (
       <div className="planner-preview p-6">
         <h2 className="text-2xl font-bold mb-2">{content?.title || 'Weekly Planner'}</h2>
         {content?.subtitle && (
           <p className="text-gray-600 mb-6">{content.subtitle}</p>
         )}
-        <div className={`grid grid-cols-${content?.columns || 2} gap-4`}>
+        <div className={`grid ${gridColsClass} gap-4`}>
           {days.map((day, i) => (
             <div key={i} className="border-2 border-gray-200 rounded-xl overflow-hidden">
               <div className="bg-gray-100 px-4 py-3 font-semibold">

@@ -24,9 +24,13 @@ function CopyButton({ text, label }) {
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(text || '')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+    }
   }
 
   return (
@@ -98,13 +102,13 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
                 <FileText className="w-4 h-4" />
                 Marketplace Title
                 <span className="text-xs text-gray-400">
-                  ({listing.marketplace_title.length}/140 chars)
+                  ({listing.marketplace_title?.length || 0}/140 chars)
                 </span>
               </span>
-              <CopyButton text={listing.marketplace_title} label="Copy" />
+              <CopyButton text={listing.marketplace_title || ''} label="Copy" />
             </div>
             <p className="p-3 bg-gray-50 rounded-lg text-gray-900 font-medium">
-              {listing.marketplace_title}
+              {listing.marketplace_title || 'No title generated'}
             </p>
           </div>
 
@@ -114,13 +118,13 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
               <span className="text-sm font-medium text-gray-700">
                 Etsy Description
                 <span className="text-xs text-gray-400 ml-2">
-                  ({listing.etsy_description.length} chars)
+                  ({listing.etsy_description?.length || 0} chars)
                 </span>
               </span>
-              <CopyButton text={listing.etsy_description} label="Copy" />
+              <CopyButton text={listing.etsy_description || ''} label="Copy" />
             </div>
             <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap">
-              {listing.etsy_description}
+              {listing.etsy_description || 'No description generated'}
             </div>
           </div>
 
@@ -130,13 +134,13 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
               <span className="text-sm font-medium text-gray-700">
                 Gumroad Description
                 <span className="text-xs text-gray-400 ml-2">
-                  ({listing.normal_description.length} chars)
+                  ({listing.normal_description?.length || 0} chars)
                 </span>
               </span>
-              <CopyButton text={listing.normal_description} label="Copy" />
+              <CopyButton text={listing.normal_description || ''} label="Copy" />
             </div>
             <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-              {listing.normal_description}
+              {listing.normal_description || 'No description generated'}
             </div>
           </div>
 
@@ -147,10 +151,10 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
                 <Tag className="w-4 h-4" />
                 SEO Tags (13)
               </span>
-              <CopyButton text={listing.marketplace_tags} label="Copy All" />
+              <CopyButton text={listing.marketplace_tags || ''} label="Copy All" />
             </div>
             <div className="flex flex-wrap gap-2">
-              {listing.marketplace_tags.split(',').map((tag, index) => (
+              {(listing.marketplace_tags || '').split(',').filter(tag => tag.trim()).map((tag, index) => (
                 <span
                   key={index}
                   className="

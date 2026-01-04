@@ -6,6 +6,9 @@
 
 // Generate HTML for review request section
 export function generateReviewRequestHTML(profile, style = {}) {
+  // Add null safety for profile
+  profile = profile || { name: 'Creator' };
+
   const {
     fontFamily = '-apple-system, BlinkMacSystemFont, sans-serif',
     primaryColor = '#1a1a1a',

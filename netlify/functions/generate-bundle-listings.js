@@ -74,17 +74,18 @@ export async function handler(event) {
 
     console.log(`[Bundle] Generating for funnel: ${funnel_id}`);
 
-    // Get funnel data
+    // Get funnel data - verify ownership with user_id
     const { data: funnel, error: funnelError } = await supabase
       .from('funnels')
       .select('*, profiles(*), audiences(*)')
       .eq('id', funnel_id)
+      .eq('user_id', user_id)
       .single();
 
     if (funnelError || !funnel) {
       return {
         statusCode: 404,
-        body: JSON.stringify({ error: 'Funnel not found' })
+        body: JSON.stringify({ error: 'Funnel not found or access denied' })
       };
     }
 
@@ -167,11 +168,12 @@ ${getLanguagePromptSuffix(language)}`;
       savings: savings
     };
 
-    // Delete existing bundle for this funnel
+    // Delete existing bundle for this funnel (verify ownership)
     await supabase
       .from('bundles')
       .delete()
-      .eq('funnel_id', funnel_id);
+      .eq('funnel_id', funnel_id)
+      .eq('user_id', user_id);
 
     // Insert new bundle
     const { data: savedBundle, error: insertError } = await supabase

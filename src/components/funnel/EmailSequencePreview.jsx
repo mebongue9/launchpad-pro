@@ -22,9 +22,13 @@ function EmailCard({ email, number, expanded, onToggle }) {
   const [copied, setCopied] = useState(null)
 
   const copyToClipboard = async (text, field) => {
-    await navigator.clipboard.writeText(text)
-    setCopied(field)
-    setTimeout(() => setCopied(null), 2000)
+    try {
+      await navigator.clipboard.writeText(text || '')
+      setCopied(field)
+      setTimeout(() => setCopied(null), 2000)
+    } catch (err) {
+      console.error('Failed to copy to clipboard:', err)
+    }
   }
 
   return (

@@ -108,6 +108,15 @@ export const cheatSheetTemplate = {
   PreviewComponent: ({ content, style }) => {
     const sections = content?.sections || [];
 
+    // Static class mapping for Tailwind JIT compatibility
+    const columnClasses = {
+      1: 'grid-cols-1',
+      2: 'grid-cols-2',
+      3: 'grid-cols-3',
+      4: 'grid-cols-4'
+    };
+    const gridColsClass = columnClasses[content?.columns] || 'grid-cols-2';
+
     return (
       <div className="cheat-sheet-preview p-6">
         <div className="text-center mb-8 pb-6 border-b-4 border-blue-600">
@@ -119,7 +128,7 @@ export const cheatSheetTemplate = {
           )}
         </div>
 
-        <div className={`grid grid-cols-${content?.columns || 2} gap-6`}>
+        <div className={`grid ${gridColsClass} gap-6`}>
           {sections.map((section, i) => (
             <div
               key={i}
