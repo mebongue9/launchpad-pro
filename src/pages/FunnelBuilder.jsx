@@ -3,7 +3,7 @@
 // Uses job-based approach to avoid 504 timeouts with real-time progress
 // RELEVANT FILES: src/hooks/useGenerationJob.jsx, process-generation-background.js
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
@@ -33,6 +33,8 @@ import {
   Edit3,
   X
 } from 'lucide-react'
+import FunnelCard from '../components/funnel/FunnelCard'
+import FunnelFilters, { FunnelStats } from '../components/funnel/FunnelFilters'
 
 // Progress bar component for generation
 function GenerationProgress({ progress, currentChunk, completedChunks, totalChunks }) {
@@ -121,6 +123,83 @@ export default function FunnelBuilder() {
   const [viewingFunnel, setViewingFunnel] = useState(null)
   const [deletingFunnel, setDeletingFunnel] = useState(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  // Filter and view state
+  const [filters, setFilters] = useState({
+    search: '',
+    profileId: '',
+    audienceId: '',
+    productId: '',
+    status: '',
+    dateFrom: '',
+    dateTo: ''
+  })
+  const [viewMode, setViewMode] = useState('list')
+  const [sortBy, setSortBy] = useState('newest')
+
+  // Filter and sort funnels
+  const filteredFunnels = useMemo(() => {
+    let result = [...funnels]
+
+    // Apply filters
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase()
+      result = result.filter(f =>
+        f.name?.toLowerCase().includes(searchLower) ||
+        f.profiles?.name?.toLowerCase().includes(searchLower) ||
+        f.audiences?.name?.toLowerCase().includes(searchLower)
+      )
+    }
+
+    if (filters.profileId) {
+      result = result.filter(f => f.profile_id === filters.profileId)
+    }
+
+    if (filters.audienceId) {
+      result = result.filter(f => f.audience_id === filters.audienceId)
+    }
+
+    if (filters.productId) {
+      result = result.filter(f => f.existing_product_id === filters.productId)
+    }
+
+    if (filters.status) {
+      result = result.filter(f => f.status === filters.status)
+    }
+
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom)
+      result = result.filter(f => new Date(f.created_at) >= fromDate)
+    }
+
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo)
+      toDate.setHours(23, 59, 59, 999)
+      result = result.filter(f => new Date(f.created_at) <= toDate)
+    }
+
+    // Apply sorting
+    switch (sortBy) {
+      case 'oldest':
+        result.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+        break
+      case 'alpha_asc':
+        result.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+        break
+      case 'alpha_desc':
+        result.sort((a, b) => (b.name || '').localeCompare(a.name || ''))
+        break
+      case 'updated':
+        result.sort((a, b) => new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at))
+        break
+      case 'newest':
+      default:
+        result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        break
+    }
+
+    return result
+  }, [funnels, filters, sortBy])
 
   // Manual Entry state
   const [manualFunnel, setManualFunnel] = useState({
@@ -757,50 +836,67 @@ export default function FunnelBuilder() {
         </Card>
       )}
 
-      {/* Existing Funnels */}
+      {/* Existing Funnels with Filters */}
       {funnels.length > 0 && !isGenerating && (
         <Card>
-          <h2 className="text-lg font-semibold mb-4">Your Funnels</h2>
-          <div className="space-y-3">
-            {funnels.map(funnel => (
-              <div
-                key={funnel.id}
-                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-              >
-                <div className="flex-1">
-                  <h3 className="font-medium text-gray-900">{funnel.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {funnel.profiles?.name ? `${funnel.profiles.name} → ` : ''}
-                    {funnel.audiences?.name || 'No audience'}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`
-                    text-xs px-2 py-1 rounded-full
-                    ${funnel.status === 'complete' ? 'bg-green-100 text-green-700' :
-                      funnel.status === 'content_generated' ? 'bg-blue-100 text-blue-700' :
-                      'bg-gray-100 text-gray-700'}
-                  `}>
-                    {funnel.status}
-                  </span>
-                  <button
-                    onClick={() => navigate(`/funnels/${funnel.id}`)}
-                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="View funnel details"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeletingFunnel(funnel)}
-                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Delete funnel"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold">Your Funnels</h2>
           </div>
+
+          {/* Filters */}
+          <FunnelFilters
+            filters={filters}
+            onFilterChange={setFilters}
+            profiles={profiles}
+            audiences={audiences}
+            existingProducts={existingProducts}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+          />
+
+          {/* Stats */}
+          <div className="mt-4 mb-4">
+            <FunnelStats funnels={filteredFunnels} />
+          </div>
+
+          {/* Funnel List/Grid */}
+          {filteredFunnels.length > 0 ? (
+            <div className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4'
+                : 'space-y-3'
+            }>
+              {filteredFunnels.map(funnel => (
+                <FunnelCard
+                  key={funnel.id}
+                  funnel={funnel}
+                  viewMode={viewMode}
+                  onView={() => navigate(`/funnels/${funnel.id}`)}
+                  onDelete={() => setDeletingFunnel(funnel)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No funnels match your filters.</p>
+              <button
+                onClick={() => setFilters({
+                  search: '',
+                  profileId: '',
+                  audienceId: '',
+                  productId: '',
+                  status: '',
+                  dateFrom: '',
+                  dateTo: ''
+                })}
+                className="mt-2 text-blue-600 hover:underline"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
         </Card>
       )}
 
