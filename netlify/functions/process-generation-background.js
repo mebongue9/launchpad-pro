@@ -532,49 +532,9 @@ Return ONLY valid JSON with 4 products (NO upsell_3):
 
   await updateJobStatus(jobId, { completed_chunks: 1 });
 
-  // Generate TLDR for each product
-  const productLevels = ['front_end', 'bump', 'upsell_1', 'upsell_2'];
-  const tldrs = {};
-  const crossPromos = {};
-
-  for (const level of productLevels) {
-    if (funnel[level]) {
-      await updateJobStatus(jobId, {
-        current_chunk_name: `Generating TLDR for ${funnel[level].name}...`
-      });
-
-      try {
-        tldrs[level] = await generateTLDR(jobId, funnel[level], language);
-      } catch (error) {
-        console.error(`TLDR generation failed for ${level}:`, error);
-        tldrs[level] = null;
-      }
-
-      // Generate cross-promo for paid products (pointing to existing product)
-      if (existing_product && level !== 'front_end') {
-        await updateJobStatus(jobId, {
-          current_chunk_name: `Generating cross-promo for ${funnel[level].name}...`
-        });
-
-        try {
-          crossPromos[level] = await generateCrossPromo(
-            jobId,
-            funnel[level],
-            existing_product,
-            profile,
-            language
-          );
-        } catch (error) {
-          console.error(`Cross-promo generation failed for ${level}:`, error);
-          crossPromos[level] = null;
-        }
-      }
-    }
-  }
-
-  // Add TLDRs and cross-promos to funnel object
-  funnel.tldrs = tldrs;
-  funnel.cross_promos = crossPromos;
+  // NOTE: TLDRs and cross-promos are now generated AFTER the user saves the funnel
+  // This saves tokens when the user decides not to keep the generated funnel
+  // See: generate-supplementary-content.js for post-save generation
 
   return funnel;
 }

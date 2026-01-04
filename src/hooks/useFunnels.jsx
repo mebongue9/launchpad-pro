@@ -89,9 +89,45 @@ export function useFunnels() {
         .single()
 
       if (error) throw error
+
+      // Trigger supplementary content generation in the background
+      // This generates TLDRs and cross-promos only AFTER user accepts the funnel
+      // Saves tokens when user clicks "Start Over" instead of saving
+      if (data?.id) {
+        generateSupplementaryContent(data.id).catch(err => {
+          console.error('Supplementary content generation failed:', err)
+        })
+      }
+
       await fetchFunnels()
       return data
     } catch (err) {
+      throw err
+    }
+  }
+
+  // Generate TLDRs and cross-promos in background (called after save)
+  async function generateSupplementaryContent(funnelId) {
+    try {
+      const response = await fetch('/.netlify/functions/generate-supplementary-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          funnel_id: funnelId,
+          user_id: user.id
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to generate supplementary content')
+      }
+
+      // Refresh funnels to get updated TLDRs/cross-promos
+      await fetchFunnels()
+      return await response.json()
+    } catch (err) {
+      console.error('Supplementary content error:', err)
       throw err
     }
   }
