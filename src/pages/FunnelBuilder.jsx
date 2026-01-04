@@ -1,16 +1,19 @@
 // /src/pages/FunnelBuilder.jsx
-// Funnel creation page with AI generation and manual entry options
-// Team can paste existing funnels directly from Word docs
-// RELEVANT FILES: src/hooks/useFunnels.jsx, src/hooks/useProfiles.jsx, src/hooks/useAudiences.jsx
+// Funnel creation page with AI generation (background job) and manual entry options
+// Uses job-based approach to avoid 504 timeouts with real-time progress
+// RELEVANT FILES: src/hooks/useGenerationJob.jsx, process-generation-background.js
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { useProfiles } from '../hooks/useProfiles'
 import { useAudiences } from '../hooks/useAudiences'
 import { useFunnels } from '../hooks/useFunnels'
 import { useExistingProducts } from '../hooks/useExistingProducts'
+import { useFunnelJob } from '../hooks/useGenerationJob'
 import { useToast } from '../components/ui/Toast'
+import LanguageSelector from '../components/common/LanguageSelector'
+import { DEFAULT_FAVORITE_LANGUAGES } from '../lib/languages'
 import {
   Rocket,
   Sparkles,
@@ -19,18 +22,88 @@ import {
   Loader2,
   DollarSign,
   Package,
-  FileText,
   Wand2,
   ClipboardPaste,
-  ArrowLeft
+  ArrowLeft,
+  AlertCircle,
+  RefreshCw,
+  Trash2,
+  Eye,
+  Edit3,
+  X
 } from 'lucide-react'
+
+// Progress bar component for generation
+function GenerationProgress({ progress, currentChunk, completedChunks, totalChunks }) {
+  return (
+    <div className="space-y-3">
+      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gray-600 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+          {currentChunk || 'Starting...'}
+        </span>
+        <span className="text-gray-500">
+          {totalChunks ? `${completedChunks || 0}/${totalChunks} sections` : `${progress}%`}
+        </span>
+      </div>
+
+      {currentChunk?.includes('Retry') && (
+        <div className="flex items-center gap-2 text-amber-600 text-sm">
+          <RefreshCw className="w-4 h-4" />
+          <span>Automatic retry in progress...</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Error display with retry button
+function GenerationError({ error, canResume, onRetry, onCancel }) {
+  return (
+    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+      <div className="flex items-start gap-3">
+        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+        <div className="flex-1">
+          <h4 className="font-medium text-red-800">Generation Failed</h4>
+          <p className="text-sm text-red-600 mt-1">{error}</p>
+          {canResume && (
+            <p className="text-sm text-red-600 mt-1">
+              Some progress was saved. You can try resuming.
+            </p>
+          )}
+          <div className="flex gap-2 mt-3">
+            {canResume && (
+              <Button variant="secondary" onClick={onRetry} className="text-sm">
+                <RefreshCw className="w-4 h-4 mr-1" />
+                Resume Generation
+              </Button>
+            )}
+            <Button variant="secondary" onClick={onCancel} className="text-sm">
+              Start Over
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function FunnelBuilder() {
   const { profiles, loading: profilesLoading } = useProfiles()
   const { audiences, loading: audiencesLoading } = useAudiences()
   const { products: existingProducts } = useExistingProducts()
-  const { funnels, generateFunnel, saveFunnel, loading: funnelsLoading } = useFunnels()
-  const { showToast } = useToast()
+  const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading } = useFunnels()
+  const { addToast } = useToast()
+
+  // Use job-based generation hook
+  const funnelJob = useFunnelJob()
 
   // Mode: null = choose, 'ai' = AI generation, 'manual' = manual entry
   const [mode, setMode] = useState(null)
@@ -39,8 +112,13 @@ export default function FunnelBuilder() {
   const [selectedProfile, setSelectedProfile] = useState(null)
   const [selectedAudience, setSelectedAudience] = useState(null)
   const [selectedExistingProduct, setSelectedExistingProduct] = useState(null)
-  const [generating, setGenerating] = useState(false)
+  const [selectedLanguage, setSelectedLanguage] = useState('English')
   const [generatedFunnel, setGeneratedFunnel] = useState(null)
+
+  // Funnel management state
+  const [viewingFunnel, setViewingFunnel] = useState(null)
+  const [deletingFunnel, setDeletingFunnel] = useState(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
 
   // Manual Entry state
   const [manualFunnel, setManualFunnel] = useState({
@@ -53,15 +131,30 @@ export default function FunnelBuilder() {
 
   const [saving, setSaving] = useState(false)
 
+  // Track if we've already shown toast for current job
+  const toastShownForJobRef = useRef(null)
+
+  // Watch for funnel job completion - only show toast ONCE per job
+  useEffect(() => {
+    if (funnelJob.status === 'complete' && funnelJob.result && funnelJob.jobId) {
+      // Only show toast if we haven't already for this specific job
+      if (toastShownForJobRef.current !== funnelJob.jobId) {
+        toastShownForJobRef.current = funnelJob.jobId
+        setGeneratedFunnel(funnelJob.result)
+        addToast('Funnel generated successfully!', 'success')
+      }
+    }
+  }, [funnelJob.status, funnelJob.result, funnelJob.jobId, addToast])
+
   // AI Generation handler
   async function handleGenerate() {
     if (!selectedProfile || !selectedAudience) {
-      showToast('Please select a profile and audience', 'error')
+      addToast('Please select a profile and audience', 'error')
       return
     }
 
-    setGenerating(true)
     setGeneratedFunnel(null)
+    toastShownForJobRef.current = null // Reset toast tracker for new job
 
     try {
       const profile = profiles.find(p => p.id === selectedProfile)
@@ -70,13 +163,9 @@ export default function FunnelBuilder() {
         ? existingProducts.find(p => p.id === selectedExistingProduct)
         : null
 
-      const funnel = await generateFunnel(profile, audience, existingProduct)
-      setGeneratedFunnel(funnel)
-      showToast('Funnel generated successfully!', 'success')
+      await funnelJob.generateFunnel(profile, audience, existingProduct, selectedLanguage)
     } catch (error) {
-      showToast(error.message || 'Failed to generate funnel', 'error')
-    } finally {
-      setGenerating(false)
+      addToast(error.message || 'Failed to start generation', 'error')
     }
   }
 
@@ -90,12 +179,13 @@ export default function FunnelBuilder() {
         generatedFunnel,
         selectedProfile,
         selectedAudience,
-        selectedExistingProduct
+        selectedExistingProduct,
+        selectedLanguage
       )
-      showToast('Funnel saved!', 'success')
+      addToast('Funnel saved!', 'success')
       resetAll()
     } catch (error) {
-      showToast(error.message || 'Failed to save funnel', 'error')
+      addToast(error.message || 'Failed to save funnel', 'error')
     } finally {
       setSaving(false)
     }
@@ -104,13 +194,12 @@ export default function FunnelBuilder() {
   // Save manual funnel
   async function handleSaveManual() {
     if (!manualFunnel.funnel_name || !manualFunnel.front_end.name) {
-      showToast('Please fill in at least the funnel name and front-end product', 'error')
+      addToast('Please fill in at least the funnel name and front-end product', 'error')
       return
     }
 
     setSaving(true)
     try {
-      // Convert manual input to funnel format
       const funnelData = {
         funnel_name: manualFunnel.funnel_name,
         front_end: {
@@ -133,7 +222,6 @@ export default function FunnelBuilder() {
         } : null
       }
 
-      // Include lead magnet info in the funnel name/description if provided
       if (manualFunnel.lead_magnet.name) {
         funnelData.lead_magnet = {
           name: manualFunnel.lead_magnet.name,
@@ -143,10 +231,10 @@ export default function FunnelBuilder() {
       }
 
       await saveFunnel(funnelData, selectedProfile, selectedAudience, null)
-      showToast('Funnel saved!', 'success')
+      addToast('Funnel saved!', 'success')
       resetAll()
     } catch (error) {
-      showToast(error.message || 'Failed to save funnel', 'error')
+      addToast(error.message || 'Failed to save funnel', 'error')
     } finally {
       setSaving(false)
     }
@@ -158,6 +246,7 @@ export default function FunnelBuilder() {
     setSelectedProfile(null)
     setSelectedAudience(null)
     setSelectedExistingProduct(null)
+    setSelectedLanguage('English')
     setManualFunnel({
       funnel_name: '',
       lead_magnet: { name: '', description: '', keyword: '' },
@@ -165,6 +254,23 @@ export default function FunnelBuilder() {
       bump: { name: '', price: '', description: '', format: '' },
       upsell_1: { name: '', price: '', description: '', format: '' }
     })
+    funnelJob.cancelJob()
+  }
+
+  // Handle funnel deletion
+  async function handleDeleteFunnel() {
+    if (!deletingFunnel) return
+
+    setDeleteLoading(true)
+    try {
+      await deleteFunnel(deletingFunnel.id)
+      addToast('Funnel deleted successfully', 'success')
+      setDeletingFunnel(null)
+    } catch (error) {
+      addToast(error.message || 'Failed to delete funnel', 'error')
+    } finally {
+      setDeleteLoading(false)
+    }
   }
 
   function updateManualField(section, field, value) {
@@ -176,14 +282,16 @@ export default function FunnelBuilder() {
     }))
   }
 
-  const productLevels = ['front_end', 'bump', 'upsell_1', 'upsell_2', 'upsell_3']
+  // Only 2 upsells - user's existing product becomes Upsell 3 destination
+  const productLevels = ['front_end', 'bump', 'upsell_1', 'upsell_2']
   const productLabels = {
     front_end: 'Front-End',
     bump: 'Bump',
     upsell_1: 'Upsell 1',
-    upsell_2: 'Upsell 2',
-    upsell_3: 'Upsell 3'
+    upsell_2: 'Upsell 2'
   }
+
+  const isGenerating = funnelJob.isActive
 
   return (
     <div className="space-y-6">
@@ -194,8 +302,31 @@ export default function FunnelBuilder() {
         </p>
       </div>
 
+      {/* Generation Progress */}
+      {isGenerating && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <h3 className="font-semibold text-gray-900 mb-4">Generating Your Funnel...</h3>
+          <GenerationProgress
+            progress={funnelJob.progress}
+            currentChunk={funnelJob.currentChunk}
+            completedChunks={funnelJob.completedChunks}
+            totalChunks={funnelJob.totalChunks}
+          />
+        </Card>
+      )}
+
+      {/* Error Display */}
+      {funnelJob.error && !isGenerating && (
+        <GenerationError
+          error={funnelJob.error}
+          canResume={funnelJob.canResume}
+          onRetry={() => funnelJob.resumeJob(funnelJob.jobId)}
+          onCancel={resetAll}
+        />
+      )}
+
       {/* Mode Selection */}
-      {mode === null && !generatedFunnel && (
+      {mode === null && !generatedFunnel && !isGenerating && (
         <Card>
           <h2 className="text-lg font-semibold mb-4">How would you like to create your funnel?</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -229,7 +360,7 @@ export default function FunnelBuilder() {
       )}
 
       {/* AI Generation Mode */}
-      {mode === 'ai' && !generatedFunnel && (
+      {mode === 'ai' && !generatedFunnel && !isGenerating && (
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <button onClick={() => setMode(null)} className="p-1 hover:bg-gray-100 rounded">
@@ -296,28 +427,32 @@ export default function FunnelBuilder() {
             </div>
           </div>
 
+          {/* Language Selection */}
+          <div className="mb-6">
+            <LanguageSelector
+              value={selectedLanguage}
+              onChange={setSelectedLanguage}
+              favoriteLanguages={
+                profiles.find(p => p.id === selectedProfile)?.favorite_languages ||
+                DEFAULT_FAVORITE_LANGUAGES
+              }
+              label="Output Language"
+            />
+          </div>
+
           <Button
             onClick={handleGenerate}
-            disabled={!selectedProfile || !selectedAudience || generating}
+            disabled={!selectedProfile || !selectedAudience}
             className="w-full md:w-auto"
           >
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating Funnel...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate Funnel
-              </>
-            )}
+            <Sparkles className="w-4 h-4 mr-2" />
+            Generate Funnel
           </Button>
         </Card>
       )}
 
       {/* Manual Entry Mode */}
-      {mode === 'manual' && (
+      {mode === 'manual' && !isGenerating && (
         <Card>
           <div className="flex items-center gap-2 mb-4">
             <button onClick={() => setMode(null)} className="p-1 hover:bg-gray-100 rounded">
@@ -551,7 +686,7 @@ export default function FunnelBuilder() {
       )}
 
       {/* Generated Funnel Preview */}
-      {generatedFunnel && (
+      {generatedFunnel && !isGenerating && (
         <Card>
           <div className="flex items-center justify-between mb-6">
             <div>
@@ -621,7 +756,7 @@ export default function FunnelBuilder() {
       )}
 
       {/* Existing Funnels */}
-      {funnels.length > 0 && (
+      {funnels.length > 0 && !isGenerating && (
         <Card>
           <h2 className="text-lg font-semibold mb-4">Your Funnels</h2>
           <div className="space-y-3">
@@ -630,29 +765,170 @@ export default function FunnelBuilder() {
                 key={funnel.id}
                 className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
               >
-                <div>
+                <div className="flex-1">
                   <h3 className="font-medium text-gray-900">{funnel.name}</h3>
                   <p className="text-sm text-gray-500">
                     {funnel.profiles?.name ? `${funnel.profiles.name} → ` : ''}
                     {funnel.audiences?.name || 'No audience'}
                   </p>
                 </div>
-                <span className={`
-                  text-xs px-2 py-1 rounded-full
-                  ${funnel.status === 'complete' ? 'bg-green-100 text-green-700' :
-                    funnel.status === 'content_generated' ? 'bg-blue-100 text-blue-700' :
-                    'bg-gray-100 text-gray-700'}
-                `}>
-                  {funnel.status}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`
+                    text-xs px-2 py-1 rounded-full
+                    ${funnel.status === 'complete' ? 'bg-green-100 text-green-700' :
+                      funnel.status === 'content_generated' ? 'bg-blue-100 text-blue-700' :
+                      'bg-gray-100 text-gray-700'}
+                  `}>
+                    {funnel.status}
+                  </span>
+                  <button
+                    onClick={() => setViewingFunnel(funnel)}
+                    className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View funnel details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingFunnel(funnel)}
+                    className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete funnel"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         </Card>
       )}
 
+      {/* Delete Confirmation Modal */}
+      {deletingFunnel && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Delete Funnel</h3>
+                <p className="text-sm text-gray-500">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete "<strong>{deletingFunnel.name}</strong>"?
+              All products and content in this funnel will be permanently removed.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="secondary"
+                onClick={() => setDeletingFunnel(null)}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleDeleteFunnel}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Funnel
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Funnel Modal */}
+      {viewingFunnel && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full my-8">
+            <div className="flex items-center justify-between p-6 border-b">
+              <div>
+                <h3 className="font-semibold text-gray-900 text-lg">{viewingFunnel.name}</h3>
+                <p className="text-sm text-gray-500">
+                  {viewingFunnel.profiles?.name ? `${viewingFunnel.profiles.name} → ` : ''}
+                  {viewingFunnel.audiences?.name || 'No audience'}
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingFunnel(null)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+              {productLevels.map((level) => {
+                const product = viewingFunnel[level]
+                if (!product) return null
+
+                return (
+                  <div key={level} className="flex items-start gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Package className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 bg-gray-50 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-medium text-blue-600 uppercase">
+                          {productLabels[level]}
+                        </span>
+                        <span className="flex items-center text-green-600 font-semibold">
+                          <DollarSign className="w-4 h-4" />
+                          {product.price}
+                        </span>
+                      </div>
+                      <h4 className="font-semibold text-gray-900">{product.name}</h4>
+                      {product.description && (
+                        <p className="text-sm text-gray-600 mt-1">{product.description}</p>
+                      )}
+                      {product.format && (
+                        <span className="inline-block text-xs bg-gray-200 px-2 py-1 rounded mt-2">
+                          {product.format}
+                        </span>
+                      )}
+                      {product.bridges_to && (
+                        <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                          <ChevronRight className="w-3 h-3" />
+                          {product.bridges_to}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex justify-end gap-3 p-6 border-t">
+              <Button
+                variant="danger"
+                onClick={() => {
+                  setViewingFunnel(null)
+                  setDeletingFunnel(viewingFunnel)
+                }}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </Button>
+              <Button variant="secondary" onClick={() => setViewingFunnel(null)}>
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Empty State */}
-      {mode === null && !generatedFunnel && funnels.length === 0 && (
+      {mode === null && !generatedFunnel && funnels.length === 0 && !isGenerating && (
         <Card className="text-center py-12">
           <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Rocket className="w-8 h-8 text-blue-600" />

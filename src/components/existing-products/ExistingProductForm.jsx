@@ -25,7 +25,7 @@ const PRODUCT_FORMATS = [
 export function ExistingProductForm({ product, onClose, onSuccess }) {
   const { createProduct, updateProduct } = useExistingProducts()
   const { profiles } = useProfiles()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
@@ -67,15 +67,15 @@ export function ExistingProductForm({ product, onClose, onSuccess }) {
     try {
       if (product) {
         await updateProduct(product.id, submitData)
-        showToast('Product updated successfully', 'success')
+        addToast('Product updated successfully', 'success')
       } else {
         await createProduct(submitData)
-        showToast('Product added successfully', 'success')
+        addToast('Product added successfully', 'success')
       }
       onSuccess?.()
       onClose()
     } catch (err) {
-      showToast(err.message || 'Failed to save product', 'error')
+      addToast(err.message || 'Failed to save product', 'error')
     } finally {
       setLoading(false)
     }

@@ -23,29 +23,53 @@ import {
   LogOut,
   Shield,
   Database,
-  Loader2
+  Loader2,
+  Globe
 } from 'lucide-react'
+import FavoriteLanguagesManager from '../components/settings/FavoriteLanguagesManager'
 
 export default function Settings() {
   const { user, signOut } = useAuth()
-  const { profiles } = useProfiles()
+  const { profiles, updateFavoriteLanguages } = useProfiles()
   const { funnels } = useFunnels()
   const { leadMagnets } = useLeadMagnets()
   const { creations } = useCreations()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
   const [signingOut, setSigningOut] = useState(false)
+  const [savingLanguages, setSavingLanguages] = useState(false)
 
   async function handleSignOut() {
     setSigningOut(true)
     try {
       await signOut()
-      showToast('Signed out successfully', 'success')
+      addToast('Signed out successfully', 'success')
     } catch (error) {
-      showToast('Failed to sign out', 'error')
+      addToast('Failed to sign out', 'error')
     } finally {
       setSigningOut(false)
     }
   }
+
+  // Handle favorite languages update for the first profile
+  async function handleUpdateFavoriteLanguages(newLanguages) {
+    if (!profiles.length) {
+      addToast('Please create a profile first', 'error')
+      return
+    }
+
+    setSavingLanguages(true)
+    try {
+      await updateFavoriteLanguages(profiles[0].id, newLanguages)
+      addToast('Favorite languages updated', 'success')
+    } catch (error) {
+      addToast(error.message || 'Failed to update languages', 'error')
+    } finally {
+      setSavingLanguages(false)
+    }
+  }
+
+  // Get current favorite languages from first profile
+  const currentFavoriteLanguages = profiles[0]?.favorite_languages || ['English', 'French', 'Spanish', 'Indonesian', 'German']
 
   const stats = [
     { label: 'Profiles', value: profiles.length, icon: User, color: 'text-blue-600 bg-blue-100' },
@@ -135,6 +159,22 @@ export default function Settings() {
             </div>
           </div>
         </div>
+      </Card>
+
+      {/* Language Preferences */}
+      <Card>
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+          <Globe className="w-5 h-5 text-gray-600" />
+          Language Preferences
+        </h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Customize which languages appear at the top of the language selector when creating funnels.
+        </p>
+        <FavoriteLanguagesManager
+          favorites={currentFavoriteLanguages}
+          onUpdate={handleUpdateFavoriteLanguages}
+          loading={savingLanguages}
+        />
       </Card>
 
       {/* Actions */}

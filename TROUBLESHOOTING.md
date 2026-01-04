@@ -79,7 +79,37 @@ CREATE POLICY "Public read logos" ON storage.objects
 
 ---
 
-### Issue 3: Database Setup Function Not Working
+### Issue 3: Products "Add Product" Button Does Nothing
+**Symptom:** Clicking "Add Product" button has no effect, modal doesn't open.
+
+**Root Cause:** Code used `showToast` but the Toast component exports `addToast`. This caused a silent JavaScript error.
+
+**Solution:** Replace `showToast` with `addToast` in all files:
+- src/pages/ExistingProducts.jsx
+- src/pages/Settings.jsx
+- src/pages/FunnelBuilder.jsx
+- src/pages/History.jsx
+- src/pages/VisualBuilder.jsx
+- src/pages/LeadMagnetBuilder.jsx
+- src/components/existing-products/ExistingProductForm.jsx
+
+---
+
+### Issue 4: Missing Columns in existing_products Table
+**Symptom:** "Could not find the 'url' column" error, or modal doesn't close after save.
+
+**Solution:** Run this SQL:
+```sql
+ALTER TABLE existing_products ADD COLUMN IF NOT EXISTS url TEXT;
+ALTER TABLE existing_products ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE existing_products ADD COLUMN IF NOT EXISTS price DECIMAL;
+ALTER TABLE existing_products ADD COLUMN IF NOT EXISTS format TEXT;
+ALTER TABLE existing_products ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES profiles(id);
+```
+
+---
+
+### Issue 5: Database Setup Function Not Working
 **Symptom:** Calling `/netlify/functions/setup-database` returns "Tenant or user not found"
 
 **Root Cause:** The Supabase pooler connection string doesn't work from serverless functions.
@@ -97,16 +127,19 @@ CREATE POLICY "Public read logos" ON storage.objects
 - [x] Profile deletion
 - [x] Profile photo upload
 - [x] Logo upload
-- [ ] Audiences (to be tested)
-- [ ] Products (to be tested)
+- [x] Audience creation
+- [x] Audience editing
+- [x] Audience deletion
+- [x] Product creation
+- [x] Product editing
 - [ ] Funnel Builder (to be tested)
 - [ ] Lead Magnet Builder (to be tested)
 - [ ] Visual Builder (to be tested)
 
 ### Database Tables:
-- `profiles` - Has RLS policies configured
-- `audiences` - Needs RLS policies (same pattern as profiles)
-- `products` - Needs verification
+- `profiles` - Has RLS policies configured ✓
+- `audiences` - Has RLS policies configured ✓
+- `existing_products` - Working ✓ (added url, description, price, format, profile_id columns)
 - `funnels` - Needs verification
 - `lead_magnets` - Needs verification
 - `creations` - Needs verification

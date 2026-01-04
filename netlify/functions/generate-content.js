@@ -4,6 +4,7 @@
 // RELEVANT FILES: src/prompts/product-builder.js, src/pages/FunnelBuilder.jsx
 
 import Anthropic from '@anthropic-ai/sdk';
+import { parseClaudeJSON } from './utils/sanitize-json.js';
 
 const PRODUCT_BUILDER_PROMPT = `
 You are a product content creator specializing in digital products for coaches. You transform concepts into fully-written, actionable content.
@@ -132,8 +133,7 @@ Generate the complete product content now.
       messages: [{ role: 'user', content: userMessage }]
     });
 
-    const jsonText = response.content[0].text;
-    const content = JSON.parse(jsonText);
+    const content = parseClaudeJSON(response.content[0].text);
 
     return {
       statusCode: 200,

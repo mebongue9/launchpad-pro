@@ -50,8 +50,14 @@ export function useFunnels() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate funnel')
+        // Handle non-JSON error responses (like HTML from 504 timeout)
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate funnel')
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
       }
 
       return await response.json()
@@ -60,8 +66,9 @@ export function useFunnels() {
     }
   }
 
-  async function saveFunnel(funnelData, profileId, audienceId, existingProductId = null) {
+  async function saveFunnel(funnelData, profileId, audienceId, existingProductId = null, language = 'English') {
     try {
+      // Only 4 products: front_end, bump, upsell_1, upsell_2 (user's existing product is final destination)
       const { data, error } = await supabase
         .from('funnels')
         .insert({
@@ -74,7 +81,8 @@ export function useFunnels() {
           bump: funnelData.bump,
           upsell_1: funnelData.upsell_1,
           upsell_2: funnelData.upsell_2,
-          upsell_3: funnelData.upsell_3,
+          language: language,
+          // No upsell_3 - user's existing product is the final destination
           status: 'draft'
         })
         .select()
@@ -132,8 +140,14 @@ export function useFunnels() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate content')
+        // Handle non-JSON error responses (like HTML from 504 timeout)
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate content')
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
       }
 
       return await response.json()

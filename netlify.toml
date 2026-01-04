@@ -6,6 +6,10 @@
 [build.environment]
   NODE_VERSION = "20"
 
+[functions]
+  # Use esbuild for faster bundling
+  node_bundler = "esbuild"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

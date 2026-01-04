@@ -30,7 +30,7 @@ export default function VisualBuilder() {
   const { funnels } = useFunnels()
   const { leadMagnets } = useLeadMagnets()
   const { saveCreation } = useCreations()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
 
   const [step, setStep] = useState(1)
   const [sourceType, setSourceType] = useState(null)
@@ -100,7 +100,7 @@ export default function VisualBuilder() {
   async function handleGenerate() {
     const content = getContent()
     if (!content) {
-      showToast('Please select content to design', 'error')
+      addToast('Please select content to design', 'error')
       return
     }
 
@@ -110,9 +110,9 @@ export default function VisualBuilder() {
       const html = generateVisualHTML(selectedTemplate, content, branding)
       setGeneratedHTML(html)
       setStep(3)
-      showToast('Design generated!', 'success')
+      addToast('Design generated!', 'success')
     } catch (error) {
-      showToast(error.message || 'Failed to generate design', 'error')
+      addToast(error.message || 'Failed to generate design', 'error')
     } finally {
       setGenerating(false)
     }
@@ -131,9 +131,9 @@ export default function VisualBuilder() {
         template_id: selectedTemplate,
         html_content: generatedHTML
       })
-      showToast('Design saved!', 'success')
+      addToast('Design saved!', 'success')
     } catch (error) {
-      showToast(error.message || 'Failed to save', 'error')
+      addToast(error.message || 'Failed to save', 'error')
     } finally {
       setSaving(false)
     }
@@ -149,13 +149,13 @@ export default function VisualBuilder() {
     a.download = `${content?.title || 'design'}.html`
     a.click()
     URL.revokeObjectURL(url)
-    showToast('HTML downloaded!', 'success')
+    addToast('HTML downloaded!', 'success')
   }
 
   async function handleDownloadPDF() {
     if (!generatedHTML) return
 
-    showToast('Generating PDF...', 'info')
+    addToast('Generating PDF...', 'info')
 
     try {
       // Load html2pdf.js from CDN
@@ -187,9 +187,9 @@ export default function VisualBuilder() {
         .save()
 
       document.body.removeChild(container)
-      showToast('PDF downloaded!', 'success')
+      addToast('PDF downloaded!', 'success')
     } catch (error) {
-      showToast('PDF generation failed. Try downloading HTML instead.', 'error')
+      addToast('PDF generation failed. Try downloading HTML instead.', 'error')
     }
   }
 

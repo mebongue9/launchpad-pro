@@ -29,7 +29,7 @@ export default function History() {
   const { creations, loading: creationsLoading, deleteCreation } = useCreations()
   const { funnels, loading: funnelsLoading } = useFunnels()
   const { leadMagnets, loading: leadMagnetsLoading } = useLeadMagnets()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
 
   const [filter, setFilter] = useState('all')
   const [previewHTML, setPreviewHTML] = useState(null)
@@ -110,16 +110,16 @@ export default function History() {
     }
 
     if (item.type !== 'creation') {
-      showToast('Only visual creations can be deleted from history', 'error')
+      addToast('Only visual creations can be deleted from history', 'error')
       return
     }
 
     setDeleting(item.id)
     try {
       await deleteCreation(item.id)
-      showToast('Deleted successfully', 'success')
+      addToast('Deleted successfully', 'success')
     } catch (error) {
-      showToast('Failed to delete', 'error')
+      addToast('Failed to delete', 'error')
     } finally {
       setDeleting(null)
     }
@@ -129,7 +129,7 @@ export default function History() {
     if (item.type === 'creation' && item.data.html_content) {
       setPreviewHTML(item.data.html_content)
     } else {
-      showToast('No preview available for this item', 'info')
+      addToast('No preview available for this item', 'info')
     }
   }
 
@@ -142,9 +142,9 @@ export default function History() {
       a.download = `${item.name}.html`
       a.click()
       URL.revokeObjectURL(url)
-      showToast('Downloaded!', 'success')
+      addToast('Downloaded!', 'success')
     } else {
-      showToast('Download not available for this item', 'info')
+      addToast('Download not available for this item', 'info')
     }
   }
 

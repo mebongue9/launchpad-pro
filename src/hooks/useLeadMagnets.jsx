@@ -51,8 +51,14 @@ export function useLeadMagnets() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate ideas')
+        // Handle non-JSON error responses (like HTML from 504 timeout)
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate ideas')
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
       }
 
       return await response.json()
@@ -75,8 +81,14 @@ export function useLeadMagnets() {
       })
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to generate content')
+        // Handle non-JSON error responses (like HTML from 504 timeout)
+        const contentType = response.headers.get('content-type')
+        if (contentType && contentType.includes('application/json')) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to generate content')
+        } else {
+          throw new Error(`Server error (${response.status}). Please try again.`)
+        }
       }
 
       return await response.json()

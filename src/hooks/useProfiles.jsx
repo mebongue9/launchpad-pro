@@ -99,6 +99,23 @@ export function useProfiles() {
     return publicUrl
   }
 
+  // Update favorite languages for a profile
+  const updateFavoriteLanguages = async (profileId, languages) => {
+    if (!user) throw new Error('Not authenticated')
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ favorite_languages: languages })
+      .eq('id', profileId)
+      .eq('user_id', user.id)
+      .select()
+      .single()
+
+    if (error) throw error
+    setProfiles(prev => prev.map(p => p.id === profileId ? data : p))
+    return data
+  }
+
   return {
     profiles,
     loading,
@@ -108,5 +125,6 @@ export function useProfiles() {
     updateProfile,
     deleteProfile,
     uploadFile,
+    updateFavoriteLanguages,
   }
 }

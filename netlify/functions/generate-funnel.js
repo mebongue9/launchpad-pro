@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
+import { parseClaudeJSON } from './utils/sanitize-json.js';
 
 // Initialize clients
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -28,6 +29,12 @@ function cosineSimilarity(a, b) {
 
 // Search knowledge base for relevant content
 async function searchKnowledge(query, limit = 5) {
+  // Skip if OpenAI API key is not configured
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('Skipping knowledge search - OPENAI_API_KEY not configured');
+    return '';
+  }
+
   try {
     const embedding = await openai.embeddings.create({
       model: 'text-embedding-ada-002',
@@ -195,8 +202,7 @@ Generate the funnel architecture now.
       messages: [{ role: 'user', content: userMessage }]
     });
 
-    const jsonText = response.content[0].text;
-    const funnel = JSON.parse(jsonText);
+    const funnel = parseClaudeJSON(response.content[0].text);
 
     return {
       statusCode: 200,

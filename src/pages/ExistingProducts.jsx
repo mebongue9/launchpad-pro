@@ -14,7 +14,7 @@ import { Card } from '../components/ui/Card'
 
 export default function ExistingProducts() {
   const { products, loading, error, deleteProduct, fetchProducts } = useExistingProducts()
-  const { showToast } = useToast()
+  const { addToast } = useToast()
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState(null)
 
@@ -35,9 +35,9 @@ export default function ExistingProducts() {
 
     try {
       await deleteProduct(id)
-      showToast('Product deleted successfully', 'success')
+      addToast('Product deleted successfully', 'success')
     } catch (err) {
-      showToast('Failed to delete product', 'error')
+      addToast('Failed to delete product', 'error')
     }
   }
 
