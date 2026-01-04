@@ -40,7 +40,7 @@ export async function handler(event) {
     // Verify funnel exists
     const { data: funnel, error: funnelError } = await supabase
       .from('funnels')
-      .select('id, funnel_name, user_id')
+      .select('id, name, user_id')
       .eq('id', funnel_id)
       .single();
 
@@ -53,7 +53,7 @@ export async function handler(event) {
       };
     }
 
-    console.log(`✅ ${LOG_TAG} Funnel found: ${funnel.funnel_name}`);
+    console.log(`✅ ${LOG_TAG} Funnel found: ${funnel.name}`);
     console.log(`📋 ${LOG_TAG} Starting orchestration with 14 batched tasks...`);
 
     // Run orchestrator with all 14 generators

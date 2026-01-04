@@ -1,7 +1,7 @@
 // /src/pages/FunnelBuilder.jsx
-// Funnel creation page with AI generation (background job) and manual entry options
-// Uses job-based approach to avoid 504 timeouts with real-time progress
-// RELEVANT FILES: src/hooks/useGenerationJob.jsx, process-generation-background.js
+// Funnel creation page with AI batched generation (14 tasks) and manual entry options
+// Uses batched task system to avoid timeouts with real-time progress
+// RELEVANT FILES: src/hooks/useBatchedGeneration.jsx, netlify/functions/generate-funnel-content-batched.js
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -11,7 +11,7 @@ import { useProfiles } from '../hooks/useProfiles'
 import { useAudiences } from '../hooks/useAudiences'
 import { useFunnels } from '../hooks/useFunnels'
 import { useExistingProducts } from '../hooks/useExistingProducts'
-import { useFunnelJob } from '../hooks/useGenerationJob'
+import { useBatchedGeneration } from '../hooks/useBatchedGeneration'
 import { useToast } from '../components/ui/Toast'
 import LanguageSelector from '../components/common/LanguageSelector'
 import { DEFAULT_FAVORITE_LANGUAGES } from '../lib/languages'
@@ -107,8 +107,18 @@ export default function FunnelBuilder() {
   const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading, documentJob } = useFunnels()
   const { addToast } = useToast()
 
-  // Use job-based generation hook
-  const funnelJob = useFunnelJob()
+  // Use batched generation hook (14 tasks instead of 51+ sequential calls)
+  const {
+    funnelId: generationFunnelId,
+    isGenerating,
+    progress: generationProgress,
+    currentTask,
+    error: generationError,
+    canResume,
+    startGeneration,
+    resumeGeneration,
+    cancelGeneration
+  } = useBatchedGeneration()
 
   // Mode: null = choose, 'ai' = AI generation, 'manual' = manual entry
   const [mode, setMode] = useState(null)
@@ -213,22 +223,16 @@ export default function FunnelBuilder() {
 
   const [saving, setSaving] = useState(false)
 
-  // Track if we've already shown toast for current job
-  const toastShownForJobRef = useRef(null)
+  // Track if we've already shown toast for current funnel
+  const toastShownForFunnelRef = useRef(null)
 
-  // Watch for funnel job completion - only show toast ONCE per job
+  // Watch for batched generation completion - uses direct result return instead of polling
   useEffect(() => {
-    if (funnelJob.status === 'complete' && funnelJob.result && funnelJob.jobId) {
-      // Only show toast if we haven't already for this specific job
-      if (toastShownForJobRef.current !== funnelJob.jobId) {
-        toastShownForJobRef.current = funnelJob.jobId
-        setGeneratedFunnel(funnelJob.result)
-        addToast('Funnel generated successfully!', 'success')
-      }
-    }
-  }, [funnelJob.status, funnelJob.result, funnelJob.jobId, addToast])
+    // Batched generation returns result directly, no need for job polling
+    // Toast is shown in handleGenerate after startGeneration completes
+  }, [])
 
-  // AI Generation handler
+  // AI Generation handler - uses batched generation (14 tasks)
   async function handleGenerate() {
     if (!selectedProfile || !selectedAudience) {
       addToast('Please select a profile and audience', 'error')
@@ -236,7 +240,7 @@ export default function FunnelBuilder() {
     }
 
     setGeneratedFunnel(null)
-    toastShownForJobRef.current = null // Reset toast tracker for new job
+    toastShownForFunnelRef.current = null
 
     try {
       const profile = profiles.find(p => p.id === selectedProfile)
@@ -245,7 +249,21 @@ export default function FunnelBuilder() {
         ? existingProducts.find(p => p.id === selectedExistingProduct)
         : null
 
-      await funnelJob.generateFunnel(profile, audience, existingProduct, selectedLanguage)
+      // Use batched generation system (14 tasks instead of 51+ calls)
+      addToast('Starting funnel generation with batched system (14 tasks)...', 'info')
+      const result = await startGeneration(
+        { name: 'Generated Funnel' }, // Will be replaced with actual funnel data
+        profile,
+        audience,
+        selectedLanguage,
+        existingProduct
+      )
+
+      // Generation complete - result is returned directly
+      if (result) {
+        setGeneratedFunnel(result)
+        addToast('Funnel generated successfully!', 'success')
+      }
     } catch (error) {
       addToast(error.message || 'Failed to start generation', 'error')
     }
@@ -336,7 +354,7 @@ export default function FunnelBuilder() {
       bump: { name: '', price: '', description: '', format: '' },
       upsell_1: { name: '', price: '', description: '', format: '' }
     })
-    funnelJob.cancelJob()
+    cancelGeneration()
   }
 
   // Handle funnel deletion
@@ -373,8 +391,6 @@ export default function FunnelBuilder() {
     upsell_2: 'Upsell 2'
   }
 
-  const isGenerating = funnelJob.isActive
-
   return (
     <div className="space-y-6">
       <div>
@@ -384,25 +400,25 @@ export default function FunnelBuilder() {
         </p>
       </div>
 
-      {/* Generation Progress */}
+      {/* Generation Progress - Batched System (14 tasks) */}
       {isGenerating && (
         <Card className="border-blue-200 bg-blue-50/50">
-          <h3 className="font-semibold text-gray-900 mb-4">Generating Your Funnel...</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Generating Your Funnel (14 Batched Tasks)...</h3>
           <GenerationProgress
-            progress={funnelJob.progress}
-            currentChunk={funnelJob.currentChunk}
-            completedChunks={funnelJob.completedChunks}
-            totalChunks={funnelJob.totalChunks}
+            progress={generationProgress.percentage}
+            currentChunk={currentTask}
+            completedChunks={generationProgress.completed}
+            totalChunks={generationProgress.total}
           />
         </Card>
       )}
 
       {/* Error Display */}
-      {funnelJob.error && !isGenerating && (
+      {generationError && !isGenerating && (
         <GenerationError
-          error={funnelJob.error}
-          canResume={funnelJob.canResume}
-          onRetry={() => funnelJob.resumeJob(funnelJob.jobId)}
+          error={generationError}
+          canResume={canResume}
+          onRetry={() => resumeGeneration(generationFunnelId)}
           onCancel={resetAll}
         />
       )}

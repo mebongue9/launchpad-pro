@@ -69,14 +69,14 @@ export function useLeadMagnets() {
 
   async function generateContent(leadMagnet, profile, audience, frontEndProduct) {
     try {
-      const response = await fetch('/.netlify/functions/generate-lead-magnet-content', {
+      const response = await fetch('/.netlify/functions/generate-lead-magnet-content-batched', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lead_magnet: leadMagnet,
           profile,
           audience,
-          front_end_product: frontEndProduct
+          front_end: frontEndProduct
         })
       })
 

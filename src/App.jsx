@@ -18,7 +18,6 @@ import LeadMagnetBuilder from './pages/LeadMagnetBuilder'
 import VisualBuilder from './pages/VisualBuilder'
 import History from './pages/History'
 import Settings from './pages/Settings'
-import BatchedGenerationDemo from './pages/BatchedGenerationDemo'
 
 export default function App() {
   return (
@@ -44,7 +43,6 @@ export default function App() {
         <Route path="/visual-builder" element={<VisualBuilder />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
-        <Route path="/batched-generation-demo" element={<BatchedGenerationDemo />} />
       </Route>
 
       {/* Redirect root to dashboard */}

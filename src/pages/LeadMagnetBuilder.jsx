@@ -11,8 +11,10 @@ import { useAudiences } from '../hooks/useAudiences'
 import { useFunnels } from '../hooks/useFunnels'
 import { useExistingProducts } from '../hooks/useExistingProducts'
 import { useLeadMagnets } from '../hooks/useLeadMagnets'
-import { useLeadMagnetIdeasJob, useLeadMagnetContentJob } from '../hooks/useGenerationJob'
+import { useLeadMagnetIdeasJob } from '../hooks/useGenerationJob'
+import { useBatchedGeneration } from '../hooks/useBatchedGeneration'
 import { useToast } from '../components/ui/Toast'
+import BatchedGenerationManager from '../components/generation/BatchedGenerationManager'
 import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package } from 'lucide-react'
 
 // Progress bar component for generation
@@ -85,12 +87,12 @@ export default function LeadMagnetBuilder() {
   const { audiences } = useAudiences()
   const { funnels } = useFunnels()
   const { products } = useExistingProducts()
-  const { leadMagnets, saveLeadMagnet, getExcludedTopics } = useLeadMagnets()
+  const { leadMagnets, saveLeadMagnet, getExcludedTopics, generateContent } = useLeadMagnets()
   const { addToast } = useToast()
 
   // Use job-based generation hooks
   const ideasJob = useLeadMagnetIdeasJob()
-  const contentJob = useLeadMagnetContentJob()
+  const { startGeneration } = useBatchedGeneration()
 
   const [selectedProfile, setSelectedProfile] = useState(null)
   const [selectedAudience, setSelectedAudience] = useState(null)
@@ -104,6 +106,7 @@ export default function LeadMagnetBuilder() {
   const [saving, setSaving] = useState(false)
   const [ideasToastShown, setIdeasToastShown] = useState(false)
   const [contentToastShown, setContentToastShown] = useState(false)
+  const [savedFunnelId, setSavedFunnelId] = useState(null)
 
   // Get the target product based on destination type
   const targetProduct = destinationType === 'funnel'
@@ -123,15 +126,7 @@ export default function LeadMagnetBuilder() {
     }
   }, [ideasJob.status, ideasJob.result, ideasToastShown, addToast])
 
-  // Watch for content job completion
-  useEffect(() => {
-    if (contentJob.status === 'complete' && contentJob.result && !contentToastShown) {
-      setGeneratedContent({ ...contentJob.result, ...selectedIdea })
-      setStep(3)
-      setContentToastShown(true)
-      addToast('Content generated!', 'success')
-    }
-  }, [contentJob.status, contentJob.result, selectedIdea, contentToastShown, addToast])
+  // Content generation now happens directly via batched endpoint (no job polling needed)
 
   async function handleGenerateIdeas() {
     // Validate required fields based on destination type
@@ -189,9 +184,17 @@ export default function LeadMagnetBuilder() {
       const profile = profiles.find(p => p.id === selectedProfile)
       const audience = audiences.find(a => a.id === selectedAudience)
 
-      await contentJob.generateContent(selectedIdea, profile, audience, frontEndProduct)
+      // Use batched generation (2 API calls instead of 8)
+      addToast('Generating content with batched system (2 API calls)...', 'info')
+      const result = await generateContent(selectedIdea, profile, audience, frontEndProduct)
+
+      // Set the generated content immediately
+      setGeneratedContent({ ...result, ...selectedIdea })
+      setStep(3)
+      setContentToastShown(true)
+      addToast('Content generated!', 'success')
     } catch (error) {
-      addToast(error.message || 'Failed to start generation', 'error')
+      addToast(error.message || 'Failed to generate content', 'error')
     }
   }
 
@@ -201,8 +204,15 @@ export default function LeadMagnetBuilder() {
     setSaving(true)
     try {
       await saveLeadMagnet(generatedContent, selectedProfile, selectedFunnel)
-      addToast('Lead magnet saved!', 'success')
-      handleReset()
+      addToast('Lead magnet saved! Starting funnel generation...', 'success')
+
+      // If there's a funnel, trigger batched generation
+      if (selectedFunnel) {
+        setSavedFunnelId(selectedFunnel)
+        await startGeneration(selectedFunnel)
+      } else {
+        handleReset()
+      }
     } catch (error) {
       addToast(error.message || 'Failed to save', 'error')
     } finally {
@@ -221,15 +231,14 @@ export default function LeadMagnetBuilder() {
     setSelectedProduct(null)
     setIdeasToastShown(false)
     setContentToastShown(false)
+    setSavedFunnelId(null)
     ideasJob.cancelJob()
-    contentJob.cancelJob()
   }
 
   function handleBack() {
     if (step === 3) {
       setStep(2)
       setGeneratedContent(null)
-      contentJob.cancelJob()
     } else if (step === 2) {
       setStep(1)
       setIdeas([])
@@ -238,9 +247,9 @@ export default function LeadMagnetBuilder() {
   }
 
   // Check if any generation is in progress
-  const isGenerating = ideasJob.isActive || contentJob.isActive
-  const currentJobError = ideasJob.error || contentJob.error
-  const currentCanResume = ideasJob.canResume || contentJob.canResume
+  const isGenerating = ideasJob.isActive
+  const currentJobError = ideasJob.error
+  const currentCanResume = ideasJob.canResume
 
   return (
     <div className="space-y-6">
@@ -273,11 +282,11 @@ export default function LeadMagnetBuilder() {
             {ideasJob.isActive ? 'Generating Ideas...' : 'Generating Content...'}
           </h3>
           <GenerationProgress
-            progress={ideasJob.isActive ? ideasJob.progress : contentJob.progress}
-            currentChunk={ideasJob.isActive ? ideasJob.currentChunk : contentJob.currentChunk}
-            completedChunks={ideasJob.isActive ? ideasJob.completedChunks : contentJob.completedChunks}
-            totalChunks={ideasJob.isActive ? ideasJob.totalChunks : contentJob.totalChunks}
-            status={ideasJob.isActive ? ideasJob.status : contentJob.status}
+            progress={ideasJob.progress}
+            currentChunk={ideasJob.currentChunk}
+            completedChunks={ideasJob.completedChunks}
+            totalChunks={ideasJob.totalChunks}
+            status={ideasJob.status}
           />
         </Card>
       )}
@@ -290,8 +299,6 @@ export default function LeadMagnetBuilder() {
           onRetry={() => {
             if (ideasJob.error) {
               ideasJob.resumeJob(ideasJob.jobId)
-            } else if (contentJob.error) {
-              contentJob.resumeJob(contentJob.jobId)
             }
           }}
           onCancel={handleReset}
@@ -616,6 +623,17 @@ export default function LeadMagnetBuilder() {
             Create a funnel or add an existing product, then generate lead magnets for it.
           </p>
         </Card>
+      )}
+
+      {/* Batched Generation Progress */}
+      {savedFunnelId && (
+        <BatchedGenerationManager
+          funnelId={savedFunnelId}
+          onComplete={() => {
+            addToast('Funnel content generated successfully!', 'success')
+            handleReset()
+          }}
+        />
       )}
     </div>
   )

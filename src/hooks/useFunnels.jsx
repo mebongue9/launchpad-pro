@@ -37,7 +37,7 @@ export function useFunnels() {
       setLoading(true)
       const { data, error } = await supabase
         .from('funnels')
-        .select('*, profiles(name, business_name), audiences(name), existing_products(name)')
+        .select('*, profiles(name, business_name, niche), audiences(name), existing_products(name)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
