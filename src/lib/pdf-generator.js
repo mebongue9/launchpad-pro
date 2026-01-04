@@ -4,10 +4,10 @@
 // Uses html2pdf.js for client-side PDF generation
 // RELEVANT FILES: src/pages/VisualBuilder.jsx, src/templates/cover.js, src/templates/review-request.js
 
-import { generateCoverHTML } from '../templates/cover';
-import { generateReviewRequestHTML } from '../templates/review-request';
-import { generateFormatHTML } from '../templates/formats/index';
-import { getStyle } from '../templates/styles/index';
+import { generateCoverHTML } from '../templates/cover.jsx';
+import { generateReviewRequestHTML } from '../templates/review-request.jsx';
+import { generateFormatHTML } from '../templates/formats/index.jsx';
+import { getStyle } from '../templates/styles/index.js';
 
 // ==============================================
 // HTML DOCUMENT GENERATION

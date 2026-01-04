@@ -12,6 +12,8 @@ import { useLeadMagnets } from '../hooks/useLeadMagnets'
 import { useCreations } from '../hooks/useCreations'
 import { useToast } from '../components/ui/Toast'
 import { templateList, generateVisualHTML } from '../styles/templates'
+import { formatTemplateList, getFormatTemplate } from '../templates/formats/index.jsx'
+import { getStyleList, getStyle } from '../templates/styles/index.js'
 import {
   Palette,
   Sparkles,
@@ -22,7 +24,8 @@ import {
   Loader2,
   ArrowRight,
   Maximize2,
-  X
+  X,
+  LayoutGrid
 } from 'lucide-react'
 
 export default function VisualBuilder() {
@@ -37,11 +40,15 @@ export default function VisualBuilder() {
   const [selectedSource, setSelectedSource] = useState(null)
   const [selectedProfile, setSelectedProfile] = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState('apple-minimal')
+  const [selectedFormat, setSelectedFormat] = useState('checklist')
   const [generatedHTML, setGeneratedHTML] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const previewRef = useRef(null)
+
+  // Get available formats and styles
+  const styleList = getStyleList()
 
   // Get content based on source type
   function getContent() {
@@ -197,6 +204,7 @@ export default function VisualBuilder() {
     setStep(1)
     setSourceType(null)
     setSelectedSource(null)
+    setSelectedFormat('checklist')
     setGeneratedHTML(null)
   }
 
@@ -216,7 +224,7 @@ export default function VisualBuilder() {
         </span>
         <ArrowRight className="w-4 h-4 text-gray-400" />
         <span className={`px-3 py-1 rounded-full ${step >= 2 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
-          2. Choose Style
+          2. Format & Style
         </span>
         <ArrowRight className="w-4 h-4 text-gray-400" />
         <span className={`px-3 py-1 rounded-full ${step >= 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -311,40 +319,72 @@ export default function VisualBuilder() {
         </Card>
       )}
 
-      {/* Step 2: Choose Style */}
+      {/* Step 2: Choose Format & Style */}
       {step === 2 && (
         <Card>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Choose a Style Template</h2>
+            <h2 className="text-lg font-semibold">Choose Format & Style</h2>
             <Button variant="secondary" onClick={() => setStep(1)}>
               ← Back
             </Button>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
-            {templateList.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelectedTemplate(t.id)}
-                className={`p-4 border-2 rounded-lg text-center transition-all ${
-                  selectedTemplate === t.id
-                    ? 'border-purple-500 ring-2 ring-purple-200'
-                    : 'border-gray-200 hover:border-purple-300'
-                }`}
-              >
-                <div
-                  className="w-full h-20 rounded-lg mb-3 flex items-center justify-center"
-                  style={{ background: t.preview.bg }}
+          {/* Format Selection */}
+          <div className="mb-8">
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4" />
+              Document Format
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {formatTemplateList.map((format) => (
+                <button
+                  key={format.id}
+                  onClick={() => setSelectedFormat(format.id)}
+                  className={`p-4 border-2 rounded-lg text-center transition-all ${
+                    selectedFormat === format.id
+                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
+                      : 'border-gray-200 hover:border-blue-300'
+                  }`}
+                >
+                  <span className="text-2xl mb-2 block">{format.icon}</span>
+                  <p className="text-sm font-medium text-gray-900">{format.name}</p>
+                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{format.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Style Selection */}
+          <div className="mb-6">
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+              <Palette className="w-4 h-4" />
+              Visual Style
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {templateList.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTemplate(t.id)}
+                  className={`p-4 border-2 rounded-lg text-center transition-all ${
+                    selectedTemplate === t.id
+                      ? 'border-purple-500 ring-2 ring-purple-200'
+                      : 'border-gray-200 hover:border-purple-300'
+                  }`}
                 >
                   <div
-                    className="w-8 h-8 rounded"
-                    style={{ background: t.preview.accent }}
-                  />
-                </div>
-                <p className="text-sm font-medium text-gray-900">{t.name}</p>
-                <p className="text-xs text-gray-500 mt-1">{t.category}</p>
-              </button>
-            ))}
+                    className="w-full h-16 rounded-lg mb-2 flex items-center justify-center"
+                    style={{ background: t.preview.bg }}
+                  >
+                    <div
+                      className="w-6 h-6 rounded"
+                      style={{ background: t.preview.accent }}
+                    />
+                  </div>
+                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
+                  <p className="text-xs text-gray-500 mt-1">{t.category}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           <Button onClick={handleGenerate} disabled={generating}>

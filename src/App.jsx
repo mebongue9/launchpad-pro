@@ -13,6 +13,7 @@ import Profiles from './pages/Profiles'
 import Audiences from './pages/Audiences'
 import ExistingProducts from './pages/ExistingProducts'
 import FunnelBuilder from './pages/FunnelBuilder'
+import FunnelDetails from './pages/FunnelDetails'
 import LeadMagnetBuilder from './pages/LeadMagnetBuilder'
 import VisualBuilder from './pages/VisualBuilder'
 import History from './pages/History'
@@ -37,6 +38,7 @@ export default function App() {
         <Route path="/audiences" element={<Audiences />} />
         <Route path="/products" element={<ExistingProducts />} />
         <Route path="/funnels" element={<FunnelBuilder />} />
+        <Route path="/funnels/:id" element={<FunnelDetails />} />
         <Route path="/lead-magnets" element={<LeadMagnetBuilder />} />
         <Route path="/visual-builder" element={<VisualBuilder />} />
         <Route path="/history" element={<History />} />

@@ -4,6 +4,7 @@
 // RELEVANT FILES: src/hooks/useGenerationJob.jsx, process-generation-background.js
 
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { useProfiles } from '../hooks/useProfiles'
@@ -96,6 +97,7 @@ function GenerationError({ error, canResume, onRetry, onCancel }) {
 }
 
 export default function FunnelBuilder() {
+  const navigate = useNavigate()
   const { profiles, loading: profilesLoading } = useProfiles()
   const { audiences, loading: audiencesLoading } = useAudiences()
   const { products: existingProducts } = useExistingProducts()
@@ -782,7 +784,7 @@ export default function FunnelBuilder() {
                     {funnel.status}
                   </span>
                   <button
-                    onClick={() => setViewingFunnel(funnel)}
+                    onClick={() => navigate(`/funnels/${funnel.id}`)}
                     className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                     title="View funnel details"
                   >
