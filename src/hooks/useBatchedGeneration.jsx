@@ -124,25 +124,21 @@ export function useBatchedGeneration() {
     }
   }, []);
 
-  // Start batched generation
-  // options.skipLeadMagnet: true if lead magnet was already generated (from LeadMagnetBuilder)
-  const startGeneration = useCallback(async (fId, options = {}) => {
+  // Start batched generation - ALL 14 tasks (including lead magnet)
+  const startGeneration = useCallback(async (fId) => {
     if (!user?.id) {
       throw new Error('User must be logged in');
     }
-
-    // Determine total tasks based on whether we're skipping lead magnet
-    const totalTasks = options.skipLeadMagnet ? 12 : 14;
 
     setFunnelId(fId);
     setIsGenerating(true);
     setError(null);
     setProgress({
-      total: totalTasks,
+      total: 14,
       completed: 0,
       inProgress: 0,
       failed: 0,
-      pending: totalTasks,
+      pending: 14,
       percentage: 0
     });
 
@@ -153,15 +149,11 @@ export function useBatchedGeneration() {
     }
 
     try {
-      // Call batched generation endpoint
-      // Pass skip_lead_magnet flag if lead magnet was already generated
+      // Call batched generation endpoint - runs all 14 tasks including lead magnet
       const response = await fetch('/.netlify/functions/generate-funnel-content-batched', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          funnel_id: fId,
-          skip_lead_magnet: options.skipLeadMagnet || false
-        })
+        body: JSON.stringify({ funnel_id: fId })
       });
 
       if (!response.ok) {

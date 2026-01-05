@@ -25,7 +25,7 @@ export async function handler(event) {
   }
 
   try {
-    const { funnel_id, skip_lead_magnet } = JSON.parse(event.body || '{}');
+    const { funnel_id } = JSON.parse(event.body || '{}');
 
     if (!funnel_id) {
       return {
@@ -36,9 +36,6 @@ export async function handler(event) {
     }
 
     console.log(`🚀 ${LOG_TAG} Starting batched generation for funnel: ${funnel_id}`);
-    if (skip_lead_magnet) {
-      console.log(`⏭️ ${LOG_TAG} Skipping lead magnet tasks (already generated)`);
-    }
 
     // Verify funnel exists
     const { data: funnel, error: funnelError } = await supabase
@@ -57,21 +54,10 @@ export async function handler(event) {
     }
 
     console.log(`✅ ${LOG_TAG} Funnel found: ${funnel.name}`);
+    console.log(`📋 ${LOG_TAG} Starting orchestration with 14 batched tasks...`);
 
-    // Filter generators if skip_lead_magnet is set
-    // This is used when called from LeadMagnetBuilder where lead magnet was already generated
-    let generatorsToRun = generators;
-    if (skip_lead_magnet) {
-      generatorsToRun = Object.fromEntries(
-        Object.entries(generators).filter(([key]) => !key.startsWith('lead_magnet_'))
-      );
-      console.log(`📋 ${LOG_TAG} Starting orchestration with 12 batched tasks (skipping lead magnet)...`);
-    } else {
-      console.log(`📋 ${LOG_TAG} Starting orchestration with 14 batched tasks...`);
-    }
-
-    // Run orchestrator with generators (14 or 12 depending on skip_lead_magnet)
-    const result = await orchestrateGeneration(funnel_id, generatorsToRun);
+    // Run orchestrator with all 14 generators (including lead_magnet_part_1 and lead_magnet_part_2)
+    const result = await orchestrateGeneration(funnel_id, generators);
 
     console.log(`✅ ${LOG_TAG} Generation completed:`, {
       success: result.success,

@@ -184,36 +184,50 @@ export default function LeadMagnetBuilder() {
       const profile = profiles.find(p => p.id === selectedProfile)
       const audience = audiences.find(a => a.id === selectedAudience)
 
-      // Use batched generation (2 API calls instead of 8)
-      addToast('Generating content with batched system (2 API calls)...', 'info')
-      const result = await generateContent(selectedIdea, profile, audience, frontEndProduct)
+      if (selectedFunnel) {
+        // FUNNEL FLOW: Save lead magnet idea, then trigger 14-task orchestrator
+        // The orchestrator includes lead_magnet_part_1 and lead_magnet_part_2 as tasks 1-2
+        addToast('Starting full funnel generation (14 API calls)...', 'info')
 
-      // Set the generated content immediately
-      setGeneratedContent({ ...result, ...selectedIdea })
-      setStep(3)
-      setContentToastShown(true)
-      addToast('Content generated!', 'success')
+        // Save lead magnet IDEA as a record (no content yet - orchestrator will generate it)
+        const savedLeadMagnet = await saveLeadMagnet(
+          { ...selectedIdea, sections: null }, // null sections = no content yet
+          selectedProfile,
+          selectedFunnel
+        )
+
+        // Trigger 14-task orchestrator which generates ALL content including lead magnet
+        setSavedFunnelId(selectedFunnel)
+        await startGeneration(selectedFunnel)
+
+        // Don't go to step 3 (preview) - the BatchedGenerationManager shows progress
+        setContentToastShown(true)
+      } else {
+        // DIRECT TO PRODUCT FLOW: Generate standalone lead magnet only (2 API calls)
+        addToast('Generating standalone lead magnet (2 API calls)...', 'info')
+        const result = await generateContent(selectedIdea, profile, audience, frontEndProduct)
+
+        // Set the generated content and show preview
+        setGeneratedContent({ ...result, ...selectedIdea })
+        setStep(3)
+        setContentToastShown(true)
+        addToast('Content generated!', 'success')
+      }
     } catch (error) {
       addToast(error.message || 'Failed to generate content', 'error')
     }
   }
 
   async function handleSave() {
+    // This is ONLY for standalone lead magnets (direct to product flow)
+    // Funnel flow handles saving + generation in handleGenerateContent()
     if (!generatedContent) return
 
     setSaving(true)
     try {
-      await saveLeadMagnet(generatedContent, selectedProfile, selectedFunnel)
-      addToast('Generating full funnel content...', 'success')
-
-      // If there's a funnel, trigger batched generation
-      // Pass skipLeadMagnet: true because lead magnet was already generated above
-      if (selectedFunnel) {
-        setSavedFunnelId(selectedFunnel)
-        await startGeneration(selectedFunnel, { skipLeadMagnet: true })
-      } else {
-        handleReset()
-      }
+      await saveLeadMagnet(generatedContent, selectedProfile, null) // null = standalone, no funnel
+      addToast('Lead magnet saved!', 'success')
+      handleReset()
     } catch (error) {
       addToast(error.message || 'Failed to save', 'error')
     } finally {
@@ -541,12 +555,12 @@ export default function LeadMagnetBuilder() {
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Generating...
+                    Saving...
                   </>
                 ) : (
                   <>
                     <Sparkles className="w-4 h-4 mr-2" />
-                    Generate Full Funnel
+                    Save Lead Magnet
                   </>
                 )}
               </Button>
