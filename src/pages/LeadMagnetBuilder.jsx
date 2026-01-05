@@ -207,9 +207,10 @@ export default function LeadMagnetBuilder() {
       addToast('Generating full funnel content...', 'success')
 
       // If there's a funnel, trigger batched generation
+      // Pass skipLeadMagnet: true because lead magnet was already generated above
       if (selectedFunnel) {
         setSavedFunnelId(selectedFunnel)
-        await startGeneration(selectedFunnel)
+        await startGeneration(selectedFunnel, { skipLeadMagnet: true })
       } else {
         handleReset()
       }
