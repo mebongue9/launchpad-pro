@@ -34,7 +34,8 @@ export function ExistingProductForm({ product, onClose, onSuccess }) {
     format: '',
     url: '',
     profile_id: '',
-    tldr: ''
+    tldr: '',
+    mention_price: false
   })
 
   useEffect(() => {
@@ -46,14 +47,18 @@ export function ExistingProductForm({ product, onClose, onSuccess }) {
         format: product.format || '',
         url: product.url || '',
         profile_id: product.profile_id || '',
-        tldr: product.tldr || ''
+        tldr: product.tldr || '',
+        mention_price: product.mention_price || false
       })
     }
   }, [product])
 
   const handleChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    const { name, value, type, checked } = e.target
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }))
   }
 
   const handleSubmit = async (e) => {
@@ -165,6 +170,24 @@ export function ExistingProductForm({ product, onClose, onSuccess }) {
           Used for cross-promo in lead magnets
         </p>
       </div>
+
+      {/* Mention Price Toggle - Per Vision doc: "Optionally mentions the price (if user enabled that setting)" */}
+      <div className="flex items-center gap-3 py-2">
+        <input
+          type="checkbox"
+          id="mention_price"
+          name="mention_price"
+          checked={formData.mention_price}
+          onChange={handleChange}
+          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        />
+        <label htmlFor="mention_price" className="text-sm font-medium text-gray-700">
+          Mention price in cross-promo
+        </label>
+      </div>
+      <p className="text-xs text-gray-500 -mt-1 ml-7">
+        When enabled, generated cross-promo paragraphs will include this product's price
+      </p>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">

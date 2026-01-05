@@ -10,6 +10,51 @@ import { parseClaudeJSON } from './utils/sanitize-json.js';
 
 const LOG_TAG = '[LEAD-MAGNET-IDEAS]';
 
+// Fetch previous lead magnet titles to ensure freshness (no duplicate ideas)
+async function getPreviousLeadMagnetTitles(userId, limit = 10) {
+  console.log(`🔄 ${LOG_TAG} Fetching previous lead magnet titles for user:`, userId);
+
+  if (!userId) {
+    console.log(`⚠️ ${LOG_TAG} No user_id provided, skipping freshness check`);
+    return [];
+  }
+
+  try {
+    const { data: leadMagnets, error } = await supabase
+      .from('lead_magnets')
+      .select('title, topic')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error(`❌ ${LOG_TAG} Error fetching previous lead magnets:`, error.message);
+      return [];
+    }
+
+    if (!leadMagnets || leadMagnets.length === 0) {
+      console.log(`ℹ️ ${LOG_TAG} No previous lead magnets found`);
+      return [];
+    }
+
+    // Extract titles and topics from previous lead magnets
+    const previousTitles = [];
+    leadMagnets.forEach(lm => {
+      if (lm.title) previousTitles.push(lm.title);
+      if (lm.topic) previousTitles.push(lm.topic);
+    });
+
+    // Remove duplicates
+    const uniqueTitles = [...new Set(previousTitles)];
+    console.log(`✅ ${LOG_TAG} Found`, uniqueTitles.length, 'previous titles to avoid');
+
+    return uniqueTitles;
+  } catch (err) {
+    console.error(`❌ ${LOG_TAG} getPreviousLeadMagnetTitles error:`, err.message);
+    return [];
+  }
+}
+
 // Initialize clients
 console.log(`🔧 ${LOG_TAG} Initializing API clients...`);
 console.log(`🔧 ${LOG_TAG} Environment check:`, {
@@ -225,13 +270,14 @@ export async function handler(event) {
 
   try {
     console.log(`📥 ${LOG_TAG} Parsing request body...`);
-    const { profile, audience, front_end_product, excluded_topics } = JSON.parse(event.body);
+    const { profile, audience, front_end_product, excluded_topics, user_id } = JSON.parse(event.body);
 
     console.log(`📥 ${LOG_TAG} Received parameters:`, {
       profile: profile ? { id: profile.id, name: profile.name, niche: profile.niche } : null,
       audience: audience ? { name: audience.name } : null,
       front_end_product: front_end_product ? { name: front_end_product.name, price: front_end_product.price } : null,
-      excluded_topics: excluded_topics || []
+      excluded_topics: excluded_topics || [],
+      userId: user_id || 'not provided'
     });
 
     if (!profile || !front_end_product) {
@@ -263,6 +309,12 @@ No specific knowledge chunks found. Generate ideas based on the profile's niche 
 `;
     }
 
+    // Freshness check: Get previous lead magnet titles to avoid duplicates
+    const previousTitles = await getPreviousLeadMagnetTitles(user_id, 10);
+    const freshnessContext = previousTitles.length > 0
+      ? `\n\n## AVOID DUPLICATE TITLES\nThe user has already created lead magnets with these titles. Use DIFFERENT TITLES but STAY WITHIN THE SAME NICHE (${profile.niche || 'as specified in the profile'}):\n- ${previousTitles.join('\n- ')}\n\nUse fresh, unique titles while still serving the same audience and niche.`
+      : '';
+
     const userMessage = `
 ## PROFILE
 Name: ${profile.name}
@@ -283,6 +335,7 @@ Description: ${front_end_product.description || 'Not specified'}
 ${(excluded_topics || []).join(', ') || 'None'}
 
 ${knowledgeContext}
+${freshnessContext}
 
 Generate 3 lead magnet ideas now. Remember:
 - PDF ONLY formats (no video, no courses, no "hours")

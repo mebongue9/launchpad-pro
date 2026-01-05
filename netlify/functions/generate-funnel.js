@@ -27,6 +27,54 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+// Fetch previous funnel product names to ensure freshness (no duplicate ideas)
+async function getPreviousFunnelNames(userId, limit = 10) {
+  console.log('🔄 [GENERATE-FUNNEL] Fetching previous funnel names for user:', userId);
+
+  if (!userId) {
+    console.log('⚠️ [GENERATE-FUNNEL] No user_id provided, skipping freshness check');
+    return [];
+  }
+
+  try {
+    const { data: funnels, error } = await supabase
+      .from('funnels')
+      .select('name, front_end, bump, upsell_1, upsell_2')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('❌ [GENERATE-FUNNEL] Error fetching previous funnels:', error.message);
+      return [];
+    }
+
+    if (!funnels || funnels.length === 0) {
+      console.log('ℹ️ [GENERATE-FUNNEL] No previous funnels found');
+      return [];
+    }
+
+    // Extract all product names from previous funnels
+    const previousNames = [];
+    funnels.forEach(funnel => {
+      if (funnel.name) previousNames.push(funnel.name);
+      if (funnel.front_end?.name) previousNames.push(funnel.front_end.name);
+      if (funnel.bump?.name) previousNames.push(funnel.bump.name);
+      if (funnel.upsell_1?.name) previousNames.push(funnel.upsell_1.name);
+      if (funnel.upsell_2?.name) previousNames.push(funnel.upsell_2.name);
+    });
+
+    // Remove duplicates
+    const uniqueNames = [...new Set(previousNames)];
+    console.log('✅ [GENERATE-FUNNEL] Found', uniqueNames.length, 'previous product names to avoid');
+
+    return uniqueNames;
+  } catch (err) {
+    console.error('❌ [GENERATE-FUNNEL] getPreviousFunnelNames error:', err.message);
+    return [];
+  }
+}
+
 // Search knowledge base for relevant content
 async function searchKnowledge(query, limit = 5) {
   console.log('🔄 [GENERATE-FUNNEL] searchKnowledge called with limit:', limit);
@@ -57,17 +105,27 @@ async function searchKnowledge(query, limit = 5) {
     }
     console.log('✅ [GENERATE-FUNNEL] Retrieved', chunks.length, 'knowledge chunks');
 
-    const results = chunks
-      .map(c => ({
-        content: c.content,
-        score: cosineSimilarity(queryVector, JSON.parse(c.embedding))
-      }))
-      .filter(r => r.score > 0.6)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    // Calculate ALL scores first for debugging
+    const allScored = chunks.map(c => ({
+      content: c.content,
+      score: cosineSimilarity(queryVector, JSON.parse(c.embedding))
+    }));
+
+    // Sort by score descending
+    allScored.sort((a, b) => b.score - a.score);
+
+    // Log top 5 scores for debugging (regardless of threshold)
+    console.log('📊 [GENERATE-FUNNEL] TOP 5 SIMILARITY SCORES (before filter):');
+    allScored.slice(0, 5).forEach((r, i) => {
+      console.log(`  [${i+1}] score=${r.score.toFixed(4)}, content="${r.content.substring(0, 60)}..."`);
+    });
+
+    // Take top results with similarity threshold
+    const results = allScored.filter(r => r.score > 0.6).slice(0, limit);
 
     if (results.length === 0) {
       console.log('⚠️ [GENERATE-FUNNEL] No chunks matched with score > 0.6');
+      console.log('⚠️ [GENERATE-FUNNEL] Best score was:', allScored[0]?.score?.toFixed(4));
       return '';
     }
 
@@ -173,7 +231,7 @@ export async function handler(event) {
   }
 
   try {
-    const { profile, audience, existing_product } = JSON.parse(event.body);
+    const { profile, audience, existing_product, user_id } = JSON.parse(event.body);
 
     console.log('📥 [GENERATE-FUNNEL] Received parameters:', {
       profile: profile?.name,
@@ -181,7 +239,8 @@ export async function handler(event) {
       profileNiche: profile?.niche,
       audience: audience?.name,
       audiencePainPoints: audience?.pain_points?.length || 0,
-      existingProduct: existing_product?.name || 'none'
+      existingProduct: existing_product?.name || 'none',
+      userId: user_id || 'not provided'
     });
 
     console.log('🔧 [GENERATE-FUNNEL] Environment check:', {
@@ -202,6 +261,12 @@ export async function handler(event) {
     const anthropic = new Anthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
+
+    // Freshness check: Get previous funnel product names to avoid duplicate names
+    const previousNames = await getPreviousFunnelNames(user_id, 10);
+    const freshnessContext = previousNames.length > 0
+      ? `\n\n## AVOID DUPLICATE NAMES\nThe user has already used these product names in previous funnels. Use DIFFERENT NAMES for the new products, but STAY WITHIN THE SAME NICHE (${profile.niche || 'as specified in the profile'}):\n- ${previousNames.join('\n- ')}\n\nUse fresh, unique product names while still serving the same audience and niche.`
+      : '';
 
     // Search knowledge base for relevant content
     const searchQuery = `${profile.niche || ''} ${audience.name} ${(audience.pain_points || []).join(' ')} funnel products digital`;
@@ -229,6 +294,7 @@ Name: ${existing_product.name}
 Price: $${existing_product.price}
 Description: ${existing_product.description}
 ` : '## NO EXISTING PRODUCT - Create complete standalone funnel'}
+${freshnessContext}
 ${knowledgeContext}
 
 Generate the funnel architecture now.

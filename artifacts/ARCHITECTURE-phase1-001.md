@@ -92,6 +92,25 @@ Set up a React + Vite application with Tailwind CSS, configure Supabase for auth
 | `/src/pages/VisualBuilder.jsx` | Placeholder for Phase 3 |
 | `/src/pages/History.jsx` | Placeholder for Phase 4 |
 
+### Existing Products Components (Added for Vision Corrections)
+| File Path | Purpose |
+|-----------|---------|
+| `/src/components/existing-products/ExistingProductForm.jsx` | Create/edit product form with mention_price toggle |
+| `/src/hooks/useExistingProducts.jsx` | Product CRUD operations |
+
+### Netlify Functions (Added for Vision Corrections)
+| File Path | Purpose |
+|-----------|---------|
+| `/netlify/functions/generate-funnel.js` | Funnel idea generation with freshness check |
+| `/netlify/functions/lib/batched-generators.js` | Batched content generation |
+
+### Additional Hooks (Added for Vision Corrections)
+| File Path | Purpose |
+|-----------|---------|
+| `/src/hooks/useFunnels.jsx` | Funnel CRUD and generation |
+| `/src/hooks/useBatchedGeneration.jsx` | Batched generation orchestration |
+| `/src/hooks/useLeadMagnets.jsx` | Lead magnet CRUD and generation |
+
 ## Files NOT to Touch
 - All files in `/docs/` - Documentation only
 - All files in `/agents/` - Agent definitions only

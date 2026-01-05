@@ -46,7 +46,8 @@ export function useLeadMagnets() {
           profile,
           audience,
           front_end_product: frontEndProduct,
-          excluded_topics: excludedTopics
+          excluded_topics: excludedTopics,
+          user_id: user?.id  // Pass user_id for freshness check
         })
       })
 

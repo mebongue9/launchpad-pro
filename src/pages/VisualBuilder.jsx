@@ -1,6 +1,7 @@
 // /src/pages/VisualBuilder.jsx
 // Visual Builder for creating designed PDFs and presentations
 // Uses style templates to generate professional outputs
+// FORMAT COMES FROM FUNNEL/LEAD MAGNET - NO MANUAL FORMAT SELECTION (per Vision spec)
 // RELEVANT FILES: src/styles/templates/index.js, src/hooks/useCreations.jsx
 
 import { useState, useEffect, useRef } from 'react'
@@ -12,20 +13,19 @@ import { useLeadMagnets } from '../hooks/useLeadMagnets'
 import { useCreations } from '../hooks/useCreations'
 import { useToast } from '../components/ui/Toast'
 import { templateList, generateVisualHTML } from '../styles/templates'
-import { formatTemplateList, getFormatTemplate } from '../templates/formats/index.jsx'
+// formatTemplateList removed - format comes from funnel/lead magnet, not manual selection
+import { getFormatTemplate } from '../templates/formats/index.jsx'
 import { getStyleList, getStyle } from '../templates/styles/index.js'
 import {
   Palette,
   Sparkles,
   Download,
   FileText,
-  Eye,
   Check,
   Loader2,
   ArrowRight,
   Maximize2,
-  X,
-  LayoutGrid
+  X
 } from 'lucide-react'
 
 export default function VisualBuilder() {
@@ -40,14 +40,14 @@ export default function VisualBuilder() {
   const [selectedSource, setSelectedSource] = useState(null)
   const [selectedProfile, setSelectedProfile] = useState(null)
   const [selectedTemplate, setSelectedTemplate] = useState('apple-minimal')
-  const [selectedFormat, setSelectedFormat] = useState('checklist')
+  // REMOVED: selectedFormat state - format comes from funnel/lead magnet data automatically
   const [generatedHTML, setGeneratedHTML] = useState(null)
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [fullscreen, setFullscreen] = useState(false)
   const previewRef = useRef(null)
 
-  // Get available formats and styles
+  // Get available styles (formats come from source data, not selection)
   const styleList = getStyleList()
 
   // Get content based on source type
@@ -204,7 +204,7 @@ export default function VisualBuilder() {
     setStep(1)
     setSourceType(null)
     setSelectedSource(null)
-    setSelectedFormat('checklist')
+    // REMOVED: setSelectedFormat - format comes from source data automatically
     setGeneratedHTML(null)
   }
 
@@ -319,42 +319,20 @@ export default function VisualBuilder() {
         </Card>
       )}
 
-      {/* Step 2: Choose Format & Style */}
+      {/* Step 2: Choose Visual Style (Format comes from funnel/lead magnet automatically) */}
       {step === 2 && (
         <Card>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Choose Format & Style</h2>
+            <h2 className="text-lg font-semibold">Choose Visual Style</h2>
             <Button variant="secondary" onClick={() => setStep(1)}>
               ← Back
             </Button>
           </div>
 
-          {/* Format Selection */}
-          <div className="mb-8">
-            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-              <LayoutGrid className="w-4 h-4" />
-              Document Format
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-              {formatTemplateList.map((format) => (
-                <button
-                  key={format.id}
-                  onClick={() => setSelectedFormat(format.id)}
-                  className={`p-4 border-2 rounded-lg text-center transition-all ${
-                    selectedFormat === format.id
-                      ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-200'
-                      : 'border-gray-200 hover:border-blue-300'
-                  }`}
-                >
-                  <span className="text-2xl mb-2 block">{format.icon}</span>
-                  <p className="text-sm font-medium text-gray-900">{format.name}</p>
-                  <p className="text-xs text-gray-500 mt-1 line-clamp-2">{format.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
+          {/* FORMAT SELECTION REMOVED - Per Vision spec, format comes from funnel/lead magnet data */}
+          {/* User only selects visual style (Apple Minimal, Swiss Design, etc.) */}
 
-          {/* Style Selection */}
+          {/* Visual Style Selection */}
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
               <Palette className="w-4 h-4" />

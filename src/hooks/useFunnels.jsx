@@ -58,7 +58,8 @@ export function useFunnels() {
         body: JSON.stringify({
           profile,
           audience,
-          existing_product: existingProduct
+          existing_product: existingProduct,
+          user_id: user?.id  // Pass user_id for freshness check
         })
       })
 

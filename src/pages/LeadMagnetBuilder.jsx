@@ -1,7 +1,7 @@
 // /src/pages/LeadMagnetBuilder.jsx
-// AI-powered lead magnet generation page with background job processing
-// Uses job-based approach to avoid 504 timeouts with real-time progress
-// RELEVANT FILES: src/hooks/useGenerationJob.jsx, process-generation-background.js
+// Lead magnet creation page - TRIGGERS ALL CONTENT GENERATION (14 tasks)
+// User selects funnel → generates/selects lead magnet idea → clicks Generate → ALL content generated
+// RELEVANT FILES: src/hooks/useBatchedGeneration.jsx, netlify/functions/generate-funnel-content-batched.js
 
 import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
@@ -204,7 +204,7 @@ export default function LeadMagnetBuilder() {
     setSaving(true)
     try {
       await saveLeadMagnet(generatedContent, selectedProfile, selectedFunnel)
-      addToast('Lead magnet saved! Starting funnel generation...', 'success')
+      addToast('Generating full funnel content...', 'success')
 
       // If there's a funnel, trigger batched generation
       if (selectedFunnel) {
@@ -540,12 +540,12 @@ export default function LeadMagnetBuilder() {
                 {saving ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
+                    Generating...
                   </>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Save Lead Magnet
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Generate Full Funnel
                   </>
                 )}
               </Button>

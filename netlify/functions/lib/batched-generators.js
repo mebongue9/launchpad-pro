@@ -1,6 +1,10 @@
 // netlify/functions/lib/batched-generators.js
 // All 14 batched generation functions for funnel content
 // Each function generates multiple pieces of content in a single Claude API call
+// CROSS-PROMO: Embedded in last chapter of each product (not separate bridge/cta)
+//   - Lead Magnet → promotes Front-End
+//   - Front-End, Bump, Upsell 1, Upsell 2 → promote Main Product (from existing_product_id)
+//   - Uses main_product.mention_price flag (defaults to false if not set)
 // RELEVANT FILES: netlify/functions/lib/task-orchestrator.js, netlify/functions/lib/retry-engine.js
 
 import { createClient } from '@supabase/supabase-js';
@@ -77,7 +81,7 @@ async function searchKnowledge(query, limit = 8) {
   }
 }
 
-// Helper: Get funnel data
+// Helper: Get funnel data (including Main Product for cross-promo)
 async function getFunnelData(funnelId) {
   const { data: funnel, error } = await supabase
     .from('funnels')
@@ -88,6 +92,7 @@ async function getFunnelData(funnelId) {
       bump:existing_products!funnels_bump_product_id_fkey(*),
       upsell1:existing_products!funnels_upsell1_product_id_fkey(*),
       upsell2:existing_products!funnels_upsell2_product_id_fkey(*),
+      main_product:existing_products!funnels_existing_product_id_fkey(*),
       profile:profiles(*),
       audience:audiences(*)
     `)
@@ -96,6 +101,35 @@ async function getFunnelData(funnelId) {
 
   if (error) throw new Error(`Failed to load funnel: ${error.message}`);
   return funnel;
+}
+
+// Helper: Build cross-promo paragraph to embed in content
+// For Lead Magnet: promotes Front-End
+// For paid products (Front-End, Bump, Upsell 1, Upsell 2): promotes Main Product
+function buildCrossPromoParagraph(promotedProduct, mentionPrice = false) {
+  if (!promotedProduct) return '';
+
+  const name = promotedProduct.name || 'our premium product';
+  const tldr = promotedProduct.tldr || promotedProduct.description || '';
+  const url = promotedProduct.url || '';
+  const price = promotedProduct.price;
+
+  let promo = `\n\n---\n\n**Want to take this further?**\n\n`;
+  promo += `If you found this valuable, you'll love "${name}". `;
+
+  if (tldr) {
+    promo += `${tldr} `;
+  }
+
+  if (mentionPrice && price) {
+    promo += `Get it now for just $${price}. `;
+  }
+
+  if (url) {
+    promo += `\n\n[Learn more about ${name}](${url})`;
+  }
+
+  return promo;
 }
 
 // ============================================================================
@@ -205,9 +239,9 @@ IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each se
   return { cover, chapter1, chapter2, chapter3 };
 }
 
-// Task 2: Lead Magnet Part 2 (Chapters 4-5 + Bridge + CTA)
+// Task 2: Lead Magnet Part 2 (Chapters 4-5 with embedded cross-promo promoting Front-End)
 export async function generateLeadMagnetPart2(funnelId) {
-  console.log(`📝 ${LOG_TAG} Generating lead magnet part 2 (chapters 4-5 + bridge + CTA)`);
+  console.log(`📝 ${LOG_TAG} Generating lead magnet part 2 (chapters 4-5 with embedded cross-promo)`);
 
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, profile, audience, frontend } = funnel;
@@ -221,28 +255,36 @@ export async function generateLeadMagnetPart2(funnelId) {
 
   const previousChapters = existingData?.chapters || [];
 
-  const knowledge = await searchKnowledge(`${lead_magnet.title} final chapters bridge cta`, 10);
+  const knowledge = await searchKnowledge(`${lead_magnet.title} final chapters`, 10);
+
+  // Build cross-promo paragraph for Front-End product
+  // Lead Magnet always promotes Front-End (not Main Product)
+  const crossPromo = buildCrossPromoParagraph(frontend, false);
 
   const prompt = `${knowledge}
 
-Generate the FINAL 2 CHAPTERS, BRIDGE, and CTA for this lead magnet.
+Generate the FINAL 2 CHAPTERS for this lead magnet.
 
 LEAD MAGNET INFO:
 - Title: ${lead_magnet.title}
 - Subtitle: ${lead_magnet.subtitle}
-- Front-End Product: ${frontend.name} ($${frontend.price}) - ${frontend.description}
+- Front-End Product: ${frontend.name} ($${frontend.price})
 
 PREVIOUS CHAPTERS:
 ${previousChapters.map(c => `- ${c.title}`).join('\n')}
 
-Generate 4 sections separated by: ${SECTION_SEPARATOR}
+IMPORTANT: Chapter 5 (the final chapter) MUST end with a natural cross-promotion paragraph that promotes "${frontend.name}".
+The cross-promo should feel like a natural conclusion, not a hard sell. Something like:
+"If you enjoyed this and want to take it further, check out [product name] which [brief benefit]..."
+
+Generate 2 sections separated by: ${SECTION_SEPARATOR}
 
 Section 1 - CHAPTER 4 (JSON):
 {
   "type": "chapter",
   "number": 4,
   "title": "Chapter 4: [Title]",
-  "content": "[400-600 words]"
+  "content": "[400-600 words of valuable content]"
 }
 
 ${SECTION_SEPARATOR}
@@ -252,33 +294,14 @@ Section 2 - CHAPTER 5 (JSON):
   "type": "chapter",
   "number": 5,
   "title": "Chapter 5: [Title]",
-  "content": "[400-600 words - wrap up the lead magnet]"
-}
-
-${SECTION_SEPARATOR}
-
-Section 3 - BRIDGE (JSON):
-{
-  "type": "bridge",
-  "title": "What Happens Next...",
-  "content": "[Natural transition from lead magnet to front-end product - NO hard sell, just mention next step]"
-}
-
-${SECTION_SEPARATOR}
-
-Section 4 - CTA (JSON):
-{
-  "type": "cta",
-  "title": "Ready to [Outcome]?",
-  "content": "[Brief CTA for ${frontend.name}]",
-  "button_text": "Get ${frontend.name} Now"
+  "content": "[400-600 words - wrap up content AND include a natural cross-promo paragraph at the end promoting ${frontend.name}]"
 }
 
 Use creator's knowledge. Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 16000,
+    max_tokens: 12000,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -286,25 +309,26 @@ Use creator's knowledge. Return valid JSON.`;
 
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
-  const bridge = parseClaudeJSON(sections[2]);
-  const cta = parseClaudeJSON(sections[3]);
 
-  // Update with all chapters
+  // Ensure cross-promo is embedded in chapter 5 content if AI didn't include it
+  if (chapter5.content && !chapter5.content.toLowerCase().includes(frontend.name.toLowerCase())) {
+    chapter5.content += crossPromo;
+  }
+
+  // Update with all chapters (no separate bridge/cta - cross-promo is embedded)
   const allChapters = [...previousChapters, chapter4, chapter5];
 
   await supabase
     .from('lead_magnets')
     .update({
       chapters: allChapters,
-      bridge_data: bridge,
-      cta_data: cta,
       updated_at: new Date().toISOString()
     })
     .eq('id', lead_magnet.id);
 
-  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved`);
+  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved (cross-promo embedded in chapter 5)`);
 
-  return { chapter4, chapter5, bridge, cta };
+  return { chapter4, chapter5 };
 }
 
 // Task 3: Front-End Part 1 (Cover + Chapters 1-3)
@@ -396,12 +420,12 @@ Use creator's knowledge. Return valid JSON.`;
   return { cover, chapter1, chapter2, chapter3 };
 }
 
-// Task 4: Front-End Part 2 (Chapters 4-6 + Bridge + CTA)
+// Task 4: Front-End Part 2 (Chapters 4-6 with embedded cross-promo promoting Main Product)
 export async function generateFrontendPart2(funnelId) {
-  console.log(`📝 ${LOG_TAG} Generating front-end part 2 (chapters 4-6 + bridge + CTA)`);
+  console.log(`📝 ${LOG_TAG} Generating front-end part 2 (chapters 4-6 with embedded cross-promo)`);
 
   const funnel = await getFunnelData(funnelId);
-  const { frontend, bump } = funnel;
+  const { frontend, main_product } = funnel;
 
   const { data: existingData } = await supabase
     .from('existing_products')
@@ -411,19 +435,29 @@ export async function generateFrontendPart2(funnelId) {
 
   const previousChapters = existingData?.chapters || [];
 
-  const knowledge = await searchKnowledge(`${frontend.name} final chapters bridge bump offer`, 10);
+  const knowledge = await searchKnowledge(`${frontend.name} final chapters`, 10);
+
+  // Cross-promo promotes Main Product (user's flagship product)
+  // mention_price defaults to false if not set
+  const mentionPrice = main_product?.mention_price || false;
+  const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
+
+  const promoProductName = main_product?.name || 'our premium offering';
 
   const prompt = `${knowledge}
 
-Generate FINAL 3 CHAPTERS, BRIDGE, and CTA for this front-end product.
+Generate FINAL 3 CHAPTERS for this front-end product.
 
 PRODUCT: ${frontend.name} - ${frontend.description}
-BUMP OFFER: ${bump.name} ($${bump.price}) - ${bump.description}
+CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
 
 PREVIOUS CHAPTERS:
 ${previousChapters.map(c => `- ${c.title}`).join('\n')}
 
-Generate 5 sections separated by: ${SECTION_SEPARATOR}
+IMPORTANT: Chapter 6 (the final chapter) MUST end with a natural cross-promotion paragraph that promotes "${promoProductName}".
+The cross-promo should feel like a natural next step, not a hard sell.
+
+Generate 3 sections separated by: ${SECTION_SEPARATOR}
 
 Section 1 - CHAPTER 4 (JSON):
 {
@@ -450,33 +484,14 @@ Section 3 - CHAPTER 6 (JSON):
   "type": "chapter",
   "number": 6,
   "title": "Chapter 6: [Title]",
-  "content": "[500-800 words - wrap up]"
-}
-
-${SECTION_SEPARATOR}
-
-Section 4 - BRIDGE (JSON):
-{
-  "type": "bridge",
-  "title": "Want Even More?",
-  "content": "[Natural transition to bump offer - soft introduction]"
-}
-
-${SECTION_SEPARATOR}
-
-Section 5 - CTA (JSON):
-{
-  "type": "cta",
-  "title": "Add ${bump.name} to Your Order",
-  "content": "[Brief CTA for bump offer]",
-  "button_text": "Yes! Add ${bump.name}"
+  "content": "[500-800 words - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
 Use creator's knowledge. Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 16000,
+    max_tokens: 14000,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -485,8 +500,11 @@ Use creator's knowledge. Return valid JSON.`;
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
-  const bridge = parseClaudeJSON(sections[3]);
-  const cta = parseClaudeJSON(sections[4]);
+
+  // Ensure cross-promo is embedded if AI didn't include it
+  if (chapter6.content && main_product && !chapter6.content.toLowerCase().includes(main_product.name.toLowerCase())) {
+    chapter6.content += crossPromo;
+  }
 
   const allChapters = [...previousChapters, chapter4, chapter5, chapter6];
 
@@ -494,25 +512,28 @@ Use creator's knowledge. Return valid JSON.`;
     .from('existing_products')
     .update({
       chapters: allChapters,
-      bridge_data: bridge,
-      cta_data: cta,
       updated_at: new Date().toISOString()
     })
     .eq('id', frontend.id);
 
-  console.log(`✅ ${LOG_TAG} Front-end part 2 saved`);
+  console.log(`✅ ${LOG_TAG} Front-end part 2 saved (cross-promo embedded promoting Main Product)`);
 
-  return { chapter4, chapter5, chapter6, bridge, cta };
+  return { chapter4, chapter5, chapter6 };
 }
 
-// Task 5: Bump Full Product (short - 4-5 sections total)
+// Task 5: Bump Full Product (short format with embedded cross-promo promoting Main Product)
 export async function generateBumpFull(funnelId) {
-  console.log(`📝 ${LOG_TAG} Generating bump product (full - short format)`);
+  console.log(`📝 ${LOG_TAG} Generating bump product (short format with embedded cross-promo)`);
 
   const funnel = await getFunnelData(funnelId);
-  const { bump, profile, audience, upsell1 } = funnel;
+  const { bump, profile, audience, main_product } = funnel;
 
   const knowledge = await searchKnowledge(`${bump.name} ${bump.description} quick actionable`, 8);
+
+  // Cross-promo promotes Main Product (user's flagship product)
+  const mentionPrice = main_product?.mention_price || false;
+  const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
+  const promoProductName = main_product?.name || 'our premium offering';
 
   const prompt = `${knowledge}
 
@@ -521,11 +542,13 @@ Generate COMPLETE BUMP PRODUCT (short format - quick wins).
 PRODUCT: ${bump.name}
 Price: $${bump.price}
 Description: ${bump.description}
-Next Upsell: ${upsell1.name}
+CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
 
-This is a BUMP OFFER - keep it SHORT and ACTIONABLE (4-5 sections total).
+This is a BUMP OFFER - keep it SHORT and ACTIONABLE (3 sections total).
 
-Generate 5 sections separated by: ${SECTION_SEPARATOR}
+IMPORTANT: Chapter 2 (the final chapter) MUST end with a brief cross-promotion paragraph promoting "${promoProductName}".
+
+Generate 3 sections separated by: ${SECTION_SEPARATOR}
 
 Section 1 - COVER (JSON):
 {
@@ -553,33 +576,14 @@ Section 3 - CHAPTER 2 (JSON):
   "type": "chapter",
   "number": 2,
   "title": "Chapter 2: [Actionable Title]",
-  "content": "[300-400 words - actionable steps]"
-}
-
-${SECTION_SEPARATOR}
-
-Section 4 - BRIDGE (JSON):
-{
-  "type": "bridge",
-  "title": "Ready for More?",
-  "content": "[Brief transition to ${upsell1.name}]"
-}
-
-${SECTION_SEPARATOR}
-
-Section 5 - CTA (JSON):
-{
-  "type": "cta",
-  "title": "Get ${upsell1.name}",
-  "content": "[Brief CTA]",
-  "button_text": "Yes! Show Me ${upsell1.name}"
+  "content": "[300-400 words - actionable steps AND end with brief cross-promo for ${promoProductName}]"
 }
 
 Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 12000,
+    max_tokens: 10000,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -588,23 +592,24 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON.`;
   const cover = parseClaudeJSON(sections[0]);
   const chapter1 = parseClaudeJSON(sections[1]);
   const chapter2 = parseClaudeJSON(sections[2]);
-  const bridge = parseClaudeJSON(sections[3]);
-  const cta = parseClaudeJSON(sections[4]);
+
+  // Ensure cross-promo is embedded if AI didn't include it
+  if (chapter2.content && main_product && !chapter2.content.toLowerCase().includes(main_product.name.toLowerCase())) {
+    chapter2.content += crossPromo;
+  }
 
   await supabase
     .from('existing_products')
     .update({
       cover_data: cover,
       chapters: [chapter1, chapter2],
-      bridge_data: bridge,
-      cta_data: cta,
       updated_at: new Date().toISOString()
     })
     .eq('id', bump.id);
 
-  console.log(`✅ ${LOG_TAG} Bump product saved`);
+  console.log(`✅ ${LOG_TAG} Bump product saved (cross-promo embedded promoting Main Product)`);
 
-  return { cover, chapter1, chapter2, bridge, cta };
+  return { cover, chapter1, chapter2 };
 }
 
 // Task 6: Upsell 1 Part 1 (Cover + First Half)
@@ -649,51 +654,88 @@ Use 600-800 words per chapter. Return valid JSON.`;
   return { cover, chapters };
 }
 
-// Task 7: Upsell 1 Part 2 (Second Half + Bridge + CTA)
+// Task 7: Upsell 1 Part 2 (Second Half with embedded cross-promo promoting Main Product)
 export async function generateUpsell1Part2(funnelId) {
-  console.log(`📝 ${LOG_TAG} Generating upsell 1 part 2`);
+  console.log(`📝 ${LOG_TAG} Generating upsell 1 part 2 (with embedded cross-promo)`);
 
   const funnel = await getFunnelData(funnelId);
-  const { upsell1, upsell2 } = funnel;
+  const { upsell1, main_product } = funnel;
 
   const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell1.id).single();
   const previousChapters = existingData?.chapters || [];
 
   const knowledge = await searchKnowledge(`${upsell1.name} final chapters`, 10);
 
+  // Cross-promo promotes Main Product (user's flagship product)
+  const mentionPrice = main_product?.mention_price || false;
+  const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
+  const promoProductName = main_product?.name || 'our premium offering';
+
   const prompt = `${knowledge}
 
-Generate SECOND HALF, BRIDGE, CTA for upsell 1.
+Generate FINAL 3 CHAPTERS for upsell 1.
 
-PREVIOUS: ${previousChapters.map(c => c.title).join(', ')}
-NEXT UPSELL: ${upsell2.name}
+PRODUCT: ${upsell1.name}
+PREVIOUS CHAPTERS: ${previousChapters.map(c => c.title).join(', ')}
+CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
 
-Generate 5 sections separated by: ${SECTION_SEPARATOR}
+IMPORTANT: Chapter 6 (the final chapter) MUST end with a natural cross-promotion paragraph promoting "${promoProductName}".
 
-Sections 1-3: CHAPTERS 4-6, Section 4: BRIDGE, Section 5: CTA
+Generate 3 sections separated by: ${SECTION_SEPARATOR}
 
-600-800 words per chapter. Return valid JSON.`;
+Section 1 - CHAPTER 4 (JSON):
+{
+  "type": "chapter",
+  "number": 4,
+  "title": "Chapter 4: [Title]",
+  "content": "[600-800 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 2 - CHAPTER 5 (JSON):
+{
+  "type": "chapter",
+  "number": 5,
+  "title": "Chapter 5: [Title]",
+  "content": "[600-800 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 3 - CHAPTER 6 (JSON):
+{
+  "type": "chapter",
+  "number": 6,
+  "title": "Chapter 6: [Title]",
+  "content": "[600-800 words - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
+}
+
+Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 16000,
+    max_tokens: 14000,
     messages: [{ role: 'user', content: prompt }]
   });
 
   const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
-  const newChapters = [parseClaudeJSON(sections[0]), parseClaudeJSON(sections[1]), parseClaudeJSON(sections[2])];
-  const bridge = parseClaudeJSON(sections[3]);
-  const cta = parseClaudeJSON(sections[4]);
+  const chapter4 = parseClaudeJSON(sections[0]);
+  const chapter5 = parseClaudeJSON(sections[1]);
+  const chapter6 = parseClaudeJSON(sections[2]);
+
+  // Ensure cross-promo is embedded if AI didn't include it
+  if (chapter6.content && main_product && !chapter6.content.toLowerCase().includes(main_product.name.toLowerCase())) {
+    chapter6.content += crossPromo;
+  }
 
   await supabase.from('existing_products').update({
-    chapters: [...previousChapters, ...newChapters],
-    bridge_data: bridge,
-    cta_data: cta,
+    chapters: [...previousChapters, chapter4, chapter5, chapter6],
     updated_at: new Date().toISOString()
   }).eq('id', upsell1.id);
 
-  console.log(`✅ ${LOG_TAG} Upsell 1 part 2 saved`);
-  return { newChapters, bridge, cta };
+  console.log(`✅ ${LOG_TAG} Upsell 1 part 2 saved (cross-promo embedded promoting Main Product)`);
+  return { chapter4, chapter5, chapter6 };
 }
 
 // Task 8: Upsell 2 Part 1 (Cover + First Half)
@@ -737,50 +779,89 @@ Section 1: COVER, Sections 2-4: CHAPTERS 1-3
   return { cover, chapters };
 }
 
-// Task 9: Upsell 2 Part 2 (Second Half + Bridge + CTA)
+// Task 9: Upsell 2 Part 2 (Second Half with embedded cross-promo promoting Main Product)
 export async function generateUpsell2Part2(funnelId) {
-  console.log(`📝 ${LOG_TAG} Generating upsell 2 part 2`);
+  console.log(`📝 ${LOG_TAG} Generating upsell 2 part 2 (with embedded cross-promo)`);
 
   const funnel = await getFunnelData(funnelId);
-  const { upsell2 } = funnel;
+  const { upsell2, main_product } = funnel;
 
   const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell2.id).single();
   const previousChapters = existingData?.chapters || [];
 
   const knowledge = await searchKnowledge(`${upsell2.name} final chapters conclusion`, 10);
 
+  // Cross-promo promotes Main Product (user's flagship product)
+  const mentionPrice = main_product?.mention_price || false;
+  const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
+  const promoProductName = main_product?.name || 'our premium offering';
+
   const prompt = `${knowledge}
 
-Generate FINAL CHAPTERS, BRIDGE, CTA for final upsell.
+Generate FINAL 3 CHAPTERS for final upsell.
 
-PREVIOUS: ${previousChapters.map(c => c.title).join(', ')}
+PRODUCT: ${upsell2.name}
+PREVIOUS CHAPTERS: ${previousChapters.map(c => c.title).join(', ')}
+CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
 
-Generate 5 sections separated by: ${SECTION_SEPARATOR}
+IMPORTANT: Chapter 6 (the final chapter) MUST end with a natural cross-promotion paragraph promoting "${promoProductName}".
+This is the final product in the funnel, so the cross-promo should feel like a "complete your journey" recommendation.
 
-Sections 1-3: CHAPTERS 4-6, Section 4: BRIDGE (wrap up entire funnel), Section 5: CTA
+Generate 3 sections separated by: ${SECTION_SEPARATOR}
 
-600-800 words per chapter. Return valid JSON.`;
+Section 1 - CHAPTER 4 (JSON):
+{
+  "type": "chapter",
+  "number": 4,
+  "title": "Chapter 4: [Title]",
+  "content": "[600-800 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 2 - CHAPTER 5 (JSON):
+{
+  "type": "chapter",
+  "number": 5,
+  "title": "Chapter 5: [Title]",
+  "content": "[600-800 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 3 - CHAPTER 6 (JSON):
+{
+  "type": "chapter",
+  "number": 6,
+  "title": "Chapter 6: [Title]",
+  "content": "[600-800 words - conclusion AND include cross-promo paragraph at the end promoting ${promoProductName}]"
+}
+
+Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 16000,
+    max_tokens: 14000,
     messages: [{ role: 'user', content: prompt }]
   });
 
   const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
-  const newChapters = [parseClaudeJSON(sections[0]), parseClaudeJSON(sections[1]), parseClaudeJSON(sections[2])];
-  const bridge = parseClaudeJSON(sections[3]);
-  const cta = parseClaudeJSON(sections[4]);
+  const chapter4 = parseClaudeJSON(sections[0]);
+  const chapter5 = parseClaudeJSON(sections[1]);
+  const chapter6 = parseClaudeJSON(sections[2]);
+
+  // Ensure cross-promo is embedded if AI didn't include it
+  if (chapter6.content && main_product && !chapter6.content.toLowerCase().includes(main_product.name.toLowerCase())) {
+    chapter6.content += crossPromo;
+  }
 
   await supabase.from('existing_products').update({
-    chapters: [...previousChapters, ...newChapters],
-    bridge_data: bridge,
-    cta_data: cta,
+    chapters: [...previousChapters, chapter4, chapter5, chapter6],
     updated_at: new Date().toISOString()
   }).eq('id', upsell2.id);
 
-  console.log(`✅ ${LOG_TAG} Upsell 2 part 2 saved`);
-  return { newChapters, bridge, cta };
+  console.log(`✅ ${LOG_TAG} Upsell 2 part 2 saved (cross-promo embedded promoting Main Product)`);
+  return { chapter4, chapter5, chapter6 };
 }
 
 // ============================================================================

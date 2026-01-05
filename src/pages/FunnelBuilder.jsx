@@ -1,7 +1,7 @@
 // /src/pages/FunnelBuilder.jsx
-// Funnel creation page with AI batched generation (14 tasks) and manual entry options
-// Uses batched task system to avoid timeouts with real-time progress
-// RELEVANT FILES: src/hooks/useBatchedGeneration.jsx, netlify/functions/generate-funnel-content-batched.js
+// Funnel creation page - generates FUNNEL IDEAS only (not content)
+// Content generation happens in Lead Magnet Builder when user clicks "Generate"
+// RELEVANT FILES: src/hooks/useFunnels.jsx, netlify/functions/generate-funnel.js
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -11,7 +11,6 @@ import { useProfiles } from '../hooks/useProfiles'
 import { useAudiences } from '../hooks/useAudiences'
 import { useFunnels } from '../hooks/useFunnels'
 import { useExistingProducts } from '../hooks/useExistingProducts'
-import { useBatchedGeneration } from '../hooks/useBatchedGeneration'
 import { useToast } from '../components/ui/Toast'
 import LanguageSelector from '../components/common/LanguageSelector'
 import { DEFAULT_FAVORITE_LANGUAGES } from '../lib/languages'
@@ -27,98 +26,28 @@ import {
   ClipboardPaste,
   ArrowLeft,
   AlertCircle,
-  RefreshCw,
   Trash2,
   Eye,
   Edit3,
-  X
+  X,
+  FileText
 } from 'lucide-react'
+import { parseFunnelText, getExamplePasteFormat } from '../lib/utils'
 import FunnelCard from '../components/funnel/FunnelCard'
 import FunnelFilters, { FunnelStats } from '../components/funnel/FunnelFilters'
 import DocumentGenerationProgress from '../components/funnel/DocumentGenerationProgress'
-
-// Progress bar component for generation
-function GenerationProgress({ progress, currentChunk, completedChunks, totalChunks }) {
-  return (
-    <div className="space-y-3">
-      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-gray-600 flex items-center gap-2">
-          <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
-          {currentChunk || 'Starting...'}
-        </span>
-        <span className="text-gray-500">
-          {totalChunks ? `${completedChunks || 0}/${totalChunks} sections` : `${progress}%`}
-        </span>
-      </div>
-
-      {currentChunk?.includes('Retry') && (
-        <div className="flex items-center gap-2 text-amber-600 text-sm">
-          <RefreshCw className="w-4 h-4" />
-          <span>Automatic retry in progress...</span>
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Error display with retry button
-function GenerationError({ error, canResume, onRetry, onCancel }) {
-  return (
-    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-      <div className="flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
-        <div className="flex-1">
-          <h4 className="font-medium text-red-800">Generation Failed</h4>
-          <p className="text-sm text-red-600 mt-1">{error}</p>
-          {canResume && (
-            <p className="text-sm text-red-600 mt-1">
-              Some progress was saved. You can try resuming.
-            </p>
-          )}
-          <div className="flex gap-2 mt-3">
-            {canResume && (
-              <Button variant="secondary" onClick={onRetry} className="text-sm">
-                <RefreshCw className="w-4 h-4 mr-1" />
-                Resume Generation
-              </Button>
-            )}
-            <Button variant="secondary" onClick={onCancel} className="text-sm">
-              Start Over
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 export default function FunnelBuilder() {
   const navigate = useNavigate()
   const { profiles, loading: profilesLoading } = useProfiles()
   const { audiences, loading: audiencesLoading } = useAudiences()
   const { products: existingProducts } = useExistingProducts()
-  const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading, documentJob } = useFunnels()
+  const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading, documentJob, generateFunnel } = useFunnels()
   const { addToast } = useToast()
 
-  // Use batched generation hook (14 tasks instead of 51+ sequential calls)
-  const {
-    funnelId: generationFunnelId,
-    isGenerating,
-    progress: generationProgress,
-    currentTask,
-    error: generationError,
-    canResume,
-    startGeneration,
-    resumeGeneration,
-    cancelGeneration
-  } = useBatchedGeneration()
+  // Generation state (for ideas only - not full content)
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationError, setGenerationError] = useState(null)
 
   // Mode: null = choose, 'ai' = AI generation, 'manual' = manual entry
   const [mode, setMode] = useState(null)
@@ -221,18 +150,19 @@ export default function FunnelBuilder() {
     upsell_1: { name: '', price: '', description: '', format: '' }
   })
 
+  // Paste mode state (FIX 3)
+  const [pasteText, setPasteText] = useState('')
+  const [parsedFunnel, setParsedFunnel] = useState(null)
+  const [parseError, setParseError] = useState(null)
+  const [showPasteMode, setShowPasteMode] = useState(true) // Default to paste mode
+
   const [saving, setSaving] = useState(false)
 
   // Track if we've already shown toast for current funnel
   const toastShownForFunnelRef = useRef(null)
 
-  // Watch for batched generation completion - uses direct result return instead of polling
-  useEffect(() => {
-    // Batched generation returns result directly, no need for job polling
-    // Toast is shown in handleGenerate after startGeneration completes
-  }, [])
-
-  // AI Generation handler - uses batched generation (14 tasks)
+  // AI Generation handler - generates IDEAS only (not content)
+  // Content generation happens in Lead Magnet Builder when user clicks "Generate"
   async function handleGenerate() {
     if (!selectedProfile || !selectedAudience) {
       addToast('Please select a profile and audience', 'error')
@@ -240,6 +170,8 @@ export default function FunnelBuilder() {
     }
 
     setGeneratedFunnel(null)
+    setIsGenerating(true)
+    setGenerationError(null)
     toastShownForFunnelRef.current = null
 
     try {
@@ -249,23 +181,20 @@ export default function FunnelBuilder() {
         ? existingProducts.find(p => p.id === selectedExistingProduct)
         : null
 
-      // Use batched generation system (14 tasks instead of 51+ calls)
-      addToast('Starting funnel generation with batched system (14 tasks)...', 'info')
-      const result = await startGeneration(
-        { name: 'Generated Funnel' }, // Will be replaced with actual funnel data
-        profile,
-        audience,
-        selectedLanguage,
-        existingProduct
-      )
+      // Generate funnel IDEA only (1 API call) - NOT full content
+      addToast('Generating funnel idea...', 'info')
+      const result = await generateFunnel(profile, audience, existingProduct)
 
-      // Generation complete - result is returned directly
+      // Generation complete - result is the funnel IDEA (names, prices, formats)
       if (result) {
         setGeneratedFunnel(result)
-        addToast('Funnel generated successfully!', 'success')
+        addToast('Funnel idea generated! Review and save as draft.', 'success')
       }
     } catch (error) {
-      addToast(error.message || 'Failed to start generation', 'error')
+      setGenerationError(error.message)
+      addToast(error.message || 'Failed to generate funnel idea', 'error')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -347,6 +276,8 @@ export default function FunnelBuilder() {
     setSelectedAudience(null)
     setSelectedExistingProduct(null)
     setSelectedLanguage('English')
+    setIsGenerating(false)
+    setGenerationError(null)
     setManualFunnel({
       funnel_name: '',
       lead_magnet: { name: '', description: '', keyword: '' },
@@ -354,7 +285,43 @@ export default function FunnelBuilder() {
       bump: { name: '', price: '', description: '', format: '' },
       upsell_1: { name: '', price: '', description: '', format: '' }
     })
-    cancelGeneration()
+    // Reset paste state (FIX 3)
+    setPasteText('')
+    setParsedFunnel(null)
+    setParseError(null)
+    setShowPasteMode(true)
+  }
+
+  // Handle paste text parsing (FIX 3)
+  function handleParsePaste() {
+    setParseError(null)
+    setParsedFunnel(null)
+
+    const result = parseFunnelText(pasteText)
+
+    if (result.success) {
+      setParsedFunnel(result.data)
+      addToast(`Parsed ${result.summary.productsFound} products successfully!`, 'success')
+    } else {
+      setParseError(result.error)
+      addToast('Could not parse funnel text', 'error')
+    }
+  }
+
+  // Save parsed funnel (FIX 3)
+  async function handleSaveParsed() {
+    if (!parsedFunnel) return
+
+    setSaving(true)
+    try {
+      await saveFunnel(parsedFunnel, selectedProfile, selectedAudience, null)
+      addToast('Funnel saved!', 'success')
+      resetAll()
+    } catch (error) {
+      addToast(error.message || 'Failed to save funnel', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
   // Handle funnel deletion
@@ -400,27 +367,33 @@ export default function FunnelBuilder() {
         </p>
       </div>
 
-      {/* Generation Progress - Batched System (14 tasks) */}
+      {/* Generation Progress - Simple Loading (ideas only) */}
       {isGenerating && (
         <Card className="border-blue-200 bg-blue-50/50">
-          <h3 className="font-semibold text-gray-900 mb-4">Generating Your Funnel (14 Batched Tasks)...</h3>
-          <GenerationProgress
-            progress={generationProgress.percentage}
-            currentChunk={currentTask}
-            completedChunks={generationProgress.completed}
-            totalChunks={generationProgress.total}
-          />
+          <div className="flex items-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+            <div>
+              <h3 className="font-semibold text-gray-900">Generating Funnel Idea...</h3>
+              <p className="text-sm text-gray-500">Creating product names, prices, and formats</p>
+            </div>
+          </div>
         </Card>
       )}
 
       {/* Error Display */}
       {generationError && !isGenerating && (
-        <GenerationError
-          error={generationError}
-          canResume={canResume}
-          onRetry={() => resumeGeneration(generationFunnelId)}
-          onCancel={resetAll}
-        />
+        <Card className="border-red-200 bg-red-50/50">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="font-medium text-red-800">Generation Failed</h4>
+              <p className="text-sm text-red-600 mt-1">{generationError}</p>
+              <Button variant="secondary" onClick={resetAll} className="mt-3 text-sm">
+                Try Again
+              </Button>
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* Mode Selection */}
@@ -549,7 +522,7 @@ export default function FunnelBuilder() {
         </Card>
       )}
 
-      {/* Manual Entry Mode */}
+      {/* Manual Entry Mode with Paste Option (FIX 3) */}
       {mode === 'manual' && !isGenerating && (
         <Card>
           <div className="flex items-center gap-2 mb-4">
@@ -559,9 +532,181 @@ export default function FunnelBuilder() {
             <h2 className="text-lg font-semibold">Enter Your Existing Funnel</h2>
           </div>
 
-          <p className="text-sm text-gray-500 mb-6">
-            Copy and paste your funnel details from your document. Fill in each section below.
-          </p>
+          {/* Toggle between Paste and Manual Entry */}
+          <div className="flex gap-2 mb-6">
+            <button
+              onClick={() => { setShowPasteMode(true); setParsedFunnel(null); setParseError(null) }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                showPasteMode
+                  ? 'bg-green-100 text-green-700 border-2 border-green-500'
+                  : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+              }`}
+            >
+              <ClipboardPaste className="w-4 h-4" />
+              Paste Text
+            </button>
+            <button
+              onClick={() => { setShowPasteMode(false); setParsedFunnel(null); setParseError(null) }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                !showPasteMode
+                  ? 'bg-green-100 text-green-700 border-2 border-green-500'
+                  : 'bg-gray-100 text-gray-600 border-2 border-transparent hover:bg-gray-200'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              Manual Entry
+            </button>
+          </div>
+
+          {/* PASTE MODE (FIX 3) */}
+          {showPasteMode && !parsedFunnel && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Paste your funnel text below
+                </label>
+                <textarea
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  placeholder={getExamplePasteFormat()}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 font-mono text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-2">
+                  Format: PRODUCT-TYPE: Product Name - Format ($Price)
+                </p>
+              </div>
+
+              {parseError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600 whitespace-pre-line">{parseError}</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <Button onClick={handleParsePaste} disabled={!pasteText.trim()}>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Parse & Preview
+                </Button>
+                <Button variant="secondary" onClick={() => setMode(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* PARSED FUNNEL PREVIEW (FIX 3) */}
+          {showPasteMode && parsedFunnel && (
+            <div className="space-y-4">
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <Check className="w-5 h-5 text-green-600" />
+                  <h3 className="font-semibold text-green-800">Parsed Successfully!</h3>
+                </div>
+                <p className="text-sm text-green-700 mb-4">
+                  Review the parsed products below, then save your funnel.
+                </p>
+
+                <div className="space-y-3">
+                  {parsedFunnel.front_end && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <span className="text-xs font-bold text-blue-600 uppercase w-20">Front-End</span>
+                      <span className="flex-1 font-medium">{parsedFunnel.front_end.name}</span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{parsedFunnel.front_end.format}</span>
+                      <span className="text-green-600 font-semibold">${parsedFunnel.front_end.price}</span>
+                    </div>
+                  )}
+                  {parsedFunnel.bump && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <span className="text-xs font-bold text-green-600 uppercase w-20">Bump</span>
+                      <span className="flex-1 font-medium">{parsedFunnel.bump.name}</span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{parsedFunnel.bump.format}</span>
+                      <span className="text-green-600 font-semibold">${parsedFunnel.bump.price}</span>
+                    </div>
+                  )}
+                  {parsedFunnel.upsell_1 && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <span className="text-xs font-bold text-orange-600 uppercase w-20">Upsell 1</span>
+                      <span className="flex-1 font-medium">{parsedFunnel.upsell_1.name}</span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{parsedFunnel.upsell_1.format}</span>
+                      <span className="text-green-600 font-semibold">${parsedFunnel.upsell_1.price}</span>
+                    </div>
+                  )}
+                  {parsedFunnel.upsell_2 && (
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border">
+                      <span className="text-xs font-bold text-orange-600 uppercase w-20">Upsell 2</span>
+                      <span className="flex-1 font-medium">{parsedFunnel.upsell_2.name}</span>
+                      <span className="text-xs bg-gray-100 px-2 py-1 rounded">{parsedFunnel.upsell_2.format}</span>
+                      <span className="text-green-600 font-semibold">${parsedFunnel.upsell_2.price}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Optional Profile/Audience Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Profile (Optional)
+                  </label>
+                  <select
+                    value={selectedProfile || ''}
+                    onChange={(e) => setSelectedProfile(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">No profile</option>
+                    {profiles.map(profile => (
+                      <option key={profile.id} value={profile.id}>{profile.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Audience (Optional)
+                  </label>
+                  <select
+                    value={selectedAudience || ''}
+                    onChange={(e) => setSelectedAudience(e.target.value || null)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  >
+                    <option value="">No audience</option>
+                    {audiences.map(audience => (
+                      <option key={audience.id} value={audience.id}>{audience.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button onClick={handleSaveParsed} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4 mr-2" />
+                      Save Funnel
+                    </>
+                  )}
+                </Button>
+                <Button variant="secondary" onClick={() => { setParsedFunnel(null); setPasteText('') }}>
+                  Parse Different Text
+                </Button>
+                <Button variant="secondary" onClick={() => setMode(null)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* MANUAL ENTRY MODE (Original) */}
+          {!showPasteMode && (
+            <>
+              <p className="text-sm text-gray-500 mb-6">
+                Fill in each section below manually.
+              </p>
 
           {/* Funnel Name */}
           <div className="mb-6">
@@ -780,6 +925,8 @@ export default function FunnelBuilder() {
               Cancel
             </Button>
           </div>
+          </>
+          )}
         </Card>
       )}
 
