@@ -15,8 +15,10 @@ import {
   History,
   Settings,
   LogOut,
+  Shield,
 } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
+import { useAdmin } from '../../hooks/useAdmin'
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -32,6 +34,7 @@ const navItems = [
 
 export function Sidebar({ onClose }) {
   const { signOut } = useAuth()
+  const { isAdmin } = useAdmin()
 
   const handleSignOut = async () => {
     try {
@@ -40,6 +43,11 @@ export function Sidebar({ onClose }) {
       console.error('Sign out error:', err)
     }
   }
+
+  // Build nav items including admin link if user is admin
+  const allNavItems = isAdmin
+    ? [...navItems, { to: '/admin', icon: Shield, label: 'Admin' }]
+    : navItems
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
@@ -51,7 +59,7 @@ export function Sidebar({ onClose }) {
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
+        {allNavItems.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}

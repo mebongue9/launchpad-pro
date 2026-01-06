@@ -5,6 +5,7 @@
 
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/auth/ProtectedRoute'
+import { AdminRoute } from './components/auth/AdminRoute'
 import { DashboardLayout } from './components/layout/DashboardLayout'
 
 import Login from './pages/Login'
@@ -18,6 +19,7 @@ import LeadMagnetBuilder from './pages/LeadMagnetBuilder'
 import VisualBuilder from './pages/VisualBuilder'
 import History from './pages/History'
 import Settings from './pages/Settings'
+import Admin from './pages/Admin'
 
 export default function App() {
   return (
@@ -43,6 +45,7 @@ export default function App() {
         <Route path="/visual-builder" element={<VisualBuilder />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
       </Route>
 
       {/* Redirect root to dashboard */}
