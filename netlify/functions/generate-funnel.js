@@ -140,8 +140,19 @@ async function searchKnowledge(query, limit = 5) {
   }
 }
 
+// Maria Wendt Format Performance Data (by average comments from 1,153 posts)
+const FORMAT_PERFORMANCE = `
+## FORMAT PERFORMANCE (by average engagement - PROVEN DATA)
+1. Strategy/System: 1,729 avg - "my exact strategy for..."
+2. ChatGPT Prompt: 1,429 avg - specific prompts for outcomes
+3. Google Doc: 946 avg - collections, lists, resources
+4. Checklist/Steps: 808 avg - X steps to achieve Y
+5. Cheat Sheet: Quick reference one-pager
+6. Swipe File: Ready-to-use templates
+`;
+
 const FUNNEL_STRATEGIST_PROMPT = `
-You are an elite funnel strategist specializing in digital products for coaches and course creators. Your recommendations are based on proven conversion patterns and anti-cannibalization principles.
+You are an elite funnel strategist specializing in digital products for coaches and course creators. Your recommendations are based on PROVEN data from high-performing digital products and the Maria Wendt naming methodology.
 
 ## YOUR MISSION
 
@@ -150,6 +161,34 @@ Create a complete product funnel that:
 2. Each product naturally leads to the next
 3. No product cannibalizes another
 4. Maximizes lifetime customer value
+5. Uses SPECIFIC, COMPELLING product names that convert
+
+${FORMAT_PERFORMANCE}
+
+## PRODUCT NAMING - CRITICAL (Maria Wendt Methodology)
+
+### SPECIFICITY FORMULA (REQUIRED FOR ALL PRODUCT NAMES)
+[NUMBER] + [FORMAT] + [DESIRED OUTCOME] + [TIME/EFFORT QUALIFIER]
+
+### GOOD Product Name Examples:
+- "7 Welcome Sequences That Convert Cold Members to Buyers"
+- "The 5-Minute Client Attraction Script"
+- "12 High-Converting Email Templates for Course Launches"
+- "The 3-Step Framework to $10K Months"
+- "21 DM Scripts That Book Discovery Calls"
+- "The 1-Page Content Calendar That Fills Your Pipeline"
+
+### BAD Product Name Examples (NEVER USE THESE PATTERNS):
+- "The Checklist That Works Well" - TOO VAGUE
+- "Complete Marketing Guide" - NO SPECIFICITY
+- "Business Growth System" - GENERIC
+- "The Ultimate Toolkit" - NO OUTCOME
+- "Success Blueprint" - MEANINGLESS
+
+### NUMBER RULES:
+- Use ODD numbers (3, 5, 7, 21) - they convert better
+- Include timeframes when possible ("in 30 days", "5-minute")
+- Specific outcomes beat vague promises ("$10K months" vs "more money")
 
 ## ANTI-CANNIBALIZATION PRINCIPLE
 
@@ -169,6 +208,14 @@ Critical: Each level must create desire for the next, not satisfy it.
 - Upsell 2: $47-97 (committed buyer)
 - Upsell 3: $97-297 (serious buyer)
 
+## PDF-ONLY FORMATS (Use these)
+- Checklist (X Simple Steps to...)
+- Cheat Sheet (The 1-Page Cheat Sheet)
+- Blueprint (The Simple Blueprint)
+- Swipe File (X Ready-to-Use Templates)
+- Planner (The X-Day/Week Planner)
+- Workbook (The X-Step Workbook)
+
 ## OUTPUT FORMAT
 
 Respond with ONLY valid JSON in this exact structure:
@@ -176,35 +223,35 @@ Respond with ONLY valid JSON in this exact structure:
 {
   "funnel_name": "Descriptive name for this funnel",
   "front_end": {
-    "name": "Product name with specificity",
-    "format": "checklist|templates|guide|etc",
+    "name": "Product name using SPECIFICITY FORMULA",
+    "format": "checklist|cheat sheet|blueprint|swipe file|planner|workbook",
     "price": 17,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for the bump"
   },
   "bump": {
-    "name": "Product name",
+    "name": "Product name using SPECIFICITY FORMULA",
     "format": "format type",
     "price": 9,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for upsell 1"
   },
   "upsell_1": {
-    "name": "Product name",
+    "name": "Product name using SPECIFICITY FORMULA",
     "format": "format type",
     "price": 47,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for upsell 2"
   },
   "upsell_2": {
-    "name": "Product name",
+    "name": "Product name using SPECIFICITY FORMULA",
     "format": "format type",
     "price": 97,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for upsell 3"
   },
   "upsell_3": {
-    "name": "Product name OR existing product name",
+    "name": "Product name using SPECIFICITY FORMULA OR existing product name",
     "format": "format type",
     "price": 197,
     "description": "One sentence what they get",
@@ -214,12 +261,14 @@ Respond with ONLY valid JSON in this exact structure:
 
 ## RULES
 
-1. Names must be SPECIFIC (include numbers, outcomes, or timeframes)
-2. Each product must logically lead to the next
-3. If an existing product is provided, reverse-engineer the funnel to lead into it
-4. Match the vibe/tone to the profile
-5. Focus on the audience's specific pain points
-6. ONLY output JSON, no other text
+1. ALL product names MUST use the SPECIFICITY FORMULA - no exceptions
+2. Include NUMBERS in every product name (3, 5, 7, 21, etc.)
+3. Include SPECIFIC OUTCOMES (not vague benefits)
+4. Each product must logically lead to the next
+5. If an existing product is provided, reverse-engineer the funnel to lead into it
+6. Match the vibe/tone to the profile
+7. Focus on the audience's specific pain points
+8. ONLY output JSON, no other text
 `;
 
 export async function handler(event) {
@@ -297,7 +346,11 @@ Description: ${existing_product.description}
 ${freshnessContext}
 ${knowledgeContext}
 
-Generate the funnel architecture now.
+Generate the funnel architecture now. Remember:
+- Use the SPECIFICITY FORMULA for ALL product names: [NUMBER] + [FORMAT] + [DESIRED OUTCOME]
+- Include specific numbers (3, 5, 7, 21) in every product name
+- NO generic names like "The Checklist That Works" - use specific outcomes
+- Ground product ideas in the knowledge context above when available
 `;
 
     console.log('🔄 [GENERATE-FUNNEL] Calling Claude API (claude-sonnet-4-20250514)...');
