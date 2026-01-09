@@ -30,6 +30,7 @@
 | File | Change |
 |------|--------|
 | `/netlify/functions/lib/knowledge-search.js` | Replace client-side calculation with RPC |
+| `/netlify/functions/generate-funnel.js` | Update threshold from 0.6 to 0.3, limit from 5 to 20 |
 
 **Specific changes to knowledge-search.js:**
 1. Change default `limit` from 5 to 20 (return more relevant chunks)
