@@ -7,7 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
-import { searchKnowledgeWithMetrics } from './lib/knowledge-search.js';
+import { searchKnowledgeWithMetrics, logRagRetrieval } from './lib/knowledge-search.js';
 
 const LOG_TAG = '[LEAD-MAGNET-BG]';
 
@@ -104,7 +104,7 @@ Return ONLY valid JSON:
 }`;
   }
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(prompt, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(prompt, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'generate-lead-magnet-background'
@@ -118,7 +118,8 @@ Return ONLY valid JSON:
     messages: [{ role: 'user', content: fullPrompt }]
   });
 
-  return parseClaudeJSON(response.content[0].text);
+  // Return both the section and RAG metrics for logging
+  return { section: parseClaudeJSON(response.content[0].text), ragMetrics };
 }
 
 export async function handler(event) {
@@ -152,7 +153,7 @@ export async function handler(event) {
       });
 
       try {
-        const section = await generateSection(sectionType, {
+        const { section, ragMetrics } = await generateSection(sectionType, {
           leadMagnet: lead_magnet,
           profile,
           audience,
@@ -163,6 +164,23 @@ export async function handler(event) {
 
         sections.push(section);
         console.log(`✅ ${LOG_TAG} ${sectionName} complete`);
+        
+        // Log RAG metrics
+        if (ragMetrics) {
+          await logRagRetrieval({
+            userId: null,
+            profileId: profile?.id || null,
+            audienceId: audience?.id || null,
+            funnelId: null,
+            leadMagnetId: lead_magnet?.id || null,
+            sourceFunction: 'generate-lead-magnet-background',
+            generationType: sectionType,
+            metrics: ragMetrics,
+            freshnessCheck: { performed: false, count: 0, names: [] },
+            generationSuccessful: true,
+            errorMessage: null
+          });
+        }
       } catch (err) {
         console.error(`❌ ${LOG_TAG} ${sectionName} failed:`, err);
         await updateJobStatus(job_id, {
