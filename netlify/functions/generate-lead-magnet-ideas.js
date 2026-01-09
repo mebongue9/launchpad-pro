@@ -191,7 +191,7 @@ export async function handler(event) {
 
   try {
     console.log(`📥 ${LOG_TAG} Parsing request body...`);
-    const { profile, audience, front_end_product, excluded_topics, user_id } = JSON.parse(event.body);
+    const { profile, audience, front_end_product, excluded_topics, user_id, rag_limit } = JSON.parse(event.body);
 
     console.log(`📥 ${LOG_TAG} Received parameters:`, {
       profile: profile ? { id: profile.id, name: profile.name, niche: profile.niche } : null,
@@ -213,10 +213,12 @@ export async function handler(event) {
     console.log(`🔄 ${LOG_TAG} Fetching knowledge from vector database via shared RAG utility...`);
     const knowledgeQuery = `${profile.niche || ''} ${audience?.name || ''} lead magnet topics strategies teachings`;
 
+    // rag_limit allows testing different chunk counts (default 20)
+    const chunkLimit = rag_limit || 20;
     const { context: knowledgeContext, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
       threshold: 0.3,
-      limit: 20,
-      sourceFunction: 'generate-lead-magnet-ideas'
+      limit: chunkLimit,
+      sourceFunction: `generate-lead-magnet-ideas-${chunkLimit}chunks`
     });
 
     console.log(`✅ ${LOG_TAG} RAG search complete: ${ragMetrics.chunksRetrieved} chunks retrieved`);
