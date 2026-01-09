@@ -125,3 +125,26 @@ Before modifying any existing code, understand what it currently does and test a
 ---
 
 **END OF CLAUDE.MD RULES**
+
+---
+
+# SECTION 5: SUPABASE KEYS (DO NOT ASK USER FOR THESE)
+
+**CLAUDE: USE THESE KEYS. DO NOT ASK THE USER FOR THEM.**
+
+## Project URL
+```
+https://psfgnelrxzdckucvytzj.supabase.co
+```
+
+## Service Role Key (BYPASSES RLS - use for admin/debug queries)
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzZmduZWxyeHpkY2t1Y3Z5dHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTIwNDIxMCwiZXhwIjoyMDgwNzgwMjEwfQ.JwaMe5L7rqxnv0BQHqAelynhY4SPzQEsw9XBYgQ_eHs
+```
+
+## Query Example (for debugging)
+```bash
+curl -s 'https://psfgnelrxzdckucvytzj.supabase.co/rest/v1/TABLE_NAME?select=*&limit=10' \
+  -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzZmduZWxyeHpkY2t1Y3Z5dHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTIwNDIxMCwiZXhwIjoyMDgwNzgwMjEwfQ.JwaMe5L7rqxnv0BQHqAelynhY4SPzQEsw9XBYgQ_eHs' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzZmduZWxyeHpkY2t1Y3Z5dHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTIwNDIxMCwiZXhwIjoyMDgwNzgwMjEwfQ.JwaMe5L7rqxnv0BQHqAelynhY4SPzQEsw9XBYgQ_eHs'
+```
