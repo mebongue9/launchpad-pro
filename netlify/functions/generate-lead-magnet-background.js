@@ -7,6 +7,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
+import { searchKnowledgeWithMetrics } from './lib/knowledge-search.js';
 
 const LOG_TAG = '[LEAD-MAGNET-BG]';
 
@@ -29,56 +30,8 @@ async function updateJobStatus(jobId, updates) {
   }
 }
 
-// Cosine similarity for vector search
-function cosineSimilarity(a, b) {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// Search knowledge base
-async function searchKnowledge(query, limit = 8) {
-  if (!process.env.OPENAI_API_KEY) {
-    console.log(`⚠️ ${LOG_TAG} Skipping knowledge search - no OpenAI key`);
-    return '';
-  }
-
-  try {
-    const embedding = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: query
-    });
-
-    const queryVector = embedding.data[0].embedding;
-    const { data: chunks } = await supabase
-      .from('knowledge_chunks')
-      .select('content, embedding');
-
-    if (!chunks || chunks.length === 0) return '';
-
-    const results = chunks
-      .map(c => ({
-        content: c.content,
-        score: cosineSimilarity(queryVector, JSON.parse(c.embedding))
-      }))
-      .filter(r => r.score > 0.6)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
-
-    if (results.length === 0) return '';
-
-    return "\n\n=== CREATOR'S KNOWLEDGE ===\n" +
-      results.map((r, i) => `[${i + 1}] ${r.content}`).join('\n\n---\n\n') +
-      '\n=== END KNOWLEDGE ===\n';
-  } catch (err) {
-    console.error(`❌ ${LOG_TAG} Knowledge search error:`, err);
-    return '';
-  }
-}
+// RAG FIX: Using shared searchKnowledgeWithMetrics from ./lib/knowledge-search.js
+// Threshold 0.3, pgvector server-side search, automatic RAG logging
 
 // Generate a single section
 async function generateSection(sectionType, context) {
@@ -151,7 +104,11 @@ Return ONLY valid JSON:
 }`;
   }
 
-  const knowledge = await searchKnowledge(prompt);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(prompt, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'generate-lead-magnet-background'
+  });
   const fullPrompt = knowledge + '\n\n' + prompt;
 
   const response = await anthropic.messages.create({

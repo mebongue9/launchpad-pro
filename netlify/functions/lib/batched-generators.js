@@ -11,7 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { parseClaudeJSON } from '../utils/sanitize-json.js';
-import { searchKnowledgeWithMetrics } from './knowledge-search.js';
+import { searchKnowledgeWithMetrics, logRagRetrieval } from './knowledge-search.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -33,6 +33,29 @@ const SECTION_SEPARATOR = '===SECTION_BREAK===';
 // Now using shared searchKnowledgeWithMetrics from ./knowledge-search.js
 // This enables: pgvector server-side search, threshold 0.3, RAG logging
 // Aligns with vision: "Everything Comes From The Vector Database"
+
+// Helper: Log RAG retrieval metrics after content generation
+async function logRagForBatchedGen(funnelId, funnel, taskName, ragMetrics) {
+  if (!ragMetrics) return;
+  
+  try {
+    await logRagRetrieval({
+      userId: funnel?.user_id || null,
+      profileId: funnel?.profile?.id || null,
+      audienceId: funnel?.audience?.id || null,
+      funnelId: funnelId,
+      leadMagnetId: funnel?.lead_magnet?.id || null,
+      sourceFunction: 'batched-generators',
+      generationType: taskName,
+      metrics: ragMetrics,
+      freshnessCheck: { performed: false, count: 0, names: [] },
+      generationSuccessful: true,
+      errorMessage: null
+    });
+  } catch (err) {
+    console.error(`${LOG_TAG} Failed to log RAG metrics:`, err.message);
+  }
+}
 
 // Helper: Get funnel data (including Main Product for cross-promo)
 async function getFunnelData(funnelId) {
@@ -98,7 +121,7 @@ export async function generateLeadMagnetPart1(funnelId) {
 
   // Search knowledge base
   const knowledgeQuery = `${lead_magnet.title} ${lead_magnet.subtitle} content for chapters`;
-  const { context: knowledge } = await searchKnowledgeWithMetrics(knowledgeQuery, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators-lm-part1'
@@ -193,6 +216,9 @@ IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each se
 
   console.log(`✅ ${LOG_TAG} Lead magnet part 1 saved to database`);
 
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part1', ragMetrics);
+
   return { cover, chapter1, chapter2, chapter3 };
 }
 
@@ -212,7 +238,7 @@ export async function generateLeadMagnetPart2(funnelId) {
 
   const previousChapters = existingData?.chapters || [];
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${lead_magnet.title} final chapters`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${lead_magnet.title} final chapters`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -289,6 +315,9 @@ Use creator's knowledge. Return valid JSON.`;
 
   console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved (cross-promo embedded in chapter 5)`);
 
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part2', ragMetrics);
+
   return { chapter4, chapter5 };
 }
 
@@ -299,7 +328,7 @@ export async function generateFrontendPart1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { frontend, profile, audience, bump } = funnel;
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${frontend.name} ${frontend.description} content chapters`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${frontend.name} ${frontend.description} content chapters`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -382,6 +411,9 @@ Use creator's knowledge. Return valid JSON.`;
 
   console.log(`✅ ${LOG_TAG} Front-end part 1 saved`);
 
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'frontend-part1', ragMetrics);
+
   return { cover, chapter1, chapter2, chapter3 };
 }
 
@@ -400,7 +432,7 @@ export async function generateFrontendPart2(funnelId) {
 
   const previousChapters = existingData?.chapters || [];
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${frontend.name} final chapters`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${frontend.name} final chapters`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -487,6 +519,9 @@ Use creator's knowledge. Return valid JSON.`;
 
   console.log(`✅ ${LOG_TAG} Front-end part 2 saved (cross-promo embedded promoting Main Product)`);
 
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'frontend-part2', ragMetrics);
+
   return { chapter4, chapter5, chapter6 };
 }
 
@@ -497,7 +532,7 @@ export async function generateBumpFull(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { bump, profile, audience, main_product } = funnel;
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${bump.name} ${bump.description} quick actionable`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${bump.name} ${bump.description} quick actionable`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -582,6 +617,9 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON.`;
 
   console.log(`✅ ${LOG_TAG} Bump product saved (cross-promo embedded promoting Main Product)`);
 
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'bump', ragMetrics);
+
   return { cover, chapter1, chapter2 };
 }
 
@@ -592,7 +630,7 @@ export async function generateUpsell1Part1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell1, profile, audience } = funnel;
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell1.name} ${upsell1.description}`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell1.name} ${upsell1.description}`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -628,6 +666,10 @@ Use 600-800 words per chapter. Return valid JSON.`;
   }).eq('id', upsell1.id);
 
   console.log(`✅ ${LOG_TAG} Upsell 1 part 1 saved`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'upsell1-part1', ragMetrics);
+
   return { cover, chapters };
 }
 
@@ -641,7 +683,7 @@ export async function generateUpsell1Part2(funnelId) {
   const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell1.id).single();
   const previousChapters = existingData?.chapters || [];
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell1.name} final chapters`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell1.name} final chapters`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -716,6 +758,10 @@ Return valid JSON.`;
   }).eq('id', upsell1.id);
 
   console.log(`✅ ${LOG_TAG} Upsell 1 part 2 saved (cross-promo embedded promoting Main Product)`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'upsell1-part2', ragMetrics);
+
   return { chapter4, chapter5, chapter6 };
 }
 
@@ -726,7 +772,7 @@ export async function generateUpsell2Part1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell2, profile } = funnel;
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell2.name} ${upsell2.description}`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell2.name} ${upsell2.description}`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -761,6 +807,10 @@ Section 1: COVER, Sections 2-4: CHAPTERS 1-3
   }).eq('id', upsell2.id);
 
   console.log(`✅ ${LOG_TAG} Upsell 2 part 1 saved`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'upsell2-part1', ragMetrics);
+
   return { cover, chapters };
 }
 
@@ -774,7 +824,7 @@ export async function generateUpsell2Part2(funnelId) {
   const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell2.id).single();
   const previousChapters = existingData?.chapters || [];
 
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell2.name} final chapters conclusion`, {
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell2.name} final chapters conclusion`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -850,6 +900,10 @@ Return valid JSON.`;
   }).eq('id', upsell2.id);
 
   console.log(`✅ ${LOG_TAG} Upsell 2 part 2 saved (cross-promo embedded promoting Main Product)`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'upsell2-part2', ragMetrics);
+
   return { chapter4, chapter5, chapter6 };
 }
 
@@ -861,8 +915,9 @@ Return valid JSON.`;
 export async function generateAllTldrs(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 10: Generating all 5 TLDRs in 1 batched call`);
 
-  const { funnel, lead_magnet, frontend, bump, upsell1, upsell2 } = await getFunnelData(funnelId);
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} products summary`, {
+  const funnel = await getFunnelData(funnelId);
+  const { lead_magnet, frontend, bump, upsell1, upsell2 } = funnel;
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} products summary`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -913,6 +968,10 @@ Section 5: Upsell 2 TLDR`;
   await supabase.from('existing_products').update({ tldr: tldrs[4].tldr }).eq('id', upsell2.id);
 
   console.log(`✅ ${LOG_TAG} All 5 TLDRs saved`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'all-tldrs', ragMetrics);
+
   return tldrs;
 }
 
@@ -920,8 +979,9 @@ Section 5: Upsell 2 TLDR`;
 export async function generateMarketplaceBatch1(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 11: Generating marketplace listings for Lead Magnet + Front-End + Bump`);
 
-  const { funnel, lead_magnet, frontend, bump } = await getFunnelData(funnelId);
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} marketplace product listings`, {
+  const funnel = await getFunnelData(funnelId);
+  const { lead_magnet, frontend, bump } = funnel;
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} marketplace product listings`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -978,6 +1038,10 @@ Section 3: Bump Marketplace Listing`;
   }).eq('id', bump.id);
 
   console.log(`✅ ${LOG_TAG} Marketplace batch 1 saved (3 listings)`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'marketplace-batch1', ragMetrics);
+
   return listings;
 }
 
@@ -985,8 +1049,9 @@ Section 3: Bump Marketplace Listing`;
 export async function generateMarketplaceBatch2(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 12: Generating marketplace listings for Upsell 1 + Upsell 2`);
 
-  const { funnel, upsell1, upsell2 } = await getFunnelData(funnelId);
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} premium upsell products`, {
+  const funnel = await getFunnelData(funnelId);
+  const { upsell1, upsell2 } = funnel;
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} premium upsell products`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -1036,6 +1101,10 @@ Section 2: Upsell 2 Marketplace Listing`;
   }).eq('id', upsell2.id);
 
   console.log(`✅ ${LOG_TAG} Marketplace batch 2 saved (2 listings)`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'marketplace-batch2', ragMetrics);
+
   return listings;
 }
 
@@ -1043,8 +1112,9 @@ Section 2: Upsell 2 Marketplace Listing`;
 export async function generateAllEmails(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 13: Generating all 6 emails in 1 batched call`);
 
-  const { funnel, lead_magnet, frontend } = await getFunnelData(funnelId);
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} email sequences nurture sales`, {
+  const funnel = await getFunnelData(funnelId);
+  const { lead_magnet, frontend } = funnel;
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} email sequences nurture sales`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -1111,6 +1181,10 @@ Section 6: Front-End Email 3 (Close)`;
   }).eq('id', frontend.id);
 
   console.log(`✅ ${LOG_TAG} All 6 emails saved (3 lead magnet + 3 front-end)`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'all-emails', ragMetrics);
+
   return emails;
 }
 
@@ -1118,8 +1192,9 @@ Section 6: Front-End Email 3 (Close)`;
 export async function generateBundleListing(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 14: Generating bundle listing for complete funnel`);
 
-  const { funnel, lead_magnet, frontend, bump, upsell1, upsell2 } = await getFunnelData(funnelId);
-  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} complete bundle package`, {
+  const funnel = await getFunnelData(funnelId);
+  const { lead_magnet, frontend, bump, upsell1, upsell2 } = funnel;
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} complete bundle package`, {
     limit: 20,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -1168,6 +1243,10 @@ Generate bundle listing that positions this as COMPLETE TRANSFORMATION package. 
   }).eq('id', funnelId);
 
   console.log(`✅ ${LOG_TAG} Bundle listing saved`);
+
+  // Log RAG metrics
+  await logRagForBatchedGen(funnelId, funnel, 'bundle-listing', ragMetrics);
+
   return bundleListing;
 }
 
