@@ -105,7 +105,7 @@ Return ONLY valid JSON:
   }
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(prompt, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'generate-lead-magnet-background'
   });

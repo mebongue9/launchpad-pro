@@ -213,8 +213,8 @@ export async function handler(event) {
     console.log(`🔄 ${LOG_TAG} Fetching knowledge from vector database via shared RAG utility...`);
     const knowledgeQuery = `${profile.niche || ''} ${audience?.name || ''} lead magnet topics strategies teachings`;
 
-    // rag_limit allows testing different chunk counts (default 20)
-    const chunkLimit = rag_limit || 20;
+    // rag_limit allows testing different chunk counts (default 40)
+    const chunkLimit = rag_limit || 40;
     const { context: knowledgeContext, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
       threshold: 0.3,
       limit: chunkLimit,

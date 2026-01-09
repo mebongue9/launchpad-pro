@@ -26,7 +26,7 @@ const supabase = createClient(
  */
 export async function searchKnowledgeWithMetrics(query, options = {}) {
   const {
-    limit = 20,
+    limit = 40,
     threshold = 0.3,
     sourceFunction = 'unknown'
   } = options;

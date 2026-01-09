@@ -32,7 +32,7 @@ async function generatePart1(leadMagnet, profile, audience, frontEnd, language) 
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(
     `${leadMagnet.title} ${leadMagnet.subtitle}`,
-    { limit: 20, threshold: 0.3, sourceFunction: 'generate-lead-magnet-content-batched' }
+    { limit: 40, threshold: 0.3, sourceFunction: 'generate-lead-magnet-content-batched' }
   );
 
   const prompt = `You are generating a lead magnet in ${language || 'English'}.
@@ -92,7 +92,7 @@ async function generatePart2(leadMagnet, profile, audience, frontEnd, language, 
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(
     `${leadMagnet.title} next steps action`,
-    { limit: 20, threshold: 0.3, sourceFunction: 'generate-lead-magnet-content-batched' }
+    { limit: 40, threshold: 0.3, sourceFunction: 'generate-lead-magnet-content-batched' }
   );
 
   const prompt = `You are generating a lead magnet in ${language || 'English'}.

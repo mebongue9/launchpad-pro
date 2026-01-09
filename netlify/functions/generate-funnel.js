@@ -202,7 +202,7 @@ export async function handler(event) {
     console.log(LOG_TAG + ' Searching knowledge base with query:', searchQuery.substring(0, 100) + '...');
     
     const { context: knowledgeContext, metrics } = await searchKnowledgeWithMetrics(searchQuery, {
-      limit: 20,
+      limit: 40,
       threshold: 0.3,
       sourceFunction: 'generate-funnel'
     });

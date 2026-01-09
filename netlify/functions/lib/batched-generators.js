@@ -122,7 +122,7 @@ export async function generateLeadMagnetPart1(funnelId) {
   // Search knowledge base
   const knowledgeQuery = `${lead_magnet.title} ${lead_magnet.subtitle} content for chapters`;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators-lm-part1'
   });
@@ -239,7 +239,7 @@ export async function generateLeadMagnetPart2(funnelId) {
   const previousChapters = existingData?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${lead_magnet.title} final chapters`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -329,7 +329,7 @@ export async function generateFrontendPart1(funnelId) {
   const { frontend, profile, audience, bump } = funnel;
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${frontend.name} ${frontend.description} content chapters`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -433,7 +433,7 @@ export async function generateFrontendPart2(funnelId) {
   const previousChapters = existingData?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${frontend.name} final chapters`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -533,7 +533,7 @@ export async function generateBumpFull(funnelId) {
   const { bump, profile, audience, main_product } = funnel;
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${bump.name} ${bump.description} quick actionable`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -631,7 +631,7 @@ export async function generateUpsell1Part1(funnelId) {
   const { upsell1, profile, audience } = funnel;
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell1.name} ${upsell1.description}`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -684,7 +684,7 @@ export async function generateUpsell1Part2(funnelId) {
   const previousChapters = existingData?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell1.name} final chapters`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -773,7 +773,7 @@ export async function generateUpsell2Part1(funnelId) {
   const { upsell2, profile } = funnel;
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell2.name} ${upsell2.description}`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -825,7 +825,7 @@ export async function generateUpsell2Part2(funnelId) {
   const previousChapters = existingData?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell2.name} final chapters conclusion`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -918,7 +918,7 @@ export async function generateAllTldrs(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, frontend, bump, upsell1, upsell2 } = funnel;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} products summary`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -982,7 +982,7 @@ export async function generateMarketplaceBatch1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, frontend, bump } = funnel;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} marketplace product listings`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -1052,7 +1052,7 @@ export async function generateMarketplaceBatch2(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell1, upsell2 } = funnel;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} premium upsell products`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -1115,7 +1115,7 @@ export async function generateAllEmails(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, frontend } = funnel;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} email sequences nurture sales`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
@@ -1195,7 +1195,7 @@ export async function generateBundleListing(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, frontend, bump, upsell1, upsell2 } = funnel;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} complete bundle package`, {
-    limit: 20,
+    limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
   });
