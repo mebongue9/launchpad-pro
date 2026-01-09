@@ -2,11 +2,13 @@
 // Generates 3 lead magnet ideas using Claude API with vector grounding
 // Uses Maria Wendt format performance data and PDF-only formats
 // RELEVANT FILES: src/prompts/product-prompts.js, src/pages/LeadMagnetBuilder.jsx, vector-search.js
+// RAG FIX: Now using shared searchKnowledgeWithMetrics from ./lib/knowledge-search.js
+// Threshold: 0.3, Limit: 20 chunks - consistent with all other generation functions
 
 import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
+import { searchKnowledgeWithMetrics, logRagRetrieval } from './lib/knowledge-search.js';
 
 const LOG_TAG = '[LEAD-MAGNET-IDEAS]';
 
@@ -66,10 +68,6 @@ console.log(`🔧 ${LOG_TAG} Environment check:`, {
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
-});
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
 });
 
 const supabase = createClient(
@@ -182,83 +180,6 @@ Respond with ONLY valid JSON:
 7. ONLY output JSON, no other text
 `;
 
-// Calculate cosine similarity for vector search
-function cosineSimilarity(a, b) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// Search vector database for available knowledge topics
-async function getAvailableKnowledgeTopics(profileId) {
-  console.log(`🔍 ${LOG_TAG} Searching knowledge base for profile:`, profileId);
-
-  try {
-    // Get a broad query to find what topics exist in the knowledge base
-    const query = "What topics, strategies, and teachings are available?";
-    console.log(`🔄 ${LOG_TAG} Creating embedding for knowledge search...`);
-
-    const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: query
-    });
-    console.log(`✅ ${LOG_TAG} Embedding created successfully`);
-
-    const queryEmbedding = embeddingResponse.data[0].embedding;
-
-    // Fetch chunks with embeddings
-    console.log(`🔄 ${LOG_TAG} Fetching knowledge chunks from Supabase...`);
-    const { data: chunks, error } = await supabase
-      .from('knowledge_chunks')
-      .select('id, content, metadata, embedding');
-
-    if (error) {
-      console.log(`⚠️ ${LOG_TAG} No knowledge chunks found or error:`, error);
-      return [];
-    }
-
-    if (!chunks || chunks.length === 0) {
-      console.log(`⚠️ ${LOG_TAG} No knowledge chunks available in database`);
-      return [];
-    }
-
-    console.log(`📊 ${LOG_TAG} Found ${chunks.length} knowledge chunks, calculating similarities...`);
-
-    // Calculate similarity and get top topics
-    const results = chunks
-      .filter(chunk => chunk.embedding) // Only chunks with embeddings
-      .map(chunk => ({
-        content: chunk.content,
-        metadata: chunk.metadata,
-        similarity: cosineSimilarity(queryEmbedding, JSON.parse(chunk.embedding))
-      }))
-      .filter(r => r.similarity >= 0.5)
-      .sort((a, b) => b.similarity - a.similarity)
-      .slice(0, 15); // Get top 15 relevant chunks
-
-    console.log(`✅ ${LOG_TAG} Found ${results.length} relevant chunks with similarity >= 0.5`);
-
-    // Extract unique topics from the chunks
-    const topics = results.map(r => {
-      // Extract a brief topic description from the content
-      const firstLine = r.content.split('\n')[0].substring(0, 150);
-      return firstLine;
-    });
-
-    return topics;
-  } catch (err) {
-    console.error(`❌ ${LOG_TAG} Vector search error:`, err.message);
-    console.error(`❌ ${LOG_TAG} Full error:`, err);
-    return [];
-  }
-}
-
 export async function handler(event) {
   console.log(`🚀 ${LOG_TAG} Function invoked`);
   console.log(`📥 ${LOG_TAG} HTTP method:`, event.httpMethod);
@@ -288,22 +209,29 @@ export async function handler(event) {
       };
     }
 
-    // Get available knowledge topics from vector database
-    console.log(`🔄 ${LOG_TAG} Fetching knowledge topics from vector database...`);
-    const knowledgeTopics = await getAvailableKnowledgeTopics(profile.id);
-    console.log(`✅ ${LOG_TAG} Retrieved ${knowledgeTopics.length} knowledge topics`);
+    // RAG FIX: Use shared searchKnowledgeWithMetrics with threshold 0.3 and limit 20
+    console.log(`🔄 ${LOG_TAG} Fetching knowledge from vector database via shared RAG utility...`);
+    const knowledgeQuery = `${profile.niche || ''} ${audience?.name || ''} lead magnet topics strategies teachings`;
 
-    // Build knowledge context
-    let knowledgeContext = '';
-    if (knowledgeTopics.length > 0) {
-      knowledgeContext = `
+    const { context: knowledgeContext, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
+      threshold: 0.3,
+      limit: 20,
+      sourceFunction: 'generate-lead-magnet-ideas'
+    });
+
+    console.log(`✅ ${LOG_TAG} RAG search complete: ${ragMetrics.chunksRetrieved} chunks retrieved`);
+
+    // Build knowledge section for prompt
+    let knowledgeSection = '';
+    if (knowledgeContext && ragMetrics.chunksRetrieved > 0) {
+      knowledgeSection = `
 ## AVAILABLE KNOWLEDGE (Ground ideas in this - we have content to write about these topics)
-${knowledgeTopics.map((t, i) => `${i + 1}. ${t}`).join('\n')}
+${knowledgeContext}
 
 IMPORTANT: Only suggest lead magnets on topics related to the knowledge above. We need actual content to write about.
 `;
     } else {
-      knowledgeContext = `
+      knowledgeSection = `
 ## KNOWLEDGE BASE
 No specific knowledge chunks found. Generate ideas based on the profile's niche and audience needs.
 `;
@@ -334,7 +262,7 @@ Description: ${front_end_product.description || 'Not specified'}
 ## EXCLUDED TOPICS (Do NOT suggest these)
 ${(excluded_topics || []).join(', ') || 'None'}
 
-${knowledgeContext}
+${knowledgeSection}
 ${freshnessContext}
 
 Generate 3 lead magnet ideas now. Remember:
@@ -387,6 +315,21 @@ Generate 3 lead magnet ideas now. Remember:
         return idea;
       });
     }
+
+    // RAG FIX: Log RAG retrieval metrics
+    await logRagRetrieval({
+      userId: user_id || null,
+      profileId: profile?.id || null,
+      audienceId: audience?.id || null,
+      funnelId: null,
+      leadMagnetId: null,
+      sourceFunction: 'generate-lead-magnet-ideas',
+      generationType: 'lead-magnet-ideas',
+      metrics: ragMetrics,
+      freshnessCheck: { performed: previousTitles.length > 0, count: previousTitles.length, names: previousTitles },
+      generationSuccessful: true,
+      errorMessage: null
+    });
 
     console.log(`✅ ${LOG_TAG} Function completed successfully`);
     console.log(`📤 ${LOG_TAG} Returning ${ideas.ideas?.length || 0} lead magnet ideas`);
