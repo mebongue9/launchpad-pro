@@ -11,6 +11,7 @@ import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { parseClaudeJSON } from '../utils/sanitize-json.js';
+import { searchKnowledgeWithMetrics } from './knowledge-search.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -28,58 +29,10 @@ const openai = new OpenAI({
 const LOG_TAG = '[BATCHED-GENERATORS]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
-// Cosine similarity for vector search
-function cosineSimilarity(a, b) {
-  let dotProduct = 0;
-  let normA = 0;
-  let normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dotProduct += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// Search knowledge base
-async function searchKnowledge(query, limit = 8) {
-  if (!process.env.OPENAI_API_KEY) {
-    console.log(`⚠️ ${LOG_TAG} Skipping knowledge search - no OpenAI key`);
-    return '';
-  }
-
-  try {
-    const embedding = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: query
-    });
-
-    const queryVector = embedding.data[0].embedding;
-    const { data: chunks } = await supabase
-      .from('knowledge_chunks')
-      .select('content, embedding');
-
-    if (!chunks || chunks.length === 0) return '';
-
-    const results = chunks
-      .map(c => ({
-        content: c.content,
-        score: cosineSimilarity(queryVector, JSON.parse(c.embedding))
-      }))
-      .filter(r => r.score > 0.6)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
-
-    if (results.length === 0) return '';
-
-    return "\n\n=== CREATOR'S KNOWLEDGE ===\n" +
-      results.map((r, i) => `[${i + 1}] ${r.content}`).join('\n\n---\n\n') +
-      '\n=== END KNOWLEDGE ===\n';
-  } catch (err) {
-    console.error(`❌ ${LOG_TAG} Knowledge search error:`, err);
-    return '';
-  }
-}
+// RAG FIX: Removed local searchKnowledge function (had broken 0.6 threshold)
+// Now using shared searchKnowledgeWithMetrics from ./knowledge-search.js
+// This enables: pgvector server-side search, threshold 0.3, RAG logging
+// Aligns with vision: "Everything Comes From The Vector Database"
 
 // Helper: Get funnel data (including Main Product for cross-promo)
 async function getFunnelData(funnelId) {
@@ -145,7 +98,11 @@ export async function generateLeadMagnetPart1(funnelId) {
 
   // Search knowledge base
   const knowledgeQuery = `${lead_magnet.title} ${lead_magnet.subtitle} content for chapters`;
-  const knowledge = await searchKnowledge(knowledgeQuery, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(knowledgeQuery, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators-lm-part1'
+  });
 
   // Batched prompt for cover + 3 chapters
   const prompt = `${knowledge}
@@ -255,7 +212,11 @@ export async function generateLeadMagnetPart2(funnelId) {
 
   const previousChapters = existingData?.chapters || [];
 
-  const knowledge = await searchKnowledge(`${lead_magnet.title} final chapters`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${lead_magnet.title} final chapters`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   // Build cross-promo paragraph for Front-End product
   // Lead Magnet always promotes Front-End (not Main Product)
@@ -338,7 +299,11 @@ export async function generateFrontendPart1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { frontend, profile, audience, bump } = funnel;
 
-  const knowledge = await searchKnowledge(`${frontend.name} ${frontend.description} content chapters`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${frontend.name} ${frontend.description} content chapters`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -435,7 +400,11 @@ export async function generateFrontendPart2(funnelId) {
 
   const previousChapters = existingData?.chapters || [];
 
-  const knowledge = await searchKnowledge(`${frontend.name} final chapters`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${frontend.name} final chapters`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   // Cross-promo promotes Main Product (user's flagship product)
   // mention_price defaults to false if not set
@@ -528,7 +497,11 @@ export async function generateBumpFull(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { bump, profile, audience, main_product } = funnel;
 
-  const knowledge = await searchKnowledge(`${bump.name} ${bump.description} quick actionable`, 8);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${bump.name} ${bump.description} quick actionable`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   // Cross-promo promotes Main Product (user's flagship product)
   const mentionPrice = main_product?.mention_price || false;
@@ -619,7 +592,11 @@ export async function generateUpsell1Part1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell1, profile, audience } = funnel;
 
-  const knowledge = await searchKnowledge(`${upsell1.name} ${upsell1.description}`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell1.name} ${upsell1.description}`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -664,7 +641,11 @@ export async function generateUpsell1Part2(funnelId) {
   const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell1.id).single();
   const previousChapters = existingData?.chapters || [];
 
-  const knowledge = await searchKnowledge(`${upsell1.name} final chapters`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell1.name} final chapters`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   // Cross-promo promotes Main Product (user's flagship product)
   const mentionPrice = main_product?.mention_price || false;
@@ -745,7 +726,11 @@ export async function generateUpsell2Part1(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell2, profile } = funnel;
 
-  const knowledge = await searchKnowledge(`${upsell2.name} ${upsell2.description}`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell2.name} ${upsell2.description}`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -789,7 +774,11 @@ export async function generateUpsell2Part2(funnelId) {
   const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell2.id).single();
   const previousChapters = existingData?.chapters || [];
 
-  const knowledge = await searchKnowledge(`${upsell2.name} final chapters conclusion`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${upsell2.name} final chapters conclusion`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   // Cross-promo promotes Main Product (user's flagship product)
   const mentionPrice = main_product?.mention_price || false;
@@ -873,7 +862,11 @@ export async function generateAllTldrs(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 10: Generating all 5 TLDRs in 1 batched call`);
 
   const { funnel, lead_magnet, frontend, bump, upsell1, upsell2 } = await getFunnelData(funnelId);
-  const knowledge = await searchKnowledge(`${funnel.audience} products summary`, 8);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} products summary`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -928,7 +921,11 @@ export async function generateMarketplaceBatch1(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 11: Generating marketplace listings for Lead Magnet + Front-End + Bump`);
 
   const { funnel, lead_magnet, frontend, bump } = await getFunnelData(funnelId);
-  const knowledge = await searchKnowledge(`${funnel.audience} marketplace product listings`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} marketplace product listings`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -989,7 +986,11 @@ export async function generateMarketplaceBatch2(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 12: Generating marketplace listings for Upsell 1 + Upsell 2`);
 
   const { funnel, upsell1, upsell2 } = await getFunnelData(funnelId);
-  const knowledge = await searchKnowledge(`${funnel.audience} premium upsell products`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} premium upsell products`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -1043,7 +1044,11 @@ export async function generateAllEmails(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 13: Generating all 6 emails in 1 batched call`);
 
   const { funnel, lead_magnet, frontend } = await getFunnelData(funnelId);
-  const knowledge = await searchKnowledge(`${funnel.audience} email sequences nurture sales`, 12);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} email sequences nurture sales`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
@@ -1114,7 +1119,11 @@ export async function generateBundleListing(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 14: Generating bundle listing for complete funnel`);
 
   const { funnel, lead_magnet, frontend, bump, upsell1, upsell2 } = await getFunnelData(funnelId);
-  const knowledge = await searchKnowledge(`${funnel.audience} complete bundle package`, 10);
+  const { context: knowledge } = await searchKnowledgeWithMetrics(`${funnel.audience} complete bundle package`, {
+    limit: 20,
+    threshold: 0.3,
+    sourceFunction: 'batched-generators'
+  });
 
   const prompt = `${knowledge}
 
