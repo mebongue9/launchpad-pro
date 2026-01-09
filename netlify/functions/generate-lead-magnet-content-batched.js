@@ -4,10 +4,10 @@
 // RELEVANT FILES: lib/batched-generators.js, lib/retry-engine.js
 
 import Anthropic from '@anthropic-ai/sdk';
-import OpenAI from 'openai';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
+import { searchKnowledgeWithMetrics, logRagRetrieval } from './lib/knowledge-search.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -18,66 +18,22 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
 
 const LOG_TAG = '[LEAD-MAGNET-BATCHED]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
-// Cosine similarity
-function cosineSimilarity(a, b) {
-  let dot = 0, normA = 0, normB = 0;
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+// RAG FIX: Using shared searchKnowledgeWithMetrics from ./lib/knowledge-search.js
+// Threshold 0.3, pgvector server-side search, automatic RAG logging
 
-// Search knowledge
-async function searchKnowledge(query, limit = 8) {
-  if (!process.env.OPENAI_API_KEY) return '';
-
-  try {
-    const embedding = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
-      input: query
-    });
-
-    const queryVector = embedding.data[0].embedding;
-    const { data: chunks } = await supabase
-      .from('knowledge_chunks')
-      .select('content, embedding');
-
-    if (!chunks || chunks.length === 0) return '';
-
-    const results = chunks
-      .map(c => ({
-        content: c.content,
-        score: cosineSimilarity(queryVector, JSON.parse(c.embedding))
-      }))
-      .filter(r => r.score > 0.6)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
-
-    if (results.length === 0) return '';
-
-    return "\n\n=== CREATOR'S KNOWLEDGE ===\n" +
-      results.map((r, i) => `[${i + 1}] ${r.content}`).join('\n\n---\n\n') +
-      '\n=== END KNOWLEDGE ===\n';
-  } catch (err) {
-    console.error(`❌ ${LOG_TAG} Knowledge search error:`, err);
-    return '';
-  }
-}
 
 // BATCHED GENERATION: Part 1 - Cover + Chapters 1-3 (1 API call)
 async function generatePart1(leadMagnet, profile, audience, frontEnd, language) {
   console.log(`📝 ${LOG_TAG} Generating Part 1: Cover + Chapters 1-3`);
 
-  const knowledge = await searchKnowledge(`${leadMagnet.title} ${leadMagnet.subtitle}`);
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(
+    `${leadMagnet.title} ${leadMagnet.subtitle}`,
+    { limit: 20, threshold: 0.3, sourceFunction: 'generate-lead-magnet-content-batched' }
+  );
 
   const prompt = `You are generating a lead magnet in ${language || 'English'}.
 
@@ -120,10 +76,13 @@ Respond with 4 JSON objects separated by ${SECTION_SEPARATOR}. Each section must
   }
 
   return {
-    cover: parseClaudeJSON(sections[0]),
-    chapter1: parseClaudeJSON(sections[1]),
-    chapter2: parseClaudeJSON(sections[2]),
-    chapter3: parseClaudeJSON(sections[3])
+    data: {
+      cover: parseClaudeJSON(sections[0]),
+      chapter1: parseClaudeJSON(sections[1]),
+      chapter2: parseClaudeJSON(sections[2]),
+      chapter3: parseClaudeJSON(sections[3])
+    },
+    ragMetrics
   };
 }
 
@@ -131,7 +90,10 @@ Respond with 4 JSON objects separated by ${SECTION_SEPARATOR}. Each section must
 async function generatePart2(leadMagnet, profile, audience, frontEnd, language, part1Data) {
   console.log(`📝 ${LOG_TAG} Generating Part 2: Chapters 4-5 + Bridge + CTA`);
 
-  const knowledge = await searchKnowledge(`${leadMagnet.title} next steps action`);
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(
+    `${leadMagnet.title} next steps action`,
+    { limit: 20, threshold: 0.3, sourceFunction: 'generate-lead-magnet-content-batched' }
+  );
 
   const prompt = `You are generating a lead magnet in ${language || 'English'}.
 
@@ -175,10 +137,13 @@ Respond with 4 JSON objects separated by ${SECTION_SEPARATOR}.`;
   }
 
   return {
-    chapter4: parseClaudeJSON(sections[0]),
-    chapter5: parseClaudeJSON(sections[1]),
-    bridge: parseClaudeJSON(sections[2]),
-    cta: parseClaudeJSON(sections[3])
+    data: {
+      chapter4: parseClaudeJSON(sections[0]),
+      chapter5: parseClaudeJSON(sections[1]),
+      bridge: parseClaudeJSON(sections[2]),
+      cta: parseClaudeJSON(sections[3])
+    },
+    ragMetrics
   };
 }
 
@@ -218,7 +183,24 @@ export async function handler(event) {
 
     // BATCHED CALL 1: Cover + Chapters 1-3
     console.log(`📞 ${LOG_TAG} API Call 1/2: Cover + Chapters 1-3`);
-    const part1 = await generatePart1(lead_magnet, profile, audience, front_end, language);
+    const { data: part1, ragMetrics: part1Metrics } = await generatePart1(lead_magnet, profile, audience, front_end, language);
+
+    // Log RAG metrics for Part 1
+    if (part1Metrics) {
+      await logRagRetrieval({
+        userId: profile.user_id || profile.id || null,
+        profileId: profile?.id || null,
+        audienceId: audience?.id || null,
+        funnelId: null,
+        leadMagnetId: lead_magnet?.id || null,
+        sourceFunction: 'generate-lead-magnet-content-batched',
+        generationType: 'part1_cover_chapters1-3',
+        metrics: part1Metrics,
+        freshnessCheck: { performed: false, count: 0, names: [] },
+        generationSuccessful: true,
+        errorMessage: null
+      });
+    }
 
     await supabase
       .from('generation_jobs')
@@ -231,7 +213,24 @@ export async function handler(event) {
 
     // BATCHED CALL 2: Chapters 4-5 + Bridge + CTA
     console.log(`📞 ${LOG_TAG} API Call 2/2: Chapters 4-5 + Bridge + CTA`);
-    const part2 = await generatePart2(lead_magnet, profile, audience, front_end, language, part1);
+    const { data: part2, ragMetrics: part2Metrics } = await generatePart2(lead_magnet, profile, audience, front_end, language, part1);
+
+    // Log RAG metrics for Part 2
+    if (part2Metrics) {
+      await logRagRetrieval({
+        userId: profile.user_id || profile.id || null,
+        profileId: profile?.id || null,
+        audienceId: audience?.id || null,
+        funnelId: null,
+        leadMagnetId: lead_magnet?.id || null,
+        sourceFunction: 'generate-lead-magnet-content-batched',
+        generationType: 'part2_chapters4-5_bridge_cta',
+        metrics: part2Metrics,
+        freshnessCheck: { performed: false, count: 0, names: [] },
+        generationSuccessful: true,
+        errorMessage: null
+      });
+    }
 
     // Combine results
     const sections = [
