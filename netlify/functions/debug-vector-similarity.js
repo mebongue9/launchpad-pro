@@ -26,7 +26,7 @@ export async function handler(event) {
 
     // Create embedding for query
     const embedding = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
+      model: 'text-embedding-3-small',
       input: testQuery
     });
     const queryVector = embedding.data[0].embedding;

@@ -30,7 +30,7 @@ export async function handler(event) {
 
     // Create embedding
     const embedding = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
+      model: 'text-embedding-3-small',
       input: testQuery
     });
 

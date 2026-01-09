@@ -205,7 +205,7 @@ async function getAvailableKnowledgeTopics(profileId) {
     console.log(`🔄 ${LOG_TAG} Creating embedding for knowledge search...`);
 
     const embeddingResponse = await openai.embeddings.create({
-      model: 'text-embedding-ada-002',
+      model: 'text-embedding-3-small',
       input: query
     });
     console.log(`✅ ${LOG_TAG} Embedding created successfully`);
