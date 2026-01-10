@@ -87,7 +87,7 @@ Respond with 4 JSON objects separated by ${SECTION_SEPARATOR}. Each section must
 }
 
 // BATCHED GENERATION: Part 2 - Chapters 4-5 + Bridge + CTA (1 API call)
-async function generatePart2(leadMagnet, profile, audience, frontEnd, language, part1Data) {
+async function generatePart2(leadMagnet, profile, audience, frontEnd, language, part1Data, frontEndLink = '') {
   console.log(`📝 ${LOG_TAG} Generating Part 2: Chapters 4-5 + Bridge + CTA`);
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(
@@ -116,7 +116,8 @@ Return JSON: {"type": "chapter", "number": 4, "title": "...", "content": "..."}
 Return JSON: {"type": "chapter", "number": 5, "title": "...", "content": "..."}
 
 **Section 3: Bridge to Front-End Product**
-Return JSON: {"type": "bridge", "content": "Transition that creates desire for ${frontEnd.name}"}
+${frontEndLink ? `The front-end product is available at: ${frontEndLink}` : ''}
+Return JSON: {"type": "bridge", "content": "Transition that creates desire for ${frontEnd.name}${frontEndLink ? ` - available at ${frontEndLink}` : ''}"}
 
 **Section 4: Call to Action**
 Return JSON: {"type": "cta", "content": "Compelling CTA for ${frontEnd.name}"}${knowledge}
@@ -155,7 +156,7 @@ export async function handler(event) {
   }
 
   try {
-    const { lead_magnet, profile, audience, front_end, language } = JSON.parse(event.body || '{}');
+    const { lead_magnet, profile, audience, front_end, language, front_end_link } = JSON.parse(event.body || '{}');
 
     if (!lead_magnet || !profile || !audience || !front_end) {
       return {
@@ -213,7 +214,7 @@ export async function handler(event) {
 
     // BATCHED CALL 2: Chapters 4-5 + Bridge + CTA
     console.log(`📞 ${LOG_TAG} API Call 2/2: Chapters 4-5 + Bridge + CTA`);
-    const { data: part2, ragMetrics: part2Metrics } = await generatePart2(lead_magnet, profile, audience, front_end, language, part1);
+    const { data: part2, ragMetrics: part2Metrics } = await generatePart2(lead_magnet, profile, audience, front_end, language, part1, front_end_link);
 
     // Log RAG metrics for Part 2
     if (part2Metrics) {

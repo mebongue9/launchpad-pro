@@ -14,6 +14,7 @@ import ExportButtons from '../components/export/ExportButtons'
 import MarketplaceListings from '../components/funnel/MarketplaceListings'
 import EmailSequencePreview from '../components/funnel/EmailSequencePreview'
 import BundlePreview from '../components/funnel/BundlePreview'
+import ContentEditor from '../components/editor/ContentEditor'
 import {
   ArrowLeft,
   Package,
@@ -24,7 +25,8 @@ import {
   Download,
   ChevronRight,
   Loader2,
-  Eye
+  Eye,
+  Edit3
 } from 'lucide-react'
 
 // Tab definitions
@@ -60,6 +62,9 @@ export default function FunnelDetails() {
 
   const [activeTab, setActiveTab] = useState('products')
   const [selectedProduct, setSelectedProduct] = useState('front_end')
+  const [editingProduct, setEditingProduct] = useState(null)
+  const [editorContent, setEditorContent] = useState('')
+  const [savingContent, setSavingContent] = useState(false)
 
   // Find the funnel
   const funnel = funnels.find(f => f.id === id)
@@ -248,6 +253,21 @@ export default function FunnelDetails() {
                       <span>Bridges to: {currentProduct.bridges_to}</span>
                     </div>
                   )}
+
+                  {/* Edit Content Button */}
+                  <div className="mt-6 pt-4 border-t">
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setEditingProduct(selectedProduct)
+                        setEditorContent(currentProduct.content || currentProduct.description || '')
+                      }}
+                      className="w-full"
+                    >
+                      <Edit3 className="w-4 h-4 mr-2" />
+                      Edit Content
+                    </Button>
+                  </div>
                 </Card>
               ) : (
                 <Card className="text-center py-12">
@@ -328,6 +348,32 @@ export default function FunnelDetails() {
           <BundlePreview funnel={funnel} />
         )}
       </div>
+
+      {/* Content Editor Modal */}
+      <ContentEditor
+        isOpen={!!editingProduct}
+        onClose={() => {
+          setEditingProduct(null)
+          setEditorContent('')
+        }}
+        content={editorContent}
+        title={`Edit ${productLabels[editingProduct] || 'Content'}`}
+        saving={savingContent}
+        onSave={async (html) => {
+          setSavingContent(true)
+          try {
+            // TODO: Save to database via useExistingProducts hook
+            console.log('Saving content for', editingProduct, html)
+            addToast('Content saved!', 'success')
+            setEditingProduct(null)
+            setEditorContent('')
+          } catch (error) {
+            addToast('Failed to save content', 'error')
+          } finally {
+            setSavingContent(false)
+          }
+        }}
+      />
     </div>
   )
 }

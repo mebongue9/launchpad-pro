@@ -57,6 +57,7 @@ export default function FunnelBuilder() {
   const [selectedAudience, setSelectedAudience] = useState(null)
   const [selectedExistingProduct, setSelectedExistingProduct] = useState(null)
   const [selectedLanguage, setSelectedLanguage] = useState('English')
+  const [frontEndLink, setFrontEndLink] = useState('')
   const [generatedFunnel, setGeneratedFunnel] = useState(null)
 
   // Funnel management state
@@ -209,7 +210,8 @@ export default function FunnelBuilder() {
         selectedProfile,
         selectedAudience,
         selectedExistingProduct,
-        selectedLanguage
+        selectedLanguage,
+        frontEndLink
       )
       addToast('Funnel saved!', 'success')
       resetAll()
@@ -276,6 +278,7 @@ export default function FunnelBuilder() {
     setSelectedAudience(null)
     setSelectedExistingProduct(null)
     setSelectedLanguage('English')
+    setFrontEndLink('')
     setIsGenerating(false)
     setGenerationError(null)
     setManualFunnel({
@@ -314,7 +317,7 @@ export default function FunnelBuilder() {
 
     setSaving(true)
     try {
-      await saveFunnel(parsedFunnel, selectedProfile, selectedAudience, null)
+      await saveFunnel(parsedFunnel, selectedProfile, selectedAudience, null, 'English', frontEndLink)
       addToast('Funnel saved!', 'success')
       resetAll()
     } catch (error) {
@@ -498,6 +501,23 @@ export default function FunnelBuilder() {
             </div>
           </div>
 
+          {/* Front-End Link */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Front-End Link
+            </label>
+            <input
+              type="url"
+              value={frontEndLink}
+              onChange={(e) => setFrontEndLink(e.target.value)}
+              placeholder="https://yoursite.com/front-end-product"
+              className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Where will your front-end product be sold? Use a redirect link you control.
+            </p>
+          </div>
+
           {/* Language Selection */}
           <div className="mb-6">
             <LanguageSelector
@@ -641,6 +661,23 @@ export default function FunnelBuilder() {
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Front-End Link - Paste Mode */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Front-End Link
+                </label>
+                <input
+                  type="url"
+                  value={frontEndLink}
+                  onChange={(e) => setFrontEndLink(e.target.value)}
+                  placeholder="https://yoursite.com/front-end-product"
+                  className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Where will your front-end product be sold? Use a redirect link you control.
+                </p>
               </div>
 
               {/* Optional Profile/Audience Selection */}

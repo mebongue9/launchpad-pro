@@ -217,7 +217,7 @@ export function useFunnels() {
     }
   }
 
-  async function saveFunnel(funnelData, profileId, audienceId, existingProductId = null, language = 'English') {
+  async function saveFunnel(funnelData, profileId, audienceId, existingProductId = null, language = 'English', frontEndLink = '') {
     try {
       const { data, error } = await supabase
         .from('funnels')
@@ -232,6 +232,7 @@ export function useFunnels() {
           upsell_1: funnelData.upsell_1,
           upsell_2: funnelData.upsell_2,
           language: language,
+          front_end_link: frontEndLink,
           status: 'draft'
         })
         .select()

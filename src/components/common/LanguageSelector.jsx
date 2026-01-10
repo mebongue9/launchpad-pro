@@ -28,6 +28,7 @@ export default function LanguageSelector({
         value={value || 'English'}
         onChange={(e) => onChange(e.target.value)}
         className="
+          w-full max-w-xs
           px-3 py-2
           border border-gray-300 rounded-lg
           bg-white
