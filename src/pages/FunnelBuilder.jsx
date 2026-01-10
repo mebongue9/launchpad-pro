@@ -36,6 +36,7 @@ import { parseFunnelText, getExamplePasteFormat } from '../lib/utils'
 import FunnelCard from '../components/funnel/FunnelCard'
 import FunnelFilters, { FunnelStats } from '../components/funnel/FunnelFilters'
 import DocumentGenerationProgress from '../components/funnel/DocumentGenerationProgress'
+import { AdminRagLogsPanel } from '../components/AdminRagLogsPanel'
 
 export default function FunnelBuilder() {
   const navigate = useNavigate()
@@ -398,6 +399,9 @@ export default function FunnelBuilder() {
           </div>
         </Card>
       )}
+
+      {/* Admin RAG Logs Panel */}
+      <AdminRagLogsPanel isGenerating={isGenerating} />
 
       {/* Mode Selection */}
       {mode === null && !generatedFunnel && !isGenerating && (

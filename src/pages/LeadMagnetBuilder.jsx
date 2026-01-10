@@ -15,6 +15,7 @@ import { useLeadMagnets } from '../hooks/useLeadMagnets'
 import { useLeadMagnetIdeasJob, useLeadMagnetContentJob, useFunnelRemainingContentJob } from '../hooks/useGenerationJob'
 import { useToast } from '../components/ui/Toast'
 import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package } from 'lucide-react'
+import { AdminRagLogsPanel } from '../components/AdminRagLogsPanel'
 
 // Progress bar component for generation
 function GenerationProgress({ progress, currentChunk, completedChunks, totalChunks, status }) {
@@ -348,6 +349,9 @@ export default function LeadMagnetBuilder() {
         />
       )}
 
+      {/* Admin RAG Logs Panel - READ-ONLY monitoring for ideas generation, does not generate anything */}
+      <AdminRagLogsPanel isGenerating={ideasJob?.isActive} />
+
       {/* Step 1: Selection */}
       {step === 1 && !isGenerating && (
         <Card>
@@ -600,6 +604,9 @@ export default function LeadMagnetBuilder() {
             </Card>
           )}
 
+          {/* Admin RAG Logs Panel - READ-ONLY monitoring for lead magnet content generation */}
+          <AdminRagLogsPanel isGenerating={leadMagnetJob?.isActive} />
+
           {/* STEP 6: Review lead magnet content (funnel flow) */}
           {leadMagnetJob.result && !funnelJob.isActive && selectedFunnel && (
             <Card className="mt-6">
@@ -648,6 +655,9 @@ export default function LeadMagnetBuilder() {
               />
             </Card>
           )}
+
+          {/* Admin RAG Logs Panel - READ-ONLY monitoring for funnel content generation */}
+          <AdminRagLogsPanel isGenerating={funnelJob?.isActive} />
 
           {/* Funnel generation complete */}
           {funnelJob.result && (
