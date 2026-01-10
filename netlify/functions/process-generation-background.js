@@ -987,10 +987,105 @@ export async function handler(event) {
       console.log('🔄 [PROCESS-GENERATION-BG] Starting processing for job_type:', job.job_type);
 
       switch (job.job_type) {
-        case 'lead_magnet_content':
-          console.log('📄 [PROCESS-GENERATION-BG] Generating lead magnet content...');
-          result = await generateLeadMagnetContent(job_id, job.input_data);
+        // BATCHED LEAD MAGNET CONTENT: User explicitly clicked "Generate" after selecting idea
+        // Frontend validates selectedIdea before calling this (LeadMagnetBuilder.jsx line 180)
+        // This replaces 10 sequential API calls with 2 batched calls using RAG
+        case 'lead_magnet_content': {
+          console.log('📄 [PROCESS-GENERATION-BG] Generating lead magnet content (2 batched tasks)...');
+
+          const { lead_magnet, profile, audience, front_end_product, funnel_id } = job.input_data;
+
+          if (!funnel_id) {
+            throw new Error('funnel_id is required for lead_magnet_content');
+          }
+
+          // Step A: Ensure lead_magnet exists in DB and is linked to funnel
+          const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+          const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+          const { createClient } = await import('@supabase/supabase-js');
+          const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+
+          // Check if funnel already has a lead_magnet
+          const { data: funnel } = await supabaseClient
+            .from('funnels')
+            .select('lead_magnet_id')
+            .eq('id', funnel_id)
+            .single();
+
+          let leadMagnetId = funnel?.lead_magnet_id;
+
+          if (!leadMagnetId) {
+            // USER ALREADY VALIDATED: This only runs after user clicked "Generate" button
+            // in LeadMagnetBuilder.jsx after selecting their idea (validated flow)
+            // Schema: name (not title), no subtitle column, has funnel_id and profile_id
+            const { data: newLM, error: lmError } = await supabaseClient
+              .from('lead_magnets')
+              .insert({
+                user_id: job.user_id,
+                funnel_id: funnel_id,
+                profile_id: profile?.id || null,
+                name: lead_magnet.title || lead_magnet.keyword,
+                format: lead_magnet.format || 'ebook',
+                topic: lead_magnet.topic || lead_magnet.keyword,
+                keyword: lead_magnet.keyword
+              })
+              .select('id')
+              .single();
+
+            if (lmError) throw new Error(`Failed to create lead magnet: ${lmError.message}`);
+            leadMagnetId = newLM.id;
+
+            // Link to funnel
+            await supabaseClient
+              .from('funnels')
+              .update({ lead_magnet_id: leadMagnetId })
+              .eq('id', funnel_id);
+
+            console.log('✅ [PROCESS-GENERATION-BG] Created and linked lead_magnet:', leadMagnetId);
+          }
+
+          // Step B: Import and call batched generators (2 API calls total with RAG)
+          const { generateLeadMagnetPart1, generateLeadMagnetPart2 } = await import('./lib/batched-generators.js');
+
+          // Task 1: Cover + Chapters 1-3
+          await updateJobStatus(job_id, {
+            current_chunk_name: 'Lead Magnet (Part 1)',
+            completed_chunks: 0,
+            total_chunks: 2
+          });
+
+          console.log('🔄 [PROCESS-GENERATION-BG] Task 1/2: Generating Part 1...');
+          const part1 = await generateLeadMagnetPart1(funnel_id);
+          console.log('✅ [PROCESS-GENERATION-BG] Part 1 complete');
+
+          // Task 2: Chapters 4-5 with cross-promo
+          await updateJobStatus(job_id, {
+            current_chunk_name: 'Lead Magnet (Part 2)',
+            completed_chunks: 1,
+            total_chunks: 2
+          });
+
+          console.log('🔄 [PROCESS-GENERATION-BG] Task 2/2: Generating Part 2...');
+          const part2 = await generateLeadMagnetPart2(funnel_id);
+          console.log('✅ [PROCESS-GENERATION-BG] Part 2 complete');
+
+          // Step C: Combine results for frontend display
+          result = {
+            title: part1.cover?.title || lead_magnet.title,
+            subtitle: part1.cover?.subtitle || lead_magnet.subtitle,
+            cover: part1.cover,
+            chapters: [
+              part1.chapter1,
+              part1.chapter2,
+              part1.chapter3,
+              part2.chapter4,
+              part2.chapter5
+            ]
+          };
+
+          console.log('✅ [PROCESS-GENERATION-BG] Lead magnet content complete (2 API calls)');
           break;
+        }
 
         case 'funnel_product':
           console.log('📦 [PROCESS-GENERATION-BG] Generating funnel product...');

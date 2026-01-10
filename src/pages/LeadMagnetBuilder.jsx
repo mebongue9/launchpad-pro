@@ -175,6 +175,7 @@ export default function LeadMagnetBuilder() {
 
   // STEP 5: Generate lead magnet content (2 API calls via background function)
   // User can review the content and regenerate if needed
+  // FLOW: User selects idea → clicks Generate button → this handler runs
   async function handleGenerateLeadMagnetContent() {
     if (!selectedIdea) {
       addToast('Please select an idea first', 'error')
@@ -191,7 +192,8 @@ export default function LeadMagnetBuilder() {
 
       // Use the background job system for lead magnet content generation
       // frontEndProduct comes from line 117 (derived from selected funnel's front_end)
-      await leadMagnetJob.generateContent(selectedIdea, profile, audience, frontEndProduct)
+      // selectedFunnel is the funnel ID - required for batched generators
+      await leadMagnetJob.generateContent(selectedIdea, profile, audience, frontEndProduct, selectedFunnel)
 
     } catch (error) {
       addToast(error.message || 'Failed to generate lead magnet content', 'error')

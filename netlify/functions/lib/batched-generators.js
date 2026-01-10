@@ -58,16 +58,13 @@ async function logRagForBatchedGen(funnelId, funnel, taskName, ragMetrics) {
 }
 
 // Helper: Get funnel data (including Main Product for cross-promo)
+// SCHEMA-VERIFIED: front_end, bump, upsell_1, upsell_2 are JSONB columns, NOT FK relationships
 async function getFunnelData(funnelId) {
+  // 1. Get funnel with valid FK joins only (profile, audience, main_product)
   const { data: funnel, error } = await supabase
     .from('funnels')
     .select(`
       *,
-      lead_magnet:lead_magnets(*),
-      frontend:existing_products!funnels_front_end_product_id_fkey(*),
-      bump:existing_products!funnels_bump_product_id_fkey(*),
-      upsell1:existing_products!funnels_upsell1_product_id_fkey(*),
-      upsell2:existing_products!funnels_upsell2_product_id_fkey(*),
       main_product:existing_products!funnels_existing_product_id_fkey(*),
       profile:profiles(*),
       audience:audiences(*)
@@ -75,8 +72,27 @@ async function getFunnelData(funnelId) {
     .eq('id', funnelId)
     .single();
 
-  if (error) throw new Error(`Failed to load funnel: ${error.message}`);
-  return funnel;
+  if (error) {
+    throw new Error(`Failed to load funnel: ${error.message}`);
+  }
+
+  // 2. Get lead_magnet separately (FK is reversed: lead_magnets.funnel_id → funnels)
+  const { data: lead_magnet } = await supabase
+    .from('lead_magnets')
+    .select('*')
+    .eq('funnel_id', funnelId)
+    .maybeSingle();
+
+  // 3. Return with consistent naming
+  // front_end, bump, upsell_1, upsell_2 are JSONB columns in funnels table
+  return {
+    ...funnel,
+    lead_magnet: lead_magnet,
+    frontend: funnel.front_end,      // JSONB data, not a table row
+    bump: funnel.bump,               // JSONB data
+    upsell1: funnel.upsell_1,        // JSONB data
+    upsell2: funnel.upsell_2         // JSONB data
+  };
 }
 
 // Helper: Build cross-promo paragraph to embed in content
@@ -204,17 +220,24 @@ IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each se
   const chapter2 = parseClaudeJSON(sections[2]);
   const chapter3 = parseClaudeJSON(sections[3]);
 
-  // Save to database
+  // Save Part 1 to content column as JSON (Part 2 will read this)
+  // SCHEMA-VERIFIED: lead_magnets has 'content' column, not 'cover_data' or 'chapters'
+  const part1Content = JSON.stringify({
+    cover: cover,
+    chapters: [chapter1, chapter2, chapter3],
+    part: 1,
+    generated_at: new Date().toISOString()
+  });
+
   await supabase
     .from('lead_magnets')
     .update({
-      cover_data: cover,
-      chapters: [chapter1, chapter2, chapter3],
+      content: part1Content,
       updated_at: new Date().toISOString()
     })
-    .eq('id', lead_magnet.id);
+    .eq('funnel_id', funnelId);
 
-  console.log(`✅ ${LOG_TAG} Lead magnet part 1 saved to database`);
+  console.log(`✅ ${LOG_TAG} Lead magnet part 1 saved to content column`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part1', ragMetrics);
@@ -229,14 +252,17 @@ export async function generateLeadMagnetPart2(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, profile, audience, frontend } = funnel;
 
-  // Get existing chapters for context
+  // Read Part 1 results from content column
+  // SCHEMA-VERIFIED: lead_magnets has 'content' column, not 'chapters'
   const { data: existingData } = await supabase
     .from('lead_magnets')
-    .select('chapters')
-    .eq('id', lead_magnet.id)
+    .select('content')
+    .eq('funnel_id', funnelId)
     .single();
 
-  const previousChapters = existingData?.chapters || [];
+  const part1Data = existingData?.content ? JSON.parse(existingData.content) : {};
+  const previousChapters = part1Data.chapters || [];
+  const existingCover = part1Data.cover || {};
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${lead_magnet.title} final chapters`, {
     limit: 40,
@@ -302,18 +328,25 @@ Use creator's knowledge. Return valid JSON.`;
     chapter5.content += crossPromo;
   }
 
-  // Update with all chapters (no separate bridge/cta - cross-promo is embedded)
-  const allChapters = [...previousChapters, chapter4, chapter5];
+  // Combine Part 1 + Part 2 and save complete content
+  // SCHEMA-VERIFIED: save to 'content' column, not 'chapters'
+  const fullContent = JSON.stringify({
+    cover: existingCover,
+    chapters: [...previousChapters, chapter4, chapter5],
+    part: 2,
+    complete: true,
+    generated_at: new Date().toISOString()
+  });
 
   await supabase
     .from('lead_magnets')
     .update({
-      chapters: allChapters,
+      content: fullContent,
       updated_at: new Date().toISOString()
     })
-    .eq('id', lead_magnet.id);
+    .eq('funnel_id', funnelId);
 
-  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved (cross-promo embedded in chapter 5)`);
+  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved to content column (complete with 5 chapters)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part2', ragMetrics);

@@ -340,16 +340,18 @@ export function useGenerationJob() {
 export function useLeadMagnetContentJob() {
   const job = useGenerationJob()
 
-  const generateContent = useCallback(async (leadMagnet, profile, audience, frontEndProduct, language = 'English') => {
+  const generateContent = useCallback(async (leadMagnet, profile, audience, frontEndProduct, funnelId, language = 'English') => {
     console.log('🚀 [LEAD-MAGNET-CONTENT] Starting content generation')
     console.log('📥 [LEAD-MAGNET-CONTENT] Lead magnet:', leadMagnet?.title || leadMagnet?.type)
     console.log('📥 [LEAD-MAGNET-CONTENT] Profile:', profile?.name || profile?.business_name)
+    console.log('📥 [LEAD-MAGNET-CONTENT] Funnel ID:', funnelId)
     console.log('📥 [LEAD-MAGNET-CONTENT] Language:', language)
     return job.startJob('lead_magnet_content', {
       lead_magnet: leadMagnet,
       profile,
       audience,
       front_end_product: frontEndProduct,
+      funnel_id: funnelId,
       language
     })
   }, [job.startJob])
