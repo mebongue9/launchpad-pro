@@ -7,7 +7,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
-import { searchKnowledgeWithMetrics, logRagRetrieval } from './lib/knowledge-search.js';
 
 // ============================================
 // LANGUAGE SUPPORT
@@ -644,49 +643,13 @@ async function generateLeadMagnetIdeas(jobId, inputData) {
 
   const { profile, audience, front_end_product, excluded_topics, language = 'English' } = inputData;
 
-  console.log('🔄 [PROCESS-GENERATION-BG] Generating lead magnet ideas with RAG...');
+  console.log('🔄 [PROCESS-GENERATION-BG] Generating lead magnet ideas...');
   await updateJobStatus(jobId, {
     status: 'processing',
     total_chunks: 1,
     completed_chunks: 0,
-    current_chunk_name: 'Searching knowledge base...'
+    current_chunk_name: 'Generating lead magnet ideas...'
   });
-
-  // RAG: Vector database search per Vision Doc requirement
-  const knowledgeQuery = `${profile.niche || ''} ${audience?.name || ''} lead magnet topics`;
-  let ragMetrics = null;
-  let knowledgeContext = '';
-  try {
-    const ragResult = await searchKnowledgeWithMetrics(knowledgeQuery, { threshold: 0.3, limit: 40, sourceFunction: 'generate-lead-magnet-ideas-bg' });
-    knowledgeContext = ragResult.context;
-    ragMetrics = ragResult.metrics;
-    console.log('✅ RAG: ' + ragMetrics.chunksRetrieved + ' chunks');
-  } catch (e) {
-    console.error('❌ [PROCESS-GENERATION-BG] RAG search FAILED:', {
-      message: e.message,
-      name: e.name,
-      stack: e.stack?.substring(0, 500)
-    });
-    ragMetrics = {
-      query: knowledgeQuery,
-      chunksRetrieved: 0,
-      knowledgeContextPassed: false,
-      totalChunksInDb: 0,
-      similarityThreshold: 0.3,
-      modelUsed: 'text-embedding-3-small',
-      queryVectorLength: 0,
-      top5Scores: [],
-      chunksUsed: [],
-      knowledgeContextLength: 0,
-      embeddingTimeMs: 0,
-      retrievalTimeMs: 0,
-      totalTimeMs: 0,
-      error: e.message
-    };
-  }
-  await updateJobStatus(jobId, { current_chunk_name: 'Generating ideas...' });
-
-  const knowledgeSection = knowledgeContext ? `\n## KNOWLEDGE\n${knowledgeContext}\n` : '';
 
   const ideasPrompt = `
 Generate 3 lead magnet ideas:
@@ -707,7 +670,7 @@ Description: ${front_end_product.description || 'Not specified'}
 
 ## EXCLUDED TOPICS (Do NOT suggest these)
 ${(excluded_topics || []).join(', ') || 'None'}
-${knowledgeSection}
+
 Remember:
 - PDF ONLY formats (no video, no courses, no "hours")
 - Use the specificity formula with numbers
@@ -811,24 +774,6 @@ Return ONLY valid JSON:
   });
 
   await updateJobStatus(jobId, { completed_chunks: 1 });
-
-  // Log RAG retrieval to database for audit (per Vision Doc compliance)
-  if (ragMetrics) {
-    try {
-      await logRagRetrieval({
-        userId: inputData.user_id || null,
-        profileId: profile?.id || null,
-        audienceId: audience?.id || null,
-        sourceFunction: 'generate-lead-magnet-ideas-bg',
-        generationType: 'lead-magnet-ideas',
-        metrics: ragMetrics,
-        generationSuccessful: true
-      });
-      console.log('✅ RAG logged to rag_retrieval_logs');
-    } catch (logErr) {
-      console.error('⚠️ RAG log failed:', logErr.message);
-    }
-  }
 
   return ideas;
 }
