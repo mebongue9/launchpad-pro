@@ -417,3 +417,17 @@ export function useFunnelProductJob() {
 
   return { ...job, generateProductContent }
 }
+
+export function useFunnelRemainingContentJob() {
+  const job = useGenerationJob()
+
+  const generateRemainingContent = useCallback(async (funnelId) => {
+    console.log('🚀 [FUNNEL-REMAINING] Starting remaining funnel content generation')
+    console.log('📥 [FUNNEL-REMAINING] Funnel ID:', funnelId)
+    return job.startJob('funnel_remaining_content', {
+      funnel_id: funnelId
+    })
+  }, [job.startJob])
+
+  return { ...job, generateRemainingContent }
+}

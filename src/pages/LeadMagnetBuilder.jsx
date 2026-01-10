@@ -1,7 +1,8 @@
 // /src/pages/LeadMagnetBuilder.jsx
-// Lead magnet creation page - TRIGGERS ALL CONTENT GENERATION (14 tasks)
-// User selects funnel → generates/selects lead magnet idea → clicks Generate → ALL content generated
-// RELEVANT FILES: src/hooks/useBatchedGeneration.jsx, netlify/functions/generate-funnel-content-batched.js
+// Lead magnet creation page with 2-step generation workflow
+// Step 5: Generate lead magnet content (2 API calls) → user reviews/regenerates
+// Step 7: Save & generate remaining funnel (12 API calls)
+// RELEVANT FILES: src/hooks/useGenerationJob.jsx, netlify/functions/process-generation-background.js
 
 import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
@@ -11,10 +12,8 @@ import { useAudiences } from '../hooks/useAudiences'
 import { useFunnels } from '../hooks/useFunnels'
 import { useExistingProducts } from '../hooks/useExistingProducts'
 import { useLeadMagnets } from '../hooks/useLeadMagnets'
-import { useLeadMagnetIdeasJob } from '../hooks/useGenerationJob'
-import { useBatchedGeneration } from '../hooks/useBatchedGeneration'
+import { useLeadMagnetIdeasJob, useLeadMagnetContentJob, useFunnelRemainingContentJob } from '../hooks/useGenerationJob'
 import { useToast } from '../components/ui/Toast'
-import BatchedGenerationManager from '../components/generation/BatchedGenerationManager'
 import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package } from 'lucide-react'
 
 // Progress bar component for generation
@@ -92,7 +91,8 @@ export default function LeadMagnetBuilder() {
 
   // Use job-based generation hooks
   const ideasJob = useLeadMagnetIdeasJob()
-  const { startGeneration } = useBatchedGeneration()
+  const leadMagnetJob = useLeadMagnetContentJob()
+  const funnelJob = useFunnelRemainingContentJob()
 
   const [selectedProfile, setSelectedProfile] = useState(null)
   const [selectedAudience, setSelectedAudience] = useState(null)
@@ -172,7 +172,9 @@ export default function LeadMagnetBuilder() {
     }
   }
 
-  async function handleGenerateContent() {
+  // STEP 5: Generate lead magnet content (2 API calls via background function)
+  // User can review the content and regenerate if needed
+  async function handleGenerateLeadMagnetContent() {
     if (!selectedIdea) {
       addToast('Please select an idea first', 'error')
       return
@@ -184,35 +186,61 @@ export default function LeadMagnetBuilder() {
       const profile = profiles.find(p => p.id === selectedProfile)
       const audience = audiences.find(a => a.id === selectedAudience)
 
-      if (selectedFunnel) {
-        // FUNNEL FLOW: Save lead magnet idea, then trigger 14-task orchestrator
-        // The orchestrator includes lead_magnet_part_1 and lead_magnet_part_2 as tasks 1-2
-        addToast('Starting full funnel generation (14 API calls)...', 'info')
+      addToast('Generating lead magnet content...', 'info')
 
-        // Save lead magnet IDEA as a record (no content yet - orchestrator will generate it)
-        const savedLeadMagnet = await saveLeadMagnet(
-          { ...selectedIdea, sections: null }, // null sections = no content yet
-          selectedProfile,
-          selectedFunnel
-        )
+      // Use the background job system for lead magnet content generation
+      // frontEndProduct comes from line 117 (derived from selected funnel's front_end)
+      await leadMagnetJob.generateContent(selectedIdea, profile, audience, frontEndProduct)
 
-        // Trigger 14-task orchestrator which generates ALL content including lead magnet
-        setSavedFunnelId(selectedFunnel)
-        await startGeneration(selectedFunnel)
+    } catch (error) {
+      addToast(error.message || 'Failed to generate lead magnet content', 'error')
+    }
+  }
 
-        // Don't go to step 3 (preview) - the BatchedGenerationManager shows progress
-        setContentToastShown(true)
-      } else {
-        // DIRECT TO PRODUCT FLOW: Generate standalone lead magnet only (2 API calls)
-        addToast('Generating standalone lead magnet (2 API calls)...', 'info')
-        const result = await generateContent(selectedIdea, profile, audience, frontEndProduct)
+  // STEP 7: Save lead magnet and generate remaining 12 funnel products
+  async function handleSaveAndGenerateFunnel() {
+    if (!leadMagnetJob.result) {
+      addToast('Please generate lead magnet content first', 'error')
+      return
+    }
 
-        // Set the generated content and show preview
-        setGeneratedContent({ ...result, ...selectedIdea })
-        setStep(3)
-        setContentToastShown(true)
-        addToast('Content generated!', 'success')
-      }
+    try {
+      // Save the generated lead magnet content
+      await saveLeadMagnet(
+        { ...selectedIdea, ...leadMagnetJob.result },
+        selectedProfile,
+        selectedFunnel
+      )
+      addToast('Lead magnet saved! Now generating funnel products...', 'info')
+
+      // Trigger generation of remaining 12 products via background job
+      await funnelJob.generateRemainingContent(selectedFunnel)
+
+    } catch (error) {
+      addToast(error.message || 'Failed to generate funnel', 'error')
+    }
+  }
+
+  // For standalone lead magnets (direct to product flow)
+  async function handleGenerateStandaloneContent() {
+    if (!selectedIdea) {
+      addToast('Please select an idea first', 'error')
+      return
+    }
+
+    setContentToastShown(false)
+
+    try {
+      const profile = profiles.find(p => p.id === selectedProfile)
+      const audience = audiences.find(a => a.id === selectedAudience)
+
+      addToast('Generating standalone lead magnet...', 'info')
+      const result = await generateContent(selectedIdea, profile, audience, frontEndProduct)
+
+      setGeneratedContent({ ...result, ...selectedIdea })
+      setStep(3)
+      setContentToastShown(true)
+      addToast('Content generated!', 'success')
     } catch (error) {
       addToast(error.message || 'Failed to generate content', 'error')
     }
@@ -528,17 +556,112 @@ export default function LeadMagnetBuilder() {
             })}
           </div>
 
-          {/* Generate Button */}
+          {/* Generate Button - Different flow based on destination type */}
           <div className="mt-6 flex justify-center">
-            <Button
-              onClick={handleGenerateContent}
-              disabled={!selectedIdea}
-              className="px-8"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              {selectedIdea ? `Generate "${selectedIdea.keyword}" Content` : 'Select an Idea Above'}
-            </Button>
+            {selectedFunnel ? (
+              // FUNNEL FLOW: 2-step process
+              <>
+                {/* STEP 5: Generate Lead Magnet Content button (only if no content yet) */}
+                {!leadMagnetJob.result && !leadMagnetJob.isActive && (
+                  <Button
+                    onClick={handleGenerateLeadMagnetContent}
+                    disabled={!selectedIdea}
+                    className="px-8"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    {selectedIdea ? `Generate "${selectedIdea.keyword}" Content` : 'Select an Idea Above'}
+                  </Button>
+                )}
+              </>
+            ) : (
+              // PRODUCT FLOW: Direct standalone generation
+              <Button
+                onClick={handleGenerateStandaloneContent}
+                disabled={!selectedIdea}
+                className="px-8"
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {selectedIdea ? `Generate "${selectedIdea.keyword}" Content` : 'Select an Idea Above'}
+              </Button>
+            )}
           </div>
+
+          {/* Progress for lead magnet generation (funnel flow) */}
+          {leadMagnetJob.isActive && (
+            <Card className="mt-6 border-blue-200 bg-blue-50/50">
+              <h3 className="font-semibold text-gray-900 mb-4">Generating Lead Magnet Content...</h3>
+              <GenerationProgress
+                progress={leadMagnetJob.progress}
+                currentChunk={leadMagnetJob.currentChunk}
+                completedChunks={leadMagnetJob.completedChunks}
+                totalChunks={leadMagnetJob.totalChunks}
+                status={leadMagnetJob.status}
+              />
+            </Card>
+          )}
+
+          {/* STEP 6: Review lead magnet content (funnel flow) */}
+          {leadMagnetJob.result && !funnelJob.isActive && selectedFunnel && (
+            <Card className="mt-6">
+              <h3 className="font-semibold text-gray-900 mb-4">Review Your Lead Magnet</h3>
+
+              {/* Content preview */}
+              <div className="prose prose-sm max-h-96 overflow-y-auto border rounded-lg p-4 mb-4 bg-white">
+                {leadMagnetJob.result.chapters?.map((chapter, i) => (
+                  <div key={i} className="mb-4">
+                    <h4 className="font-medium text-gray-900">{chapter.title}</h4>
+                    <p className="text-gray-600 text-sm">{chapter.content?.substring(0, 300)}...</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Two buttons: Regenerate and Save & Generate Funnel */}
+              <div className="flex gap-3 justify-center">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    leadMagnetJob.cancelJob()
+                    handleGenerateLeadMagnetContent()
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Regenerate
+                </Button>
+                <Button onClick={handleSaveAndGenerateFunnel}>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Save & Generate Funnel (12 products)
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* STEP 7: Progress for funnel generation */}
+          {funnelJob.isActive && (
+            <Card className="mt-6 border-green-200 bg-green-50/50">
+              <h3 className="font-semibold text-gray-900 mb-4">Generating Funnel Products...</h3>
+              <GenerationProgress
+                progress={funnelJob.progress}
+                currentChunk={funnelJob.currentChunk}
+                completedChunks={funnelJob.completedChunks}
+                totalChunks={funnelJob.totalChunks || 12}
+                status={funnelJob.status}
+              />
+            </Card>
+          )}
+
+          {/* Funnel generation complete */}
+          {funnelJob.result && (
+            <Card className="mt-6 border-green-200 bg-green-50/50">
+              <div className="text-center py-4">
+                <Check className="w-12 h-12 text-green-500 mx-auto mb-3" />
+                <h3 className="font-semibold text-gray-900">Funnel Generated Successfully!</h3>
+                <p className="text-gray-600 mt-2">All 12 funnel products have been created.</p>
+                <Button onClick={handleReset} className="mt-4">
+                  Create Another Lead Magnet
+                </Button>
+              </div>
+            </Card>
+          )}
         </Card>
       )}
 
@@ -640,16 +763,7 @@ export default function LeadMagnetBuilder() {
         </Card>
       )}
 
-      {/* Batched Generation Progress */}
-      {savedFunnelId && (
-        <BatchedGenerationManager
-          funnelId={savedFunnelId}
-          onComplete={() => {
-            addToast('Funnel content generated successfully!', 'success')
-            handleReset()
-          }}
-        />
-      )}
+      {/* Note: BatchedGenerationManager removed - now using job-based progress display above */}
     </div>
   )
 }

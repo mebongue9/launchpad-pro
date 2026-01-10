@@ -1,3 +1,20 @@
+/**
+ * @deprecated DO NOT USE THIS HOOK
+ *
+ * Created Jan 4-5, 2026 - fundamentally broken:
+ * - Calls synchronous endpoint (generate-funnel-content-batched.js) that times out after 10-26 seconds
+ * - Netlify functions have hard timeout limits, this cannot run 14 API calls (70-420+ seconds)
+ * - Removed the 2-step workflow users need to review/regenerate lead magnet content
+ *
+ * USE INSTEAD:
+ * - useLeadMagnetContentJob (for lead magnet content - 2 API calls)
+ * - useFunnelRemainingContentJob (for remaining 12 funnel products)
+ *
+ * These hooks use the background function system with proper 15-minute timeout.
+ *
+ * This file will be deleted after confirming the fix works.
+ */
+
 // src/hooks/useBatchedGeneration.jsx
 // Hook for batched generation system (14 tasks with automatic retry)
 // Replaces old chapter-by-chapter with orchestrator-based generation

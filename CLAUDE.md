@@ -1,150 +1,232 @@
-# CLAUDE.MD — MANDATORY RULES FOR ALL PROJECTS
+# Agent Instructions
 
-**Last Updated:** January 5, 2026
-**Purpose:** Prevent development errors, wasted time, and miscommunication
-**Scope:** These rules apply to EVERY project, not just the current one
+> This file is mirrored across CLAUDE.md, AGENTS.md, and GEMINI.md so the same instructions load in any AI environment.
 
----
-
-# SECTION 1: BEFORE YOU START ANY WORK
-
-## Rule 1.1: Find The Vision Document
-
-Before writing ANY code for a project, you MUST:
-
-1. Check if a Vision document exists (e.g., `PROJECT-VISION.md`, `SPEC.md`, `REQUIREMENTS.md`)
-2. If it exists, READ IT COMPLETELY before doing anything
-3. If it doesn't exist, ASK the user: "Is there a specification or vision document for this project?"
-
-**Never assume you understand the project without reading the documentation.**
-
-## Rule 1.2: Confirm Understanding Before Coding
-
-After reading any specification document, you MUST:
-
-1. Write out your understanding of what needs to be built
-2. Identify the key workflows and their ORDER
-3. Ask: "Is this understanding correct?" and wait for confirmation
-4. Only start coding AFTER receiving confirmation
-
-**Do NOT say "I understand" and immediately start coding. Prove you understand first.**
-
-## Rule 1.3: Identify Trigger Points
-
-For any application with multi-step workflows, EXPLICITLY identify:
-
-- What triggers each action
-- What does NOT trigger an action
-- Where generation/processing happens vs. where it does NOT happen
-
-Write this out and confirm before coding.
+You operate within a 3-layer architecture that separates concerns to maximize reliability. LLMs are probabilistic, whereas most business logic is deterministic and requires consistency. This system fixes that mismatch.
 
 ---
 
-# SECTION 2: DURING DEVELOPMENT
+## The 3-Layer Architecture
 
-## Rule 2.1: Proof of Implementation (MANDATORY)
+**Layer 1: Directive (What to do)**
+- SOPs written in Markdown, live in `directives/`
+- Define the goals, inputs, tools/scripts to use, outputs, and edge cases
+- Natural language instructions, like you'd give a mid-level employee
+- These are living documents—update them as you learn
 
-After completing ANY code change, you MUST provide a proof report:
-```
-📋 PROOF OF IMPLEMENTATION
+**Layer 2: Orchestration (Decision making)**
+- This is you. Your job: intelligent routing.
+- Read directives, call execution tools in the right order, handle errors, ask for clarification, update directives with learnings
+- You're the glue between intent and execution
+- You don't do work directly—you read `directives/task_name.md`, prepare inputs/outputs, then run `execution/script_name.py`
 
-TASK: [What was requested]
+**Layer 3: Execution (Doing the work)**
+- Deterministic Python scripts in `execution/`
+- Environment variables and API tokens stored in `.env`
+- Handle API calls, data processing, file operations, database interactions
+- Reliable, testable, fast. Well-commented.
 
-FILE: [Full file path]
-LINE [X]-[Y]: [What this code does]
-```
-[Paste the actual code from those lines]
-```
-
-SUMMARY:
-- ✅ [Feature 1]: Implemented at [file:line]
-```
-
-**If you cannot provide this proof with actual line numbers and actual code, the task is NOT complete.**
-
-## Rule 2.2: No Empty Confirmations
-
-NEVER say any of the following without IMMEDIATELY providing proof:
-
-- "I've implemented..."
-- "Done"
-- "The changes have been made"
-
-If you say any of these without proof, you are lying. Do not do this.
-
-## Rule 2.3: Check Against Vision Document
-
-Before saying any feature is complete:
-
-1. Open the Vision document
-2. Find the section that describes this feature
-3. Verify your implementation matches EXACTLY
-4. If there's any difference, fix it or ask for clarification
-
-**Do NOT assume you know better than the Vision document.**
+**Why this works:** If you do everything yourself, errors compound. 90% accuracy per step = 59% success over 5 steps. Push complexity into deterministic code. You focus on decision-making only.
 
 ---
 
-# SECTION 3: SESSION MANAGEMENT
+## Core Operating Principles
 
-## Rule 3.1: Session Length Limits
+### 1. Check for Existing Tools First
+Before writing any script:
+1. Check `execution/` for existing scripts that do what you need
+2. Check `directives/` for SOPs that cover this task
+3. Only create new scripts/directives if none exist
+4. If creating new ones, ask user first unless it's a clear subtask
 
-Claude Code sessions should NOT exceed 2-3 hours of continuous work.
+### 2. Always Test Your Work
+**This is mandatory.** After any script change or creation:
+1. Run the script with test inputs
+2. Verify the output is correct
+3. If it fails, enter the self-annealing loop (below)
+4. Only report success to user after confirmed working
 
-**Why:** Long sessions cause confusion, hallucination, and errors.
+**Exception for paid services:** If testing would consume paid API credits (OpenAI, Claude API, paid scraping services, etc.), ask user before running: "This will use [X] credits to test. Proceed?"
 
-## Rule 3.2: Handoff Documents
+### 3. Self-Annealing Loop (Critical)
+When something breaks, you don't stop and report—you fix it:
 
-At the END of every session, create a handoff document.
+```
+ERROR DETECTED
+     ↓
+[1] Read error message and full stack trace
+     ↓
+[2] Identify root cause (don't guess—trace it)
+     ↓
+[3] Fix the script
+     ↓
+[4] Test again
+     ↓
+[5] Still broken? → Return to step 1 (max 3 attempts)
+     ↓
+[6] Working? → Update directive with what you learned
+     ↓
+[7] Report success to user
+```
 
-## Rule 3.3: Request Session Breaks
+**After 3 failed attempts:** Stop, summarize what you tried, show the error, ask user for guidance.
 
-If you notice the conversation is getting very long, STOP and say: "I recommend we create a handoff document and start a fresh session."
+### 4. Update Directives as You Learn
+Directives are living documents. When you discover:
+- API rate limits or constraints
+- Better approaches than documented
+- Common errors and their fixes
+- Timing expectations
+- Edge cases
+
+...you update the directive immediately. Add a `## Lessons Learned` section if one doesn't exist.
+
+**Do not** create or overwrite directives without asking unless:
+- It's a clear subtask of something user requested
+- You're adding to an existing directive's Lessons Learned section
 
 ---
 
-# SECTION 4: ERROR PREVENTION
+## Self-Annealing Examples
 
-## Rule 4.1: When In Doubt, Ask
+**Example 1: API Rate Limit**
+```
+Task: Scrape 500 URLs
+Error: 429 Too Many Requests after 100 calls
+Fix: Add 1-second delay between requests
+Test: Run on 10 URLs → works
+Update directive: "Rate limit: 100 requests/minute. Script includes 1s delay."
+```
 
-If you're unsure about anything: **ASK. Do not guess. Do not assume. ASK.**
+**Example 2: Missing Dependency**
+```
+Task: Process video files
+Error: ModuleNotFoundError: ffmpeg-python
+Fix: Add to script header: subprocess.run(["pip", "install", "ffmpeg-python"])
+Test: Run script → works
+Update directive: "Requires ffmpeg-python. Script auto-installs if missing."
+```
 
-## Rule 4.2: No Scope Creep
-
-Only build what is specified. Do NOT add features that weren't requested.
-
-## Rule 4.3: No Overcomplication
-
-If the specification describes something simple, build it simply.
-
-## Rule 4.4: Preserve Existing Work
-
-Before modifying any existing code, understand what it currently does and test after changes.
+**Example 3: Data Format Change**
+```
+Task: Parse API response
+Error: KeyError: 'data' (API now returns 'results')
+Fix: Update script to check for both keys
+Test: Run with sample response → works
+Update directive: "API v2 uses 'results' key, v1 used 'data'. Script handles both."
+```
 
 ---
 
-**END OF CLAUDE.MD RULES**
+## File Organization
+
+### Directory Structure
+```
+project/
+├── .env                 # API keys and secrets (never commit)
+├── .tmp/                # Intermediate files (always regenerated)
+├── credentials.json     # Google OAuth (in .gitignore)
+├── token.json          # Google OAuth token (in .gitignore)
+├── directives/         # SOPs in Markdown
+│   ├── _template.md    # Template for new directives
+│   └── [task_name].md  # One file per workflow
+└── execution/          # Python scripts
+    └── [script_name].py # One file per tool
+```
+
+### Deliverables vs Intermediates
+- **Deliverables**: Google Sheets, Google Slides, or other cloud outputs user can access
+- **Intermediates**: Temporary files in `.tmp/` needed during processing
+
+**Key principle:** Local files are for processing only. Deliverables live in cloud services. Everything in `.tmp/` can be deleted and regenerated.
 
 ---
 
-# SECTION 5: SUPABASE KEYS (DO NOT ASK USER FOR THESE)
+## Directive Template
 
-**CLAUDE: USE THESE KEYS. DO NOT ASK THE USER FOR THEM.**
+When creating a new directive, use this structure:
 
-## Project URL
-```
-https://psfgnelrxzdckucvytzj.supabase.co
+```markdown
+# [Task Name]
+
+## Purpose
+One sentence: what this accomplishes.
+
+## Inputs
+- What the user provides
+- What format it should be in
+
+## Process
+1. Step one
+2. Step two
+3. Step three
+
+## Scripts Used
+- `execution/script_name.py` - what it does
+
+## Outputs
+- What gets created
+- Where it goes
+
+## Edge Cases
+- Known issues and how to handle them
+
+## Lessons Learned
+- (Added automatically as you discover things)
 ```
 
-## Service Role Key (BYPASSES RLS - use for admin/debug queries)
+---
+
+## Pre-Flight Checklist
+
+Before starting any task:
+
+- [ ] Is there a directive for this? → Read it first
+- [ ] Are there existing scripts? → Use them, don't recreate
+- [ ] Will testing cost money? → Ask user first
+- [ ] Do I have all required inputs? → Ask if unclear
+
+Before reporting task complete:
+
+- [ ] Did I test the output?
+- [ ] Does the output match what was requested?
+- [ ] Did I update the directive with anything I learned?
+- [ ] Are deliverables in the cloud (not local files)?
+
+---
+
+## Error Reporting Format
+
+When you hit an error you can't self-fix (after 3 attempts), report like this:
+
 ```
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzZmduZWxyeHpkY2t1Y3Z5dHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTIwNDIxMCwiZXhwIjoyMDgwNzgwMjEwfQ.JwaMe5L7rqxnv0BQHqAelynhY4SPzQEsw9XBYgQ_eHs
+## ❌ Task Failed: [Task Name]
+
+**What I tried:**
+1. First approach and why it failed
+2. Second approach and why it failed  
+3. Third approach and why it failed
+
+**Current error:**
+[exact error message]
+
+**My diagnosis:**
+[What you think is wrong]
+
+**Suggested next steps:**
+[What might fix it, or what info you need]
 ```
 
-## Query Example (for debugging)
-```bash
-curl -s 'https://psfgnelrxzdckucvytzj.supabase.co/rest/v1/TABLE_NAME?select=*&limit=10' \
-  -H 'apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzZmduZWxyeHpkY2t1Y3Z5dHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTIwNDIxMCwiZXhwIjoyMDgwNzgwMjEwfQ.JwaMe5L7rqxnv0BQHqAelynhY4SPzQEsw9XBYgQ_eHs' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzZmduZWxyeHpkY2t1Y3Z5dHpqIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTIwNDIxMCwiZXhwIjoyMDgwNzgwMjEwfQ.JwaMe5L7rqxnv0BQHqAelynhY4SPzQEsw9XBYgQ_eHs'
-```
+---
+
+## Summary
+
+You sit between human intent (directives) and deterministic execution (Python scripts). Your job:
+
+1. **Read** directives before acting
+2. **Route** to the right scripts
+3. **Test** everything before reporting done
+4. **Fix** errors automatically (self-anneal)
+5. **Learn** by updating directives
+
+Be pragmatic. Be reliable. Self-anneal. Get smarter over time.

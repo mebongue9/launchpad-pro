@@ -7,6 +7,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
+import { searchKnowledgeWithMetrics, logRagRetrieval } from './lib/knowledge-search.js';
 
 // ============================================
 // LANGUAGE SUPPORT
@@ -648,11 +649,32 @@ async function generateLeadMagnetIdeas(jobId, inputData) {
     status: 'processing',
     total_chunks: 1,
     completed_chunks: 0,
+    current_chunk_name: 'Fetching knowledge from vector database...'
+  });
+
+  // RAG: Fetch knowledge from vector database (REQUIRED - Vision Document compliance)
+  console.log('🔄 [PROCESS-GENERATION-BG] Fetching knowledge from vector database...');
+  const knowledgeQuery = `${profile.niche || ''} ${audience?.name || ''} lead magnet topics strategies teachings`;
+  const { context: knowledgeContext, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
+    threshold: 0.3,
+    limit: 40,
+    sourceFunction: 'generate-lead-magnet-ideas'
+  });
+
+  console.log('✅ [PROCESS-GENERATION-BG] RAG retrieved:', {
+    chunksRetrieved: ragMetrics.chunksRetrieved,
+    hasContext: !!knowledgeContext
+  });
+
+  await updateJobStatus(jobId, {
     current_chunk_name: 'Generating lead magnet ideas...'
   });
 
   const ideasPrompt = `
 Generate 3 lead magnet ideas:
+
+## KNOWLEDGE BASE (Ground your ideas in this content)
+${knowledgeContext}
 
 ## PROFILE
 Name: ${profile.name}
@@ -675,6 +697,7 @@ Remember:
 - PDF ONLY formats (no video, no courses, no "hours")
 - Use the specificity formula with numbers
 - Each idea bridges to the target product
+- Ground your ideas in the KNOWLEDGE BASE above
 ${getLanguagePromptSuffix(language)}`;
 
   // Maria Wendt-based PDF-only Lead Magnet Strategist Prompt - SMALL = FAST RESULTS
@@ -771,6 +794,21 @@ Return ONLY valid JSON:
   console.log('✅ [PROCESS-GENERATION-BG] Lead magnet ideas generated:', {
     ideasCount: ideas?.ideas?.length || 0,
     titles: ideas?.ideas?.map(i => i.title) || []
+  });
+
+  // Log RAG retrieval metrics
+  await logRagRetrieval({
+    userId: inputData?.user_id || null,
+    profileId: profile?.id || null,
+    audienceId: audience?.id || null,
+    funnelId: null,
+    leadMagnetId: null,
+    sourceFunction: 'generate-lead-magnet-ideas',
+    generationType: 'lead-magnet-ideas',
+    metrics: ragMetrics,
+    freshnessCheck: { performed: false, count: 0, names: [] },
+    generationSuccessful: !!(ideas?.ideas?.length > 0),
+    errorMessage: null
   });
 
   await updateJobStatus(jobId, { completed_chunks: 1 });
@@ -968,6 +1006,75 @@ export async function handler(event) {
           console.log('💡 [PROCESS-GENERATION-BG] Generating lead magnet ideas...');
           result = await generateLeadMagnetIdeas(job_id, job.input_data);
           break;
+
+        case 'funnel_remaining_content': {
+          console.log('🎯 [PROCESS-GENERATION-BG] Generating remaining funnel content (12 tasks)...');
+          const { funnel_id } = job.input_data;
+
+          if (!funnel_id) {
+            throw new Error('funnel_id is required for funnel_remaining_content');
+          }
+
+          // Import generators from batched-generators.js (has RAG integration)
+          const {
+            generateFrontendPart1,
+            generateFrontendPart2,
+            generateBumpFull,
+            generateUpsell1Part1,
+            generateUpsell1Part2,
+            generateUpsell2Part1,
+            generateUpsell2Part2,
+            generateAllTldrs,
+            generateMarketplaceBatch1,
+            generateMarketplaceBatch2,
+            generateAllEmails,
+            generateBundleListing
+          } = await import('./lib/batched-generators.js');
+
+          const tasks = [
+            { name: 'Front-End (Part 1)', fn: () => generateFrontendPart1(funnel_id) },
+            { name: 'Front-End (Part 2)', fn: () => generateFrontendPart2(funnel_id) },
+            { name: 'Bump Offer', fn: () => generateBumpFull(funnel_id) },
+            { name: 'Upsell 1 (Part 1)', fn: () => generateUpsell1Part1(funnel_id) },
+            { name: 'Upsell 1 (Part 2)', fn: () => generateUpsell1Part2(funnel_id) },
+            { name: 'Upsell 2 (Part 1)', fn: () => generateUpsell2Part1(funnel_id) },
+            { name: 'Upsell 2 (Part 2)', fn: () => generateUpsell2Part2(funnel_id) },
+            { name: 'Product Summaries', fn: () => generateAllTldrs(funnel_id) },
+            { name: 'Marketplace Listings (1)', fn: () => generateMarketplaceBatch1(funnel_id) },
+            { name: 'Marketplace Listings (2)', fn: () => generateMarketplaceBatch2(funnel_id) },
+            { name: 'Email Sequences', fn: () => generateAllEmails(funnel_id) },
+            { name: 'Bundle Listing', fn: () => generateBundleListing(funnel_id) }
+          ];
+
+          console.log('📋 [PROCESS-GENERATION-BG] Running', tasks.length, 'tasks for funnel:', funnel_id);
+
+          for (let i = 0; i < tasks.length; i++) {
+            const task = tasks[i];
+            console.log(`🔄 [PROCESS-GENERATION-BG] Task ${i + 1}/${tasks.length}: ${task.name}`);
+
+            // Update progress before task
+            await updateJobStatus(job_id, {
+              current_chunk_name: task.name,
+              completed_chunks: i,
+              total_chunks: tasks.length
+            });
+
+            // Run the task
+            await task.fn();
+
+            console.log(`✅ [PROCESS-GENERATION-BG] Completed: ${task.name}`);
+          }
+
+          // Final progress update
+          await updateJobStatus(job_id, {
+            current_chunk_name: 'All tasks complete!',
+            completed_chunks: tasks.length,
+            total_chunks: tasks.length
+          });
+
+          result = { success: true, tasksCompleted: tasks.length };
+          break;
+        }
 
         default:
           console.error('❌ [PROCESS-GENERATION-BG] Unknown job type:', job.job_type);
