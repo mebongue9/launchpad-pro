@@ -667,7 +667,22 @@ async function generateLeadMagnetIdeas(jobId, inputData) {
       name: e.name,
       stack: e.stack?.substring(0, 500)
     });
-    ragMetrics = { chunksRetrieved: 0, knowledgeContextPassed: false, error: e.message };
+    ragMetrics = {
+      query: knowledgeQuery,
+      chunksRetrieved: 0,
+      knowledgeContextPassed: false,
+      totalChunksInDb: 0,
+      similarityThreshold: 0.3,
+      modelUsed: 'text-embedding-3-small',
+      queryVectorLength: 0,
+      top5Scores: [],
+      chunksUsed: [],
+      knowledgeContextLength: 0,
+      embeddingTimeMs: 0,
+      retrievalTimeMs: 0,
+      totalTimeMs: 0,
+      error: e.message
+    };
   }
   await updateJobStatus(jobId, { current_chunk_name: 'Generating ideas...' });
 
