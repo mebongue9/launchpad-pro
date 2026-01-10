@@ -56,7 +56,7 @@ const productColors = {
 export default function FunnelDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { funnels, loading } = useFunnels()
+  const { funnels, loading, updateFunnel } = useFunnels()
   const { profiles } = useProfiles()
   const { addToast } = useToast()
 
@@ -362,12 +362,14 @@ export default function FunnelDetails() {
         onSave={async (html) => {
           setSavingContent(true)
           try {
-            // TODO: Save to database via useExistingProducts hook
-            console.log('Saving content for', editingProduct, html)
+            // Update the product's content in the funnel
+            const updatedProduct = { ...funnel[editingProduct], content: html }
+            await updateFunnel(funnel.id, { [editingProduct]: updatedProduct })
             addToast('Content saved!', 'success')
             setEditingProduct(null)
             setEditorContent('')
           } catch (error) {
+            console.error('Failed to save content:', error)
             addToast('Failed to save content', 'error')
           } finally {
             setSavingContent(false)
