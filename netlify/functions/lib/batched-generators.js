@@ -136,7 +136,8 @@ export async function generateLeadMagnetPart1(funnelId) {
   const { lead_magnet, profile, audience, frontend } = funnel;
 
   // Search knowledge base
-  const knowledgeQuery = `${lead_magnet.title} ${lead_magnet.subtitle} content for chapters`;
+  // SCHEMA-FIX: lead_magnets uses 'name' and 'topic', not 'title' and 'subtitle'
+  const knowledgeQuery = `${lead_magnet?.name || 'lead magnet'} ${lead_magnet?.topic || ''} content for chapters`;
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(knowledgeQuery, {
     limit: 40,
     threshold: 0.3,
@@ -149,11 +150,11 @@ export async function generateLeadMagnetPart1(funnelId) {
 Generate the COVER PAGE and FIRST 3 CHAPTERS for this lead magnet.
 
 LEAD MAGNET INFO:
-- Title: ${lead_magnet.title}
-- Subtitle: ${lead_magnet.subtitle}
-- Author: ${profile.name}
-- Target Audience: ${audience.name}
-- Bridge Product: ${frontend.name}
+- Title: ${lead_magnet?.name || 'Untitled Lead Magnet'}
+- Topic: ${lead_magnet?.topic || 'General'}
+- Author: ${profile?.name || 'Unknown Author'}
+- Target Audience: ${audience?.name || 'General Audience'}
+- Bridge Product: ${frontend?.name || 'Next Product'}
 
 INSTRUCTIONS:
 Generate 4 sections separated by exactly: ${SECTION_SEPARATOR}
@@ -161,9 +162,9 @@ Generate 4 sections separated by exactly: ${SECTION_SEPARATOR}
 Section 1 - COVER PAGE (JSON):
 {
   "type": "cover",
-  "title": "${lead_magnet.title}",
-  "subtitle": "${lead_magnet.subtitle}",
-  "author": "By ${profile.name}",
+  "title": "${lead_magnet?.name || 'Untitled'}",
+  "subtitle": "${lead_magnet?.topic || ''}",
+  "author": "By ${profile?.name || 'Author'}",
   "tagline": "Short tagline (5-8 words)"
 }
 
@@ -264,7 +265,8 @@ export async function generateLeadMagnetPart2(funnelId) {
   const previousChapters = part1Data.chapters || [];
   const existingCover = part1Data.cover || {};
 
-  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${lead_magnet.title} final chapters`, {
+  // SCHEMA-FIX: lead_magnets uses 'name' not 'title'
+  const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${lead_magnet?.name || 'lead magnet'} final chapters`, {
     limit: 40,
     threshold: 0.3,
     sourceFunction: 'batched-generators'
@@ -279,14 +281,14 @@ export async function generateLeadMagnetPart2(funnelId) {
 Generate the FINAL 2 CHAPTERS for this lead magnet.
 
 LEAD MAGNET INFO:
-- Title: ${lead_magnet.title}
-- Subtitle: ${lead_magnet.subtitle}
-- Front-End Product: ${frontend.name} ($${frontend.price})
+- Title: ${lead_magnet?.name || 'Lead Magnet'}
+- Topic: ${lead_magnet?.topic || 'General'}
+- Front-End Product: ${frontend?.name || 'Next Product'} ($${frontend?.price || '0'})
 
 PREVIOUS CHAPTERS:
-${previousChapters.map(c => `- ${c.title}`).join('\n')}
+${previousChapters.map(c => `- ${c?.title || 'Chapter'}`).join('\n')}
 
-IMPORTANT: Chapter 5 (the final chapter) MUST end with a natural cross-promotion paragraph that promotes "${frontend.name}".
+IMPORTANT: Chapter 5 (the final chapter) MUST end with a natural cross-promotion paragraph that promotes "${frontend?.name || 'the next product'}".
 The cross-promo should feel like a natural conclusion, not a hard sell. Something like:
 "If you enjoyed this and want to take it further, check out [product name] which [brief benefit]..."
 
@@ -961,11 +963,11 @@ export async function generateAllTldrs(funnelId) {
 Generate SHORT SUMMARIES (TLDRs) for ALL 5 products.
 
 PRODUCTS:
-1. Lead Magnet: "${lead_magnet.title}"
-2. Front-End: "${frontend.name}"
-3. Bump: "${bump.name}"
-4. Upsell 1: "${upsell1.name}"
-5. Upsell 2: "${upsell2.name}"
+1. Lead Magnet: "${lead_magnet?.name || 'Lead Magnet'}"
+2. Front-End: "${frontend?.name || 'Front-End'}"
+3. Bump: "${bump?.name || 'Bump'}"
+4. Upsell 1: "${upsell1?.name || 'Upsell 1'}"
+5. Upsell 2: "${upsell2?.name || 'Upsell 2'}"
 
 Generate 5 sections separated by: ${SECTION_SEPARATOR}
 
@@ -1028,7 +1030,7 @@ AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
 PRODUCTS:
-1. Lead Magnet: "${lead_magnet.title}" (FREE - entry point)
+1. Lead Magnet: "${lead_magnet?.name || 'Lead Magnet'}" (FREE - entry point)
 2. Front-End: "${frontend.name}" (Low-ticket paid product)
 3. Bump: "${bump.name}" (Order bump - quick win)
 
@@ -1160,8 +1162,8 @@ Generate EMAIL SEQUENCES for lead magnet nurture + front-end sales.
 AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
-LEAD MAGNET: "${lead_magnet.title}"
-FRONT-END PRODUCT: "${frontend.name}"
+LEAD MAGNET: "${lead_magnet?.name || 'Lead Magnet'}"
+FRONT-END PRODUCT: "${frontend?.name || 'Front-End Product'}"
 
 Generate 6 sections separated by: ${SECTION_SEPARATOR}
 
@@ -1241,11 +1243,11 @@ AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
 COMPLETE BUNDLE INCLUDES:
-1. Lead Magnet: "${lead_magnet.title}"
-2. Front-End: "${frontend.name}"
-3. Bump: "${bump.name}"
-4. Upsell 1: "${upsell1.name}"
-5. Upsell 2: "${upsell2.name}"
+1. Lead Magnet: "${lead_magnet?.name || 'Lead Magnet'}"
+2. Front-End: "${frontend?.name || 'Front-End'}"
+3. Bump: "${bump?.name || 'Bump'}"
+4. Upsell 1: "${upsell1?.name || 'Upsell 1'}"
+5. Upsell 2: "${upsell2?.name || 'Upsell 2'}"
 
 Generate bundle listing that positions this as COMPLETE TRANSFORMATION package. Return valid JSON:
 {
