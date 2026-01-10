@@ -662,7 +662,12 @@ async function generateLeadMagnetIdeas(jobId, inputData) {
     ragMetrics = ragResult.metrics;
     console.log('✅ RAG: ' + ragMetrics.chunksRetrieved + ' chunks');
   } catch (e) {
-    ragMetrics = { chunksRetrieved: 0, knowledgeContextPassed: false };
+    console.error('❌ [PROCESS-GENERATION-BG] RAG search FAILED:', {
+      message: e.message,
+      name: e.name,
+      stack: e.stack?.substring(0, 500)
+    });
+    ragMetrics = { chunksRetrieved: 0, knowledgeContextPassed: false, error: e.message };
   }
   await updateJobStatus(jobId, { current_chunk_name: 'Generating ideas...' });
 
