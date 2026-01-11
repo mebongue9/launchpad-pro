@@ -49,7 +49,7 @@ export async function handler(event) {
     }
 
     // Validate job_type
-    const validJobTypes = ['lead_magnet_content', 'lead_magnet_ideas', 'funnel', 'funnel_product'];
+    const validJobTypes = ['lead_magnet_content', 'lead_magnet_ideas', 'funnel', 'funnel_product', 'funnel_remaining_content'];
     if (!validJobTypes.includes(job_type)) {
       console.log('❌ [START-GENERATION] Invalid job_type:', job_type);
       return {
