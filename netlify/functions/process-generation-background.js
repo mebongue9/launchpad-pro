@@ -709,10 +709,16 @@ People don't want to read 40+ pages. They want QUICK WINS.
 - "Get results in 3 simple steps" beats "comprehensive 100-page manual"
 - Short = Easy to consume = Higher completion rate = More desire for paid product
 
-## FORMAT PERFORMANCE (by average comments - PROVEN DATA)
-1. Strategy/System: 1,729 avg - "my exact strategy for..."
-2. Checklist/Steps: 808 avg - X steps to achieve Y
-3. Cheat Sheet: Quick reference one-pager
+## APPROVED FORMATS (use ONLY these 6 - data-proven, no exceptions)
+- Checklist: Step-by-step items to check off (X steps to achieve Y)
+- Worksheet: Fill-in-the-blank exercises and reflection prompts
+- Planner: Time-based organization (daily/weekly/monthly schedules)
+- Swipe File: Ready-to-use templates and copy (emails, scripts, captions)
+- Blueprint: Visual process/flowchart (phases and steps)
+- Cheat Sheet: Quick reference, dense information (one-pager)
+
+The lead magnet MUST use one of these 6 formats. Do NOT invent new formats.
+Do NOT use: Strategy, System, Guide, Workbook, or any other format not listed above.
 
 ## LEAD MAGNET LENGTH (CRITICAL)
 Lead magnets MUST be SHORT:
@@ -720,12 +726,13 @@ Lead magnets MUST be SHORT:
 - 3-7 steps/items MAXIMUM
 - Consumable in 5-10 minutes
 
-## PDF-ONLY FORMATS (MANDATORY)
-- Strategy/System (my exact strategy for...)
+## PDF-ONLY FORMATS (Use ONLY these 6 - no exceptions)
 - Checklist (X Simple Steps to...)
-- Cheat Sheet (The 1-Page Cheat Sheet)
-- Blueprint (The Simple Blueprint)
+- Worksheet (Fill-in-the-blank exercises)
+- Planner (The X-Day/Week Planner)
 - Swipe File (X Ready-to-Use Templates)
+- Blueprint (The Simple Blueprint)
+- Cheat Sheet (The 1-Page Cheat Sheet)
 
 ## FORBIDDEN (NEVER suggest):
 - Video courses, mini-courses, training modules
