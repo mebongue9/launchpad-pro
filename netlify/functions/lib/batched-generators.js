@@ -29,6 +29,94 @@ const openai = new OpenAI({
 const LOG_TAG = '[BATCHED-GENERATORS]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
+// FORMAT INSTRUCTIONS - Structure content based on lead magnet/product format
+const FORMAT_INSTRUCTIONS = {
+  'Checklist': `
+    Structure content as numbered action items with checkbox markers (☐ or □).
+    Each item should be a specific, actionable step the reader can check off.
+    Format: "☐ [Action item]" followed by 1-2 sentences explaining why/how.
+    Aim for 10-15 actionable items per chapter.
+    Do NOT write long paragraphs - this is a checklist, not an essay.
+  `,
+
+  'Worksheet': `
+    Structure content as fill-in-the-blank exercises and reflection questions.
+    Include prompts like "My goal is: _____________" or "List 3 things you want to achieve: 1. _____ 2. _____ 3. _____"
+    Add space indicators for user answers: [Your answer here]
+    Include reflection questions: "What would success look like for you?"
+    Mix teaching moments with interactive exercises.
+  `,
+
+  'Swipe File': `
+    Provide ready-to-use templates the reader can copy and paste immediately.
+    Structure as: "TEMPLATE #1: [Name]" followed by the actual template text.
+    Include fill-in-the-blank spots marked with [brackets] for personalization.
+    Add brief context before each template (1-2 sentences max).
+    Examples: email templates, DM scripts, post captions, sales copy.
+  `,
+
+  'Cheat Sheet': `
+    Use dense, quick-reference formatting.
+    Heavy use of bullet points, numbered lists, and short phrases.
+    Include comparison tables where relevant.
+    No lengthy explanations - just the facts and actionable info.
+    Think "reference card" not "chapter book".
+    Organize by category with clear headers.
+  `,
+
+  'Blueprint': `
+    Present as a step-by-step process with clear phases.
+    Format: "PHASE 1: [Name]" → "STEP 1.1:" → "STEP 1.2:" etc.
+    Use visual sequence indicators (arrows, numbers, phases).
+    Include "What you need" and "Expected outcome" for each phase.
+    Think flowchart in text form.
+  `,
+
+  'Planner': `
+    Organize content by time periods.
+    Format options: "DAY 1:", "DAY 2:"... OR "WEEK 1:", "WEEK 2:"...
+    Each time period has specific tasks/focus areas.
+    Include checkboxes for daily/weekly tasks.
+    Add "Goal for this [day/week]:" sections.
+    Think calendar/schedule format.
+  `,
+
+  'Strategy': `
+    Structure as a clear step-by-step strategy.
+    Format: "STEP 1: [Name]" with explanation, then "STEP 2:" etc.
+    Include "Why this works:" callouts.
+    End each section with "Action item:" for immediate implementation.
+  `,
+
+  'System': `
+    Present as an interconnected system with components.
+    Format: "COMPONENT 1: [Name]" → explanation → how it connects to next component.
+    Show how pieces work together.
+    Include "How to implement:" sections.
+  `
+};
+
+// Helper: Get format instructions based on format name
+function getFormatInstructions(format) {
+  // Handle variations in format names
+  const normalizedFormat = format?.trim() || '';
+
+  // Direct match
+  if (FORMAT_INSTRUCTIONS[normalizedFormat]) {
+    return FORMAT_INSTRUCTIONS[normalizedFormat];
+  }
+
+  // Check for partial matches (e.g., "Swipe File (5 Ready-to-Use Templates)" → "Swipe File")
+  for (const key of Object.keys(FORMAT_INSTRUCTIONS)) {
+    if (normalizedFormat.toLowerCase().includes(key.toLowerCase())) {
+      return FORMAT_INSTRUCTIONS[key];
+    }
+  }
+
+  // Default fallback
+  return `Structure the content in a clear, actionable format appropriate for: ${normalizedFormat}`;
+}
+
 // RAG FIX: Removed local searchKnowledge function (had broken 0.6 threshold)
 // Now using shared searchKnowledgeWithMetrics from ./knowledge-search.js
 // This enables: pgvector server-side search, threshold 0.3, RAG logging
@@ -144,6 +232,9 @@ export async function generateLeadMagnetPart1(funnelId) {
     sourceFunction: 'batched-generators-lm-part1'
   });
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(lead_magnet?.format);
+
   // Batched prompt for cover + 3 chapters
   const prompt = `${knowledge}
 
@@ -152,9 +243,15 @@ Generate the COVER PAGE and FIRST 3 CHAPTERS for this lead magnet.
 LEAD MAGNET INFO:
 - Title: ${lead_magnet?.name || 'Untitled Lead Magnet'}
 - Topic: ${lead_magnet?.topic || 'General'}
+- Format: ${lead_magnet?.format || 'General'}
 - Author: ${profile?.name || 'Unknown Author'}
 - Target Audience: ${audience?.name || 'General Audience'}
 - Bridge Product: ${frontend?.name || 'Next Product'}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 INSTRUCTIONS:
 Generate 4 sections separated by exactly: ${SECTION_SEPARATOR}
@@ -175,7 +272,7 @@ Section 2 - CHAPTER 1 (JSON):
   "type": "chapter",
   "number": 1,
   "title": "Chapter 1: [Compelling Title]",
-  "content": "[Full chapter content with value, examples, actionable tips - 400-600 words]"
+  "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 400-600 words]"
 }
 
 ${SECTION_SEPARATOR}
@@ -185,7 +282,7 @@ Section 3 - CHAPTER 2 (JSON):
   "type": "chapter",
   "number": 2,
   "title": "Chapter 2: [Compelling Title]",
-  "content": "[Full chapter content - 400-600 words]"
+  "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 400-600 words]"
 }
 
 ${SECTION_SEPARATOR}
@@ -195,10 +292,10 @@ Section 4 - CHAPTER 3 (JSON):
   "type": "chapter",
   "number": 3,
   "title": "Chapter 3: [Compelling Title]",
-  "content": "[Full chapter content - 400-600 words]"
+  "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 400-600 words]"
 }
 
-IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section.`;
+IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.`;
 
   console.log(`🔄 ${LOG_TAG} Calling Claude API for batched generation...`);
 
@@ -276,6 +373,9 @@ export async function generateLeadMagnetPart2(funnelId) {
   // Lead Magnet always promotes Front-End (not Main Product)
   const crossPromo = buildCrossPromoParagraph(frontend, false);
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(lead_magnet?.format);
+
   const prompt = `${knowledge}
 
 Generate the FINAL 2 CHAPTERS for this lead magnet.
@@ -283,7 +383,13 @@ Generate the FINAL 2 CHAPTERS for this lead magnet.
 LEAD MAGNET INFO:
 - Title: ${lead_magnet?.name || 'Lead Magnet'}
 - Topic: ${lead_magnet?.topic || 'General'}
+- Format: ${lead_magnet?.format || 'General'}
 - Front-End Product: ${frontend?.name || 'Next Product'} ($${frontend?.price || '0'})
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 PREVIOUS CHAPTERS:
 ${previousChapters.map(c => `- ${c?.title || 'Chapter'}`).join('\n')}
@@ -299,7 +405,7 @@ Section 1 - CHAPTER 4 (JSON):
   "type": "chapter",
   "number": 4,
   "title": "Chapter 4: [Title]",
-  "content": "[400-600 words of valuable content]"
+  "content": "[400-600 words following the FORMAT INSTRUCTIONS above]"
 }
 
 ${SECTION_SEPARATOR}
@@ -309,10 +415,10 @@ Section 2 - CHAPTER 5 (JSON):
   "type": "chapter",
   "number": 5,
   "title": "Chapter 5: [Title]",
-  "content": "[400-600 words - wrap up content AND include a natural cross-promo paragraph at the end promoting ${frontend.name}]"
+  "content": "[400-600 words following FORMAT INSTRUCTIONS - wrap up content AND include a natural cross-promo paragraph at the end promoting ${frontend.name}]"
 }
 
-Use creator's knowledge. Return valid JSON.`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -369,6 +475,9 @@ export async function generateFrontendPart1(funnelId) {
     sourceFunction: 'batched-generators'
   });
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(frontend?.format);
+
   const prompt = `${knowledge}
 
 Generate COVER PAGE and FIRST 3 CHAPTERS for this front-end product.
@@ -376,8 +485,14 @@ Generate COVER PAGE and FIRST 3 CHAPTERS for this front-end product.
 PRODUCT INFO:
 - Name: ${frontend.name}
 - Price: $${frontend.price}
+- Format: ${frontend?.format || 'General'}
 - Description: ${frontend.description}
 - Target Audience: ${audience.name}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 Generate 4 sections separated by: ${SECTION_SEPARATOR}
 
@@ -397,7 +512,7 @@ Section 2 - CHAPTER 1 (JSON):
   "type": "chapter",
   "number": 1,
   "title": "Chapter 1: [Title]",
-  "content": "[500-800 words of valuable content]"
+  "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
 ${SECTION_SEPARATOR}
@@ -407,7 +522,7 @@ Section 3 - CHAPTER 2 (JSON):
   "type": "chapter",
   "number": 2,
   "title": "Chapter 2: [Title]",
-  "content": "[500-800 words]"
+  "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
 ${SECTION_SEPARATOR}
@@ -417,10 +532,10 @@ Section 4 - CHAPTER 3 (JSON):
   "type": "chapter",
   "number": 3,
   "title": "Chapter 3: [Title]",
-  "content": "[500-800 words]"
+  "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
-Use creator's knowledge. Return valid JSON.`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -480,12 +595,21 @@ export async function generateFrontendPart2(funnelId) {
 
   const promoProductName = main_product?.name || 'our premium offering';
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(frontend?.format);
+
   const prompt = `${knowledge}
 
 Generate FINAL 3 CHAPTERS for this front-end product.
 
 PRODUCT: ${frontend.name} - ${frontend.description}
+FORMAT: ${frontend?.format || 'General'}
 CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 PREVIOUS CHAPTERS:
 ${previousChapters.map(c => `- ${c.title}`).join('\n')}
@@ -500,7 +624,7 @@ Section 1 - CHAPTER 4 (JSON):
   "type": "chapter",
   "number": 4,
   "title": "Chapter 4: [Title]",
-  "content": "[500-800 words]"
+  "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
 ${SECTION_SEPARATOR}
@@ -510,7 +634,7 @@ Section 2 - CHAPTER 5 (JSON):
   "type": "chapter",
   "number": 5,
   "title": "Chapter 5: [Title]",
-  "content": "[500-800 words]"
+  "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
 ${SECTION_SEPARATOR}
@@ -520,10 +644,10 @@ Section 3 - CHAPTER 6 (JSON):
   "type": "chapter",
   "number": 6,
   "title": "Chapter 6: [Title]",
-  "content": "[500-800 words - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
+  "content": "[500-800 words following FORMAT INSTRUCTIONS - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Use creator's knowledge. Return valid JSON.`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -578,14 +702,23 @@ export async function generateBumpFull(funnelId) {
   const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
   const promoProductName = main_product?.name || 'our premium offering';
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(bump?.format);
+
   const prompt = `${knowledge}
 
 Generate COMPLETE BUMP PRODUCT (short format - quick wins).
 
 PRODUCT: ${bump.name}
 Price: $${bump.price}
+Format: ${bump?.format || 'General'}
 Description: ${bump.description}
 CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 This is a BUMP OFFER - keep it SHORT and ACTIONABLE (3 sections total).
 
@@ -609,7 +742,7 @@ Section 2 - CHAPTER 1 (JSON):
   "type": "chapter",
   "number": 1,
   "title": "Chapter 1: [Quick Win Title]",
-  "content": "[300-400 words - immediate value]"
+  "content": "[300-400 words following FORMAT INSTRUCTIONS - immediate value]"
 }
 
 ${SECTION_SEPARATOR}
@@ -619,10 +752,10 @@ Section 3 - CHAPTER 2 (JSON):
   "type": "chapter",
   "number": 2,
   "title": "Chapter 2: [Actionable Title]",
-  "content": "[300-400 words - actionable steps AND end with brief cross-promo for ${promoProductName}]"
+  "content": "[300-400 words following FORMAT INSTRUCTIONS - actionable steps AND end with brief cross-promo for ${promoProductName}]"
 }
 
-Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON.`;
+Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -671,18 +804,27 @@ export async function generateUpsell1Part1(funnelId) {
     sourceFunction: 'batched-generators'
   });
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(upsell1?.format);
+
   const prompt = `${knowledge}
 
 Generate COVER and FIRST HALF for this upsell product.
 
 PRODUCT: ${upsell1.name} ($${upsell1.price})
+Format: ${upsell1?.format || 'General'}
 Description: ${upsell1.description}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 Generate 4 sections separated by: ${SECTION_SEPARATOR}
 
-Section 1 - COVER (JSON), Section 2-4 - CHAPTERS 1-3 (JSON)
+Section 1 - COVER (JSON), Section 2-4 - CHAPTERS 1-3 (JSON following FORMAT INSTRUCTIONS)
 
-Use 600-800 words per chapter. Return valid JSON.`;
+Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -729,13 +871,22 @@ export async function generateUpsell1Part2(funnelId) {
   const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
   const promoProductName = main_product?.name || 'our premium offering';
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(upsell1?.format);
+
   const prompt = `${knowledge}
 
 Generate FINAL 3 CHAPTERS for upsell 1.
 
 PRODUCT: ${upsell1.name}
+FORMAT: ${upsell1?.format || 'General'}
 PREVIOUS CHAPTERS: ${previousChapters.map(c => c.title).join(', ')}
 CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 IMPORTANT: Chapter 6 (the final chapter) MUST end with a natural cross-promotion paragraph promoting "${promoProductName}".
 
@@ -746,7 +897,7 @@ Section 1 - CHAPTER 4 (JSON):
   "type": "chapter",
   "number": 4,
   "title": "Chapter 4: [Title]",
-  "content": "[600-800 words]"
+  "content": "[600-800 words following FORMAT INSTRUCTIONS]"
 }
 
 ${SECTION_SEPARATOR}
@@ -756,7 +907,7 @@ Section 2 - CHAPTER 5 (JSON):
   "type": "chapter",
   "number": 5,
   "title": "Chapter 5: [Title]",
-  "content": "[600-800 words]"
+  "content": "[600-800 words following FORMAT INSTRUCTIONS]"
 }
 
 ${SECTION_SEPARATOR}
@@ -766,10 +917,10 @@ Section 3 - CHAPTER 6 (JSON):
   "type": "chapter",
   "number": 6,
   "title": "Chapter 6: [Title]",
-  "content": "[600-800 words - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
+  "content": "[600-800 words following FORMAT INSTRUCTIONS - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Return valid JSON.`;
+Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -813,17 +964,26 @@ export async function generateUpsell2Part1(funnelId) {
     sourceFunction: 'batched-generators'
   });
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(upsell2?.format);
+
   const prompt = `${knowledge}
 
 Generate COVER and FIRST HALF for final upsell.
 
 PRODUCT: ${upsell2.name} ($${upsell2.price})
+FORMAT: ${upsell2?.format || 'General'}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 Generate 4 sections separated by: ${SECTION_SEPARATOR}
 
-Section 1: COVER, Sections 2-4: CHAPTERS 1-3
+Section 1: COVER, Sections 2-4: CHAPTERS 1-3 (following FORMAT INSTRUCTIONS)
 
-600-800 words per chapter. Return valid JSON.`;
+600-800 words per chapter following FORMAT INSTRUCTIONS. Return valid JSON.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -870,13 +1030,22 @@ export async function generateUpsell2Part2(funnelId) {
   const crossPromo = buildCrossPromoParagraph(main_product, mentionPrice);
   const promoProductName = main_product?.name || 'our premium offering';
 
+  // Get format instructions for content structure
+  const formatInstructions = getFormatInstructions(upsell2?.format);
+
   const prompt = `${knowledge}
 
 Generate FINAL 3 CHAPTERS for final upsell.
 
 PRODUCT: ${upsell2.name}
+FORMAT: ${upsell2?.format || 'General'}
 PREVIOUS CHAPTERS: ${previousChapters.map(c => c.title).join(', ')}
 CROSS-PROMO TARGET: ${promoProductName}${main_product?.tldr ? ` - ${main_product.tldr}` : ''}
+
+FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
+${formatInstructions}
+
+The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
 
 IMPORTANT: Chapter 6 (the final chapter) MUST end with a natural cross-promotion paragraph promoting "${promoProductName}".
 This is the final product in the funnel, so the cross-promo should feel like a "complete your journey" recommendation.
@@ -888,7 +1057,7 @@ Section 1 - CHAPTER 4 (JSON):
   "type": "chapter",
   "number": 4,
   "title": "Chapter 4: [Title]",
-  "content": "[600-800 words]"
+  "content": "[600-800 words following FORMAT INSTRUCTIONS]"
 }
 
 ${SECTION_SEPARATOR}
@@ -898,7 +1067,7 @@ Section 2 - CHAPTER 5 (JSON):
   "type": "chapter",
   "number": 5,
   "title": "Chapter 5: [Title]",
-  "content": "[600-800 words]"
+  "content": "[600-800 words following FORMAT INSTRUCTIONS]"
 }
 
 ${SECTION_SEPARATOR}
@@ -908,10 +1077,10 @@ Section 3 - CHAPTER 6 (JSON):
   "type": "chapter",
   "number": 6,
   "title": "Chapter 6: [Title]",
-  "content": "[600-800 words - conclusion AND include cross-promo paragraph at the end promoting ${promoProductName}]"
+  "content": "[600-800 words following FORMAT INSTRUCTIONS - conclusion AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Return valid JSON.`;
+Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
