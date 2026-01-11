@@ -14,7 +14,7 @@ import { useExistingProducts } from '../hooks/useExistingProducts'
 import { useLeadMagnets } from '../hooks/useLeadMagnets'
 import { useLeadMagnetIdeasJob, useLeadMagnetContentJob, useFunnelRemainingContentJob } from '../hooks/useGenerationJob'
 import { useToast } from '../components/ui/Toast'
-import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package } from 'lucide-react'
+import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package, Trash2, Eye } from 'lucide-react'
 import { AdminRagLogsPanel } from '../components/AdminRagLogsPanel'
 
 // Progress bar component for generation
@@ -87,7 +87,7 @@ export default function LeadMagnetBuilder() {
   const { audiences } = useAudiences()
   const { funnels } = useFunnels()
   const { products } = useExistingProducts()
-  const { leadMagnets, saveLeadMagnet, getExcludedTopics, generateContent } = useLeadMagnets()
+  const { leadMagnets, saveLeadMagnet, deleteLeadMagnet, getExcludedTopics, generateContent } = useLeadMagnets()
   const { addToast } = useToast()
 
   // Use job-based generation hooks
@@ -743,15 +743,53 @@ export default function LeadMagnetBuilder() {
           <h2 className="text-lg font-semibold mb-4">Your Lead Magnets</h2>
           <div className="space-y-3">
             {leadMagnets.map(lm => (
-              <div key={lm.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-3">
+              <div
+                key={lm.id}
+                className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors group"
+              >
+                <div className="flex items-center gap-3 flex-1">
                   <FileText className="w-5 h-5 text-gray-400" />
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium text-gray-900">{lm.name}</h3>
                     <p className="text-sm text-gray-500">
                       Keyword: {lm.keyword} • {lm.format}
                     </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {lm.content ? '✅ Content generated' : '⏳ No content yet'}
+                      {lm.funnels?.name && ` • Funnel: ${lm.funnels.name}`}
+                    </p>
                   </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {lm.content && (
+                    <button
+                      onClick={() => {
+                        // View lead magnet content in a modal or expand
+                        alert('View functionality coming soon!\n\nContent preview:\n' +
+                          (lm.content?.chapters?.[0]?.content?.substring(0, 200) || 'No content') + '...')
+                      }}
+                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                      title="View content"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={async () => {
+                      if (confirm(`Delete "${lm.name}"? This cannot be undone.`)) {
+                        try {
+                          await deleteLeadMagnet(lm.id)
+                          addToast('Lead magnet deleted', 'success')
+                        } catch (err) {
+                          addToast('Failed to delete: ' + err.message, 'error')
+                        }
+                      }
+                    }}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    title="Delete lead magnet"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}

@@ -98,29 +98,78 @@ export function useLeadMagnets() {
     }
   }
 
+  // FIX: Prevent duplicate lead magnets - check if exists for funnel, update instead of insert
+  // Also link lead_magnet_id to funnel to prevent backend from creating another
   async function saveLeadMagnet(leadMagnetData, profileId, funnelId = null) {
     try {
-      const { data, error } = await supabase
-        .from('lead_magnets')
-        .insert({
-          user_id: user.id,
-          profile_id: profileId,
-          funnel_id: funnelId,
-          name: leadMagnetData.title,
-          format: leadMagnetData.format || 'guide',
-          topic: leadMagnetData.topic,
-          keyword: leadMagnetData.keyword,
-          content: leadMagnetData.sections ? leadMagnetData : null,
-          caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
-          caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version
-        })
-        .select()
-        .single()
+      // Check if lead_magnet already exists for this funnel to prevent duplicates
+      let existingLeadMagnet = null
+      if (funnelId) {
+        const { data: existing } = await supabase
+          .from('lead_magnets')
+          .select('id')
+          .eq('funnel_id', funnelId)
+          .eq('user_id', user.id)
+          .single()
+        existingLeadMagnet = existing
+      }
 
-      if (error) throw error
+      let data
+      if (existingLeadMagnet) {
+        // Update existing lead magnet instead of creating duplicate
+        const { data: updated, error } = await supabase
+          .from('lead_magnets')
+          .update({
+            profile_id: profileId,
+            name: leadMagnetData.title,
+            format: leadMagnetData.format || 'guide',
+            topic: leadMagnetData.topic,
+            keyword: leadMagnetData.keyword,
+            content: leadMagnetData.sections ? leadMagnetData : null,
+            caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
+            caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingLeadMagnet.id)
+          .select()
+          .single()
+        if (error) throw error
+        data = updated
+        console.log('📝 [LEAD-MAGNETS] Updated existing lead magnet:', data.id)
+      } else {
+        // Insert new lead magnet
+        const { data: inserted, error } = await supabase
+          .from('lead_magnets')
+          .insert({
+            user_id: user.id,
+            profile_id: profileId,
+            funnel_id: funnelId,
+            name: leadMagnetData.title,
+            format: leadMagnetData.format || 'guide',
+            topic: leadMagnetData.topic,
+            keyword: leadMagnetData.keyword,
+            content: leadMagnetData.sections ? leadMagnetData : null,
+            caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
+            caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version
+          })
+          .select()
+          .single()
+        if (error) throw error
+        data = inserted
+        console.log('📝 [LEAD-MAGNETS] Created new lead magnet:', data.id)
+      }
 
-      // Track the topic
-      if (leadMagnetData.topic) {
+      // CRITICAL FIX: Link lead_magnet_id to funnel (prevents backend from creating another)
+      if (funnelId && data?.id) {
+        await supabase
+          .from('funnels')
+          .update({ lead_magnet_id: data.id })
+          .eq('id', funnelId)
+        console.log('🔗 [LEAD-MAGNETS] Linked lead_magnet to funnel:', funnelId)
+      }
+
+      // Track the topic (only for new lead magnets)
+      if (!existingLeadMagnet && leadMagnetData.topic) {
         await supabase.from('topics_used').insert({
           user_id: user.id,
           profile_id: profileId,
