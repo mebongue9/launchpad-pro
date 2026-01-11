@@ -75,14 +75,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Maria Wendt Format Performance Data (by average comments from 1,153 posts)
-const FORMAT_PERFORMANCE = `
-## FORMAT PERFORMANCE (by average comments - PROVEN DATA)
-1. Strategy/System: 1,729 avg - "my exact strategy for..."
-2. ChatGPT Prompt: 1,429 avg - specific prompts for outcomes
-3. Google Doc: 946 avg - collections, lists, resources
-4. Checklist/Steps: 808 avg - X steps to achieve Y
-5. Cheat Sheet: Quick reference one-pager
+// THE 6 APPROVED FORMATS - Data-proven from Maria Wendt's research
+// These are the ONLY formats allowed. No others.
+const APPROVED_FORMATS_TEXT = `
+## APPROVED FORMATS (use ONLY these 6 - data-proven, no exceptions)
+- Checklist: Step-by-step items to check off (X steps to achieve Y)
+- Worksheet: Fill-in-the-blank exercises and reflection prompts
+- Planner: Time-based organization (daily/weekly/monthly schedules)
+- Swipe File: Ready-to-use templates and copy (emails, scripts, captions)
+- Blueprint: Visual process/flowchart (phases and steps)
+- Cheat Sheet: Quick reference, dense information (one-pager)
+
+The lead magnet MUST use one of these 6 formats. Do NOT invent new formats.
+Do NOT use: Strategy, System, Guide, Workbook, or any other format not listed above.
 `;
 
 // PDF-Only Lead Magnet Strategist Prompt - SMALL = FAST RESULTS philosophy
@@ -95,7 +100,7 @@ People don't want to read 40+ pages. They want QUICK WINS.
 - "Get results in 3 simple steps" beats "comprehensive 100-page manual"
 - Short = Easy to consume = Higher completion rate = More desire for paid product
 
-${FORMAT_PERFORMANCE}
+${APPROVED_FORMATS_TEXT}
 
 ## LEAD MAGNET LENGTH (CRITICAL - FOLLOW EXACTLY)
 Lead magnets MUST be SHORT and QUICK to consume:
@@ -103,12 +108,13 @@ Lead magnets MUST be SHORT and QUICK to consume:
 - 3-7 steps/items MAXIMUM
 - Can be consumed in 5-10 minutes
 
-## PDF-ONLY FORMATS (MANDATORY)
-- Strategy/System (my exact strategy for...)
+## PDF-ONLY FORMATS (Use ONLY these 6 - no exceptions)
 - Checklist (X Simple Steps to...)
-- Cheat Sheet (The 1-Page Cheat Sheet)
-- Blueprint (The Simple Blueprint)
+- Worksheet (Fill-in-the-blank exercises)
+- Planner (The X-Day/Week Planner)
 - Swipe File (X Ready-to-Use Templates)
+- Blueprint (The Simple Blueprint)
+- Cheat Sheet (The 1-Page Cheat Sheet)
 
 ## FORBIDDEN (NEVER suggest):
 - Video courses, mini-courses, training modules
@@ -294,22 +300,20 @@ Generate 3 lead magnet ideas now. Remember:
     const ideas = parseClaudeJSON(response.content[0].text);
     console.log(`✅ ${LOG_TAG} JSON parsed successfully, got ${ideas.ideas?.length || 0} ideas`);
 
-    // Validate that all formats are PDF-friendly
-    const pdfFormats = [
-      'Strategy/System', 'Multi-Page Guide/PDF', 'Multi-Page Guide', 'PDF',
-      'Checklist/Steps', 'Checklist', 'Steps', 'Google Doc',
-      'Cheat Sheet', 'Swipe File', 'Blueprint', 'Workbook', 'Guide'
+    // Validate that all formats are from the 6 approved formats
+    const approvedFormats = [
+      'Checklist', 'Worksheet', 'Planner', 'Swipe File', 'Blueprint', 'Cheat Sheet'
     ];
 
     if (ideas.ideas) {
-      console.log(`🔄 ${LOG_TAG} Validating PDF formats for ${ideas.ideas.length} ideas...`);
+      console.log(`🔄 ${LOG_TAG} Validating formats for ${ideas.ideas.length} ideas...`);
       ideas.ideas = ideas.ideas.map((idea, index) => {
-        // Warn if format doesn't match allowed list (but don't block)
+        // Warn if format doesn't match one of the 6 approved formats
         const formatLower = (idea.format || '').toLowerCase();
-        const isValidFormat = pdfFormats.some(f => formatLower.includes(f.toLowerCase()));
+        const isValidFormat = approvedFormats.some(f => formatLower.includes(f.toLowerCase()));
 
         if (!isValidFormat) {
-          console.warn(`⚠️ ${LOG_TAG} Idea ${index + 1}: Format "${idea.format}" may not be PDF-compatible`);
+          console.warn(`⚠️ ${LOG_TAG} Idea ${index + 1}: Format "${idea.format}" is not an approved format`);
         } else {
           console.log(`✅ ${LOG_TAG} Idea ${index + 1}: "${idea.title}" - format valid`);
         }

@@ -29,6 +29,10 @@ const openai = new OpenAI({
 const LOG_TAG = '[BATCHED-GENERATORS]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
+// THE 6 APPROVED FORMATS - Data-proven from Maria Wendt's research
+// These are the ONLY formats allowed. No others.
+const APPROVED_FORMATS = ['Checklist', 'Worksheet', 'Planner', 'Swipe File', 'Blueprint', 'Cheat Sheet'];
+
 // FORMAT INSTRUCTIONS - Structure content based on lead magnet/product format
 const FORMAT_INSTRUCTIONS = {
   'Checklist': `
@@ -47,21 +51,21 @@ const FORMAT_INSTRUCTIONS = {
     Mix teaching moments with interactive exercises.
   `,
 
+  'Planner': `
+    Organize content by time periods.
+    Format options: "DAY 1:", "DAY 2:"... OR "WEEK 1:", "WEEK 2:"...
+    Each time period has specific tasks/focus areas.
+    Include checkboxes for daily/weekly tasks.
+    Add "Goal for this [day/week]:" sections.
+    Think calendar/schedule format.
+  `,
+
   'Swipe File': `
     Provide ready-to-use templates the reader can copy and paste immediately.
     Structure as: "TEMPLATE #1: [Name]" followed by the actual template text.
     Include fill-in-the-blank spots marked with [brackets] for personalization.
     Add brief context before each template (1-2 sentences max).
     Examples: email templates, DM scripts, post captions, sales copy.
-  `,
-
-  'Cheat Sheet': `
-    Use dense, quick-reference formatting.
-    Heavy use of bullet points, numbered lists, and short phrases.
-    Include comparison tables where relevant.
-    No lengthy explanations - just the facts and actionable info.
-    Think "reference card" not "chapter book".
-    Organize by category with clear headers.
   `,
 
   'Blueprint': `
@@ -72,33 +76,20 @@ const FORMAT_INSTRUCTIONS = {
     Think flowchart in text form.
   `,
 
-  'Planner': `
-    Organize content by time periods.
-    Format options: "DAY 1:", "DAY 2:"... OR "WEEK 1:", "WEEK 2:"...
-    Each time period has specific tasks/focus areas.
-    Include checkboxes for daily/weekly tasks.
-    Add "Goal for this [day/week]:" sections.
-    Think calendar/schedule format.
-  `,
-
-  'Strategy': `
-    Structure as a clear step-by-step strategy.
-    Format: "STEP 1: [Name]" with explanation, then "STEP 2:" etc.
-    Include "Why this works:" callouts.
-    End each section with "Action item:" for immediate implementation.
-  `,
-
-  'System': `
-    Present as an interconnected system with components.
-    Format: "COMPONENT 1: [Name]" → explanation → how it connects to next component.
-    Show how pieces work together.
-    Include "How to implement:" sections.
+  'Cheat Sheet': `
+    Use dense, quick-reference formatting.
+    Heavy use of bullet points, numbered lists, and short phrases.
+    Include comparison tables where relevant.
+    No lengthy explanations - just the facts and actionable info.
+    Think "reference card" not "chapter book".
+    Organize by category with clear headers.
   `
 };
 
 // Helper: Get format instructions based on format name
+// STRICT ENFORCEMENT: Only the 6 approved formats are allowed
+// Unknown formats default to Cheat Sheet (most flexible format)
 function getFormatInstructions(format) {
-  // Handle variations in format names
   const normalizedFormat = format?.trim() || '';
 
   // Direct match
@@ -107,14 +98,16 @@ function getFormatInstructions(format) {
   }
 
   // Check for partial matches (e.g., "Swipe File (5 Ready-to-Use Templates)" → "Swipe File")
-  for (const key of Object.keys(FORMAT_INSTRUCTIONS)) {
-    if (normalizedFormat.toLowerCase().includes(key.toLowerCase())) {
-      return FORMAT_INSTRUCTIONS[key];
+  for (const approvedFormat of APPROVED_FORMATS) {
+    if (normalizedFormat.toLowerCase().includes(approvedFormat.toLowerCase())) {
+      return FORMAT_INSTRUCTIONS[approvedFormat];
     }
   }
 
-  // Default fallback
-  return `Structure the content in a clear, actionable format appropriate for: ${normalizedFormat}`;
+  // NO FALLBACK to generic instructions - default to Cheat Sheet (most flexible approved format)
+  // This ensures we ALWAYS use approved format instructions
+  console.warn(`[FORMAT WARNING] Unknown format "${normalizedFormat}" - defaulting to Cheat Sheet`);
+  return FORMAT_INSTRUCTIONS['Cheat Sheet'];
 }
 
 // RAG FIX: Removed local searchKnowledge function (had broken 0.6 threshold)

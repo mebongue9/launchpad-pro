@@ -13,15 +13,19 @@ import {
   getPreviousFunnelNamesWithMetrics
 } from './lib/knowledge-search.js';
 
-// Maria Wendt Format Performance Data (by average comments from 1,153 posts)
-const FORMAT_PERFORMANCE = `
-## FORMAT PERFORMANCE (by average engagement - PROVEN DATA)
-1. Strategy/System: 1,729 avg - "my exact strategy for..."
-2. ChatGPT Prompt: 1,429 avg - specific prompts for outcomes
-3. Google Doc: 946 avg - collections, lists, resources
-4. Checklist/Steps: 808 avg - X steps to achieve Y
-5. Cheat Sheet: Quick reference one-pager
-6. Swipe File: Ready-to-use templates
+// THE 6 APPROVED FORMATS - Data-proven from Maria Wendt's research
+// These are the ONLY formats allowed. No others.
+const APPROVED_FORMATS_TEXT = `
+## APPROVED FORMATS (use ONLY these 6 - data-proven, no exceptions)
+- Checklist: Step-by-step items to check off (X steps to achieve Y)
+- Worksheet: Fill-in-the-blank exercises and reflection prompts
+- Planner: Time-based organization (daily/weekly/monthly schedules)
+- Swipe File: Ready-to-use templates and copy (emails, scripts, captions)
+- Blueprint: Visual process/flowchart (phases and steps)
+- Cheat Sheet: Quick reference, dense information (one-pager)
+
+Each product in the funnel MUST use one of these 6 formats. Do NOT invent new formats.
+Do NOT use: Strategy, System, Guide, Workbook, or any other format not listed above.
 `;
 
 const FUNNEL_STRATEGIST_PROMPT = `
@@ -36,7 +40,7 @@ Create a complete product funnel that:
 4. Maximizes lifetime customer value
 5. Uses SPECIFIC, COMPELLING product names that convert
 
-${FORMAT_PERFORMANCE}
+${APPROVED_FORMATS_TEXT}
 
 ## PRODUCT NAMING - CRITICAL (Maria Wendt Methodology)
 
@@ -81,13 +85,13 @@ Critical: Each level must create desire for the next, not satisfy it.
 - Upsell 2: $47-97 (committed buyer)
 - Upsell 3: $97-297 (serious buyer)
 
-## PDF-ONLY FORMATS (Use these)
+## PDF-ONLY FORMATS (Use ONLY these 6 - no exceptions)
 - Checklist (X Simple Steps to...)
-- Cheat Sheet (The 1-Page Cheat Sheet)
-- Blueprint (The Simple Blueprint)
-- Swipe File (X Ready-to-Use Templates)
+- Worksheet (Fill-in-the-blank exercises)
 - Planner (The X-Day/Week Planner)
-- Workbook (The X-Step Workbook)
+- Swipe File (X Ready-to-Use Templates)
+- Blueprint (The Simple Blueprint)
+- Cheat Sheet (The 1-Page Cheat Sheet)
 
 ## OUTPUT FORMAT
 
@@ -97,7 +101,7 @@ Respond with ONLY valid JSON in this exact structure:
   "funnel_name": "Descriptive name for this funnel",
   "front_end": {
     "name": "Product name using SPECIFICITY FORMULA",
-    "format": "checklist|cheat sheet|blueprint|swipe file|planner|workbook",
+    "format": "Checklist|Worksheet|Planner|Swipe File|Blueprint|Cheat Sheet",
     "price": 17,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for the bump"
