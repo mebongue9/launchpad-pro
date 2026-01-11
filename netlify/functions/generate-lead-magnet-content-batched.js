@@ -109,7 +109,7 @@ async function generatePart2(leadMagnet, profile, audience, frontEnd, language, 
 Generate the following sections. Separate each with:
 ${SECTION_SEPARATOR}
 
-**Section 1: Chapter 4 - ${leadMagnet.chapters?.[3]?.title || 'Advanced Strategy'}**
+**Section 1: Chapter 4 - ${leadMagnet.chapters?.[3]?.title || 'Taking Action'}**
 Return JSON: {"type": "chapter", "number": 4, "title": "...", "content": "..."}
 
 **Section 2: Chapter 5 - ${leadMagnet.chapters?.[4]?.title || 'Putting It All Together'}**

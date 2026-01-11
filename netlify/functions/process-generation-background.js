@@ -525,14 +525,14 @@ ${getLanguagePromptSuffix(language)}`;
   // PDF-Only Funnel Architect with Anti-Cannibalization Principle
   const funnelSystemPrompt = `You are an elite funnel architect. Create product funnels using PROVEN formats from Maria Wendt analysis.
 
-## PDF-ONLY PRODUCTS (MANDATORY)
-Every product in the funnel MUST be a PDF-based deliverable:
-- Multi-Page Guide/PDF (The X-Page Guide to...)
-- Checklist/Steps (X Steps to... / X-Day Checklist)
-- Cheat Sheet (The Topic Cheat Sheet)
+## PDF-ONLY PRODUCTS (MANDATORY - Use ONLY these 6 formats)
+Every product in the funnel MUST be a PDF-based deliverable using ONLY these 6 formats:
+- Checklist (X Steps to... / X-Day Checklist)
+- Worksheet (Fill-in exercises and prompts)
+- Planner (The X-Day/Week Planner)
 - Swipe File (X Ready-to-Use Templates)
 - Blueprint (The Outcome Blueprint)
-- Workbook (The Action Planner)
+- Cheat Sheet (The Quick Reference Sheet)
 
 ## FORBIDDEN (NEVER suggest):
 - Video courses, mini-courses, training modules
@@ -564,7 +564,7 @@ IMPORTANT: Keep numbers REALISTIC for PDF products!
 Good Examples:
 - "The 7-Day Client Acquisition Checklist" (Front-end, ~8 pages)
 - "21 Done-For-You Email Templates" (Bump, ~5 pages)
-- "The 15-Page Advanced Strategy Guide" (Upsell 1, 15 pages)
+- "The Advanced Implementation Blueprint" (Upsell 1, 15 pages)
 - "47 Ready-to-Use Scripts Bundle" (Upsell 2, ~20 pages)
 
 BAD Examples (NEVER DO THIS):
