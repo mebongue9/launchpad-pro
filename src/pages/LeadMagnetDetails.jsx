@@ -1,5 +1,5 @@
 // /src/pages/LeadMagnetDetails.jsx
-// Lead magnet details page with tabs for overview, marketplace, emails, and export
+// Lead magnet details page with tabs for products, marketplace, emails, and export
 // Similar structure to FunnelDetails but for lead magnets
 // RELEVANT FILES: src/pages/LeadMagnetBuilder.jsx, src/hooks/useLeadMagnets.jsx
 
@@ -39,9 +39,9 @@ const safeJsonParse = (data, fallback = null) => {
   }
 }
 
-// Tab definitions - Order: Overview → Marketplace → Emails → TLDR → Export
+// Tab definitions - Order: Products → Marketplace → Emails → TLDR → Export (consistent with FunnelDetails)
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: FileText },
+  { id: 'products', label: 'Products', icon: FileText },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
   { id: 'emails', label: 'Emails', icon: Mail },
   { id: 'tldr', label: 'TLDR', icon: Sparkles },
@@ -134,7 +134,7 @@ export default function LeadMagnetDetails() {
   const { leadMagnets, loading: leadMagnetsLoading, fetchLeadMagnets } = useLeadMagnets()
   const { addToast } = useToast()
 
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState('products')
   const [expandedChapter, setExpandedChapter] = useState(0)
   const [expandedEmail, setExpandedEmail] = useState(null)
   const [leadMagnet, setLeadMagnet] = useState(null)
@@ -263,8 +263,8 @@ export default function LeadMagnetDetails() {
 
       {/* Tab Content */}
       <div className="min-h-[400px]">
-        {/* Overview Tab */}
-        {activeTab === 'overview' && (
+        {/* Products Tab */}
+        {activeTab === 'products' && (
           <div className="space-y-6">
             {/* Chapters Section */}
             <Card>

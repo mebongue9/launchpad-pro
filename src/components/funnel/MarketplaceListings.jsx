@@ -112,37 +112,45 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
             </p>
           </div>
 
-          {/* Etsy Description */}
+          {/* Etsy/Gumroad Description */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
-                Etsy Description
+                Etsy/Gumroad Description
                 <span className="text-xs text-gray-400 ml-2">
-                  ({listing.etsy_description?.length || 0} chars)
+                  ({listing.marketplace_description?.length || 0} chars)
                 </span>
               </span>
-              <CopyButton text={listing.etsy_description || ''} label="Copy" />
+              <CopyButton text={listing.marketplace_description || ''} label="Copy" />
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap">
-              {listing.etsy_description || 'No description generated'}
+            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
+              {listing.marketplace_description || 'No description generated'}
             </div>
           </div>
 
-          {/* Gumroad Description */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Gumroad Description
-                <span className="text-xs text-gray-400 ml-2">
-                  ({listing.normal_description?.length || 0} chars)
+          {/* Marketplace Bullets */}
+          {listing.marketplace_bullets && listing.marketplace_bullets.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4" />
+                  Key Selling Points ({listing.marketplace_bullets.length})
                 </span>
-              </span>
-              <CopyButton text={listing.normal_description || ''} label="Copy" />
+                <CopyButton
+                  text={listing.marketplace_bullets.map(b => `• ${b}`).join('\n')}
+                  label="Copy All"
+                />
+              </div>
+              <ul className="p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg space-y-2">
+                {listing.marketplace_bullets.map((bullet, idx) => (
+                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                    <span className="text-green-500 mt-0.5">✓</span>
+                    {bullet}
+                  </li>
+                ))}
+              </ul>
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-              {listing.normal_description || 'No description generated'}
-            </div>
-          </div>
+          )}
 
           {/* Tags */}
           <div>

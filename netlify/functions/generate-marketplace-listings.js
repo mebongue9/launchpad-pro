@@ -44,10 +44,11 @@ const MARKETPLACE_SYSTEM_PROMPT = `You are an expert Etsy and Gumroad marketplac
    - Use pipes (|) to separate sections
    - Include 3-4 keywords naturally
 
-2. **Etsy Description**: 500-800 characters
+2. **Description** (works for both Etsy and Gumroad): 800-1200 characters
    - Hook in first line
    - Key benefits (bullet points)
    - What's included
+   - Clear deliverables list
    - End with soft CTA
 
 3. **Tags**: EXACTLY 13 tags
@@ -55,15 +56,6 @@ const MARKETPLACE_SYSTEM_PROMPT = `You are an expert Etsy and Gumroad marketplac
    - Mix of specific and broad
    - Include format variations
    - No duplicate words across tags
-
-## GUMROAD DESCRIPTION
-1,500-2,500 characters
-- More detailed than Etsy
-- Include transformation/outcome
-- Testimonial-style social proof (hypothetical)
-- Clear deliverables list
-- FAQ section (2-3 questions)
-- CTA at the end
 
 ## OUTPUT REQUIREMENTS
 Return ONLY valid JSON. No markdown, no code blocks.
@@ -93,8 +85,7 @@ Pain Points: ${(audience?.pain_points || []).join(', ') || 'Not specified'}
 Return JSON:
 {
   "marketplace_title": "SEO title (MAX 140 chars)",
-  "etsy_description": "Short description (500-800 chars)",
-  "normal_description": "Long Gumroad description (1500-2500 chars)",
+  "marketplace_description": "Etsy/Gumroad description (800-1200 chars)",
   "marketplace_tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13"
 }
 
@@ -225,10 +216,9 @@ export async function handler(event) {
 
       const listing = await generateProductListing(product, profile, audience, language, level);
 
-      // Map to database columns
+      // Map to database columns (single description for both Etsy/Gumroad)
       updates[`${level}_marketplace_title`] = listing.marketplace_title;
-      updates[`${level}_etsy_description`] = listing.etsy_description;
-      updates[`${level}_normal_description`] = listing.normal_description;
+      updates[`${level}_marketplace_description`] = listing.marketplace_description;
       updates[`${level}_marketplace_tags`] = listing.marketplace_tags;
 
       results[level] = listing;

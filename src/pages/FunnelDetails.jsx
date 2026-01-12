@@ -24,12 +24,16 @@ import {
   Gift,
   Download,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   Eye,
   Edit3,
   Sparkles,
   Copy,
-  Check
+  Check,
+  X,
+  BookOpen
 } from 'lucide-react'
 
 // Tab definitions - Order: Products → Marketplace → Bundle → Emails → TLDR → Export
@@ -97,6 +101,8 @@ export default function FunnelDetails() {
   const [editingProduct, setEditingProduct] = useState(null)
   const [editorContent, setEditorContent] = useState('')
   const [savingContent, setSavingContent] = useState(false)
+  const [previewingProduct, setPreviewingProduct] = useState(null)
+  const [expandedChapter, setExpandedChapter] = useState(0)
 
   // Find the funnel
   const funnel = funnels.find(f => f.id === id)
@@ -286,15 +292,31 @@ export default function FunnelDetails() {
                     </div>
                   )}
 
-                  {/* Edit Content Button */}
-                  <div className="mt-6 pt-4 border-t">
+                  {/* Content Buttons */}
+                  <div className="mt-6 pt-4 border-t flex gap-3">
+                    {/* View Full Content - shows chapters preview modal */}
+                    <Button
+                      variant="secondary"
+                      onClick={() => setPreviewingProduct(selectedProduct)}
+                      className="flex-1"
+                      disabled={!currentProduct.chapters || currentProduct.chapters.length === 0}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      View Content
+                    </Button>
+                    {/* Edit Content - opens editor with concatenated chapters */}
                     <Button
                       variant="secondary"
                       onClick={() => {
                         setEditingProduct(selectedProduct)
-                        setEditorContent(currentProduct.content || currentProduct.description || '')
+                        // Load chapters content, not just description
+                        const chapters = currentProduct.chapters || []
+                        const fullContent = chapters.map(ch =>
+                          `## ${ch.title || `Chapter ${ch.number}`}\n\n${ch.content || ''}`
+                        ).join('\n\n---\n\n')
+                        setEditorContent(fullContent || currentProduct.description || '')
                       }}
-                      className="w-full"
+                      className="flex-1"
                     >
                       <Edit3 className="w-4 h-4 mr-2" />
                       Edit Content
@@ -497,6 +519,127 @@ export default function FunnelDetails() {
           </div>
         )}
       </div>
+
+      {/* Content Preview Modal - Shows all chapters */}
+      {previewingProduct && funnel[previewingProduct] && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b">
+              <div className="flex items-center gap-3">
+                <BookOpen className={`w-6 h-6 text-${productColors[previewingProduct]}-500`} />
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    {funnel[previewingProduct]?.name || productLabels[previewingProduct]}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {(funnel[previewingProduct]?.chapters || []).length} chapters • {funnel[previewingProduct]?.format}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setPreviewingProduct(null)
+                  setExpandedChapter(0)
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4">
+              {/* Cover Data */}
+              {funnel[previewingProduct]?.cover_data && (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                  <h3 className="font-bold text-lg text-gray-900">
+                    {funnel[previewingProduct].cover_data.title || 'Cover'}
+                  </h3>
+                  {funnel[previewingProduct].cover_data.subtitle && (
+                    <p className="text-gray-600 mt-1">{funnel[previewingProduct].cover_data.subtitle}</p>
+                  )}
+                  {funnel[previewingProduct].cover_data.tagline && (
+                    <p className="text-sm text-purple-600 mt-2 italic">{funnel[previewingProduct].cover_data.tagline}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Chapters */}
+              <div className="space-y-3">
+                {(funnel[previewingProduct]?.chapters || []).length === 0 ? (
+                  <div className="text-center py-12 bg-gray-50 rounded-lg">
+                    <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No content generated yet.</p>
+                    <p className="text-sm text-gray-400 mt-1">Generate funnel content to see chapters here.</p>
+                  </div>
+                ) : (
+                  (funnel[previewingProduct]?.chapters || []).map((chapter, idx) => (
+                    <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedChapter(expandedChapter === idx ? -1 : idx)}
+                        className="w-full flex items-center justify-between p-4 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-8 h-8 rounded-full bg-${productColors[previewingProduct]}-100 text-${productColors[previewingProduct]}-600 flex items-center justify-center text-sm font-semibold`}>
+                            {chapter.number || idx + 1}
+                          </div>
+                          <span className="font-medium text-gray-900">
+                            {chapter.title || `Chapter ${idx + 1}`}
+                          </span>
+                        </div>
+                        {expandedChapter === idx
+                          ? <ChevronUp className="w-5 h-5 text-gray-400" />
+                          : <ChevronDown className="w-5 h-5 text-gray-400" />
+                        }
+                      </button>
+                      {expandedChapter === idx && (
+                        <div className="p-4 bg-white border-t border-gray-200">
+                          <div className="flex justify-end mb-2">
+                            <CopyButton text={chapter.content} label="Copy Content" />
+                          </div>
+                          <div className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed max-h-80 overflow-y-auto">
+                            {chapter.content || 'No content'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t bg-gray-50 flex justify-end gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setPreviewingProduct(null)
+                  setExpandedChapter(0)
+                }}
+              >
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  // Switch to edit mode
+                  const chapters = funnel[previewingProduct]?.chapters || []
+                  const fullContent = chapters.map(ch =>
+                    `## ${ch.title || `Chapter ${ch.number}`}\n\n${ch.content || ''}`
+                  ).join('\n\n---\n\n')
+                  setEditorContent(fullContent)
+                  setEditingProduct(previewingProduct)
+                  setPreviewingProduct(null)
+                  setExpandedChapter(0)
+                }}
+              >
+                <Edit3 className="w-4 h-4 mr-2" />
+                Edit Content
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Content Editor Modal */}
       <ContentEditor

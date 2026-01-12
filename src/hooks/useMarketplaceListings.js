@@ -72,8 +72,7 @@ export function useMarketplaceListings() {
           const ml = product.marketplace_listing
           listings[level] = {
             marketplace_title: ml.marketplace_title || '',
-            etsy_description: ml.marketplace_description || '',
-            normal_description: ml.marketplace_description || '',
+            marketplace_description: ml.marketplace_description || '',
             marketplace_tags: Array.isArray(ml.marketplace_tags)
               ? ml.marketplace_tags.join(', ')
               : (ml.marketplace_tags || '')

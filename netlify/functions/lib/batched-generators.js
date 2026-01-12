@@ -339,15 +339,20 @@ IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each se
     generated_at: new Date().toISOString()
   });
 
+  // FIX: Update by lead_magnet.id instead of funnel_id (funnel_id might be NULL)
+  if (!lead_magnet?.id) {
+    throw new Error('No lead magnet found for this funnel - cannot save content');
+  }
+
   await supabase
     .from('lead_magnets')
     .update({
       content: part1Content,
       updated_at: new Date().toISOString()
     })
-    .eq('funnel_id', funnelId);
+    .eq('id', lead_magnet.id);
 
-  console.log(`✅ ${LOG_TAG} Lead magnet part 1 saved to content column`);
+  console.log(`✅ ${LOG_TAG} Lead magnet part 1 saved to content column (id: ${lead_magnet.id})`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part1', ragMetrics);
@@ -458,15 +463,20 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
     generated_at: new Date().toISOString()
   });
 
+  // FIX: Update by lead_magnet.id instead of funnel_id (funnel_id might be NULL)
+  if (!lead_magnet?.id) {
+    throw new Error('No lead magnet found for this funnel - cannot save content');
+  }
+
   await supabase
     .from('lead_magnets')
     .update({
       content: fullContent,
       updated_at: new Date().toISOString()
     })
-    .eq('funnel_id', funnelId);
+    .eq('id', lead_magnet.id);
 
-  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved to content column (complete with 5 chapters)`);
+  console.log(`✅ ${LOG_TAG} Lead magnet part 2 saved to content column (id: ${lead_magnet.id}, complete with 5 chapters)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part2', ragMetrics);
@@ -1185,7 +1195,7 @@ export async function generateAllTldrs(funnelId) {
 
   const prompt = `${knowledge}
 
-Generate SHORT SUMMARIES (TLDRs) for ALL 5 products.
+Generate STRUCTURED SUMMARIES (TLDRs) for ALL 5 products.
 
 PRODUCTS:
 1. Lead Magnet: "${lead_magnet?.name || 'Lead Magnet'}"
@@ -1196,17 +1206,25 @@ PRODUCTS:
 
 Generate 5 sections separated by: ${SECTION_SEPARATOR}
 
+For EACH product, output a JSON object with these fields:
+- what_it_is: One compelling sentence describing what this product is
+- who_its_for: One sentence describing the ideal customer
+- problem_solved: The main pain point or problem this solves
+- whats_inside: Array of 3-5 key deliverables/components
+- key_benefits: Array of 3-5 transformation benefits
+- cta: A compelling call-to-action phrase
+
 Output 5 JSON objects separated by ===SECTION_BREAK=== (no markdown headers, raw JSON only):
 
-{"tldr":"2-3 sentence summary for Lead Magnet..."}
+{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}
 ===SECTION_BREAK===
-{"tldr":"2-3 sentence summary for Front-End..."}
+{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}
 ===SECTION_BREAK===
-{"tldr":"2-3 sentence summary for Bump..."}
+{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}
 ===SECTION_BREAK===
-{"tldr":"2-3 sentence summary for Upsell 1..."}
+{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}
 ===SECTION_BREAK===
-{"tldr":"2-3 sentence summary for Upsell 2..."}`;
+{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -1220,16 +1238,18 @@ Output 5 JSON objects separated by ===SECTION_BREAK=== (no markdown headers, raw
   const tldrs = sections.map(s => parseClaudeJSON(s));
 
   // Save TLDRs to lead_magnets table if it exists
+  // Now saves the FULL structured object (what_it_is, who_its_for, etc.)
   if (lead_magnet?.id) {
-    await supabase.from('lead_magnets').update({ tldr: tldrs[0].tldr }).eq('id', lead_magnet.id);
+    await supabase.from('lead_magnets').update({ tldr: tldrs[0] }).eq('id', lead_magnet.id);
   }
 
   // Save TLDRs to funnel's JSONB columns (products are JSONB, not separate tables)
+  // Now saves the FULL structured object for each product
   await supabase.from('funnels').update({
-    front_end: { ...funnel.front_end, tldr: tldrs[1].tldr },
-    bump: { ...funnel.bump, tldr: tldrs[2].tldr },
-    upsell_1: { ...funnel.upsell_1, tldr: tldrs[3].tldr },
-    upsell_2: { ...funnel.upsell_2, tldr: tldrs[4].tldr },
+    front_end: { ...funnel.front_end, tldr: tldrs[1] },
+    bump: { ...funnel.bump, tldr: tldrs[2] },
+    upsell_1: { ...funnel.upsell_1, tldr: tldrs[3] },
+    upsell_2: { ...funnel.upsell_2, tldr: tldrs[4] },
     updated_at: new Date().toISOString()
   }).eq('id', funnelId);
 
@@ -1370,7 +1390,12 @@ export async function generateAllEmails(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 13: Generating all 6 emails in 1 batched call`);
 
   const funnel = await getFunnelData(funnelId);
-  const { lead_magnet, frontend } = funnel;
+  const { lead_magnet, frontend, profile } = funnel;
+
+  // Extract first name from profile (first word of name)
+  const creatorFirstName = profile?.name?.split(' ')[0] || 'Your Friend';
+  console.log(`📝 ${LOG_TAG} Creator first name for emails: ${creatorFirstName}`);
+
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} email sequences nurture sales`, {
     limit: 40,
     threshold: 0.3,
@@ -1381,6 +1406,7 @@ export async function generateAllEmails(funnelId) {
 
 Generate EMAIL SEQUENCES for lead magnet nurture + front-end sales.
 
+CREATOR NAME: ${creatorFirstName}
 AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
@@ -1398,6 +1424,9 @@ FRONT-END SEQUENCE (3 emails):
 - Email 4: Introduce front-end product (benefits focus)
 - Email 5: Handle objections + social proof (overcome resistance)
 - Email 6: Urgency + final CTA (close the sale)
+
+IMPORTANT: Sign off all emails with the creator's name: "${creatorFirstName}"
+Do NOT use placeholder names like "Maria" or generic sign-offs. Use the CREATOR NAME provided above.
 
 Each email JSON:
 {

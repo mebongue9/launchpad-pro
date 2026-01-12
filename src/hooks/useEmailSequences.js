@@ -43,35 +43,37 @@ export function useEmailSequences() {
       const sequences = []
 
       // Lead magnet emails (stored as array in lead_magnets.email_sequence)
+      // Note: batched generator uses "preview_text", older code used "preview" - support both
       if (leadMagnet?.email_sequence && Array.isArray(leadMagnet.email_sequence)) {
         const lmEmails = leadMagnet.email_sequence
         sequences.push({
           sequence_type: 'lead_magnet',
           email_1_subject: lmEmails[0]?.subject || '',
-          email_1_preview: lmEmails[0]?.preview || '',
+          email_1_preview: lmEmails[0]?.preview_text || lmEmails[0]?.preview || '',
           email_1_body: lmEmails[0]?.body || '',
           email_2_subject: lmEmails[1]?.subject || '',
-          email_2_preview: lmEmails[1]?.preview || '',
+          email_2_preview: lmEmails[1]?.preview_text || lmEmails[1]?.preview || '',
           email_2_body: lmEmails[1]?.body || '',
           email_3_subject: lmEmails[2]?.subject || '',
-          email_3_preview: lmEmails[2]?.preview || '',
+          email_3_preview: lmEmails[2]?.preview_text || lmEmails[2]?.preview || '',
           email_3_body: lmEmails[2]?.body || ''
         })
       }
 
       // Front-end emails (stored as array in funnel.front_end.email_sequence)
+      // Note: batched generator uses "preview_text", older code used "preview" - support both
       if (funnel?.front_end?.email_sequence && Array.isArray(funnel.front_end.email_sequence)) {
         const feEmails = funnel.front_end.email_sequence
         sequences.push({
           sequence_type: 'front_end',
           email_1_subject: feEmails[0]?.subject || '',
-          email_1_preview: feEmails[0]?.preview || '',
+          email_1_preview: feEmails[0]?.preview_text || feEmails[0]?.preview || '',
           email_1_body: feEmails[0]?.body || '',
           email_2_subject: feEmails[1]?.subject || '',
-          email_2_preview: feEmails[1]?.preview || '',
+          email_2_preview: feEmails[1]?.preview_text || feEmails[1]?.preview || '',
           email_2_body: feEmails[1]?.body || '',
           email_3_subject: feEmails[2]?.subject || '',
-          email_3_preview: feEmails[2]?.preview || '',
+          email_3_preview: feEmails[2]?.preview_text || feEmails[2]?.preview || '',
           email_3_body: feEmails[2]?.body || ''
         })
       }

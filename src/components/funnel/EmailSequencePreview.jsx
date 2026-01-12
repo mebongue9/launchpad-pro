@@ -209,7 +209,7 @@ export default function EmailSequencePreview({ funnelId, language = 'English' })
             Email Sequences
           </h3>
           <p className="text-sm text-gray-500 mt-1">
-            Maria Wendt style emails for your funnel
+            Personalized email sequences for your funnel
           </p>
         </div>
         <Button
