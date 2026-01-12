@@ -35,6 +35,7 @@ export async function handler(event) {
     const analysis = {
       lead_magnet_id,
       name: lm.name,
+      funnel_id: lm.funnel_id,  // Check if funnel_id is set
 
       // Content analysis
       content: {
