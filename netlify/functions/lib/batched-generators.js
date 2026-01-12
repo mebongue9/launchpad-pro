@@ -29,6 +29,61 @@ const openai = new OpenAI({
 const LOG_TAG = '[BATCHED-GENERATORS]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
+// MARKETPLACE LISTING FRAMEWORK - Creates Etsy/Gumroad-ready descriptions
+// Uses 7-section structure from individual-product-description-framework.md
+// MUST use Unicode bold characters for Etsy/Gumroad compatibility (no markdown)
+const MARKETPLACE_SYSTEM = `You are an expert Etsy and Gumroad marketplace copywriter.
+
+## INDIVIDUAL PRODUCT DESCRIPTION - 7 SECTIONS:
+
+1. **WHAT IT IS:** (1 sentence)
+   - One clear statement with the key promise
+   - Focus on END RESULT, no hype words
+
+2. **WHO IT'S FOR:** (1-2 sentences)
+   - Specific situation + frustration
+   - Make them feel "this is for ME"
+
+3. **PROBLEM SOLVED:** (1 sentence)
+   - Emotional root problem
+   - What they're experiencing right now
+
+4. **KEY BENEFITS:** (4-5 bullet points)
+   - Transformation statements (before → after)
+   - Start with action verbs: Turn, Stop, Get, Start, Finally
+   - These must NOT repeat in What's Inside
+
+5. **WHAT'S INSIDE:** (4-6 bullet points)
+   - Format: "[Bold deliverable] so you can [benefit]"
+   - Benefits here must be DIFFERENT from Key Benefits
+   - Example: "𝟯 𝗵𝗶𝗴𝗵𝗲𝘀𝘁-𝗰𝗼𝗻𝘃𝗲𝗿𝘁𝗶𝗻𝗴 𝗿𝗲𝗲𝗹 𝗳𝗼𝗿𝗺𝗮𝘁𝘀 so you can use proven structures that work in any niche"
+
+6. **WHAT YOU'LL BE ABLE TO DO AFTER GETTING THIS:** (4-5 bullet points)
+   - Format: "[Bold action] [result they'll achieve]"
+   - Show transformed life, flip problems into possibilities
+   - Example: "𝗣𝗼𝘀𝘁 𝗮 𝗿𝗲𝗲𝗹 𝗮𝗻𝗱 𝗸𝗻𝗼𝘄 𝗶𝘁 𝘄𝗶𝗹𝗹 𝗰𝗼𝗻𝘃𝗲𝗿𝘁 instead of hoping someone buys"
+
+7. **CTA:** (1 line)
+   - Short, action-oriented
+   - Action verb + outcome
+
+## UNICODE BOLD CHARACTERS (CRITICAL):
+You MUST use Unicode bold for deliverables and actions. This is how bold displays on Etsy/Gumroad.
+
+Unicode bold alphabet to use:
+- Bold letters: 𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭 𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇
+- Bold numbers: 𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵
+
+DO NOT use markdown ** symbols - they show as raw text on marketplaces.
+
+## SECTION DIVIDERS:
+Use this line between major sections: ━━━━━━━━━━
+
+## marketplace_bullets field:
+Short deliverable names for the "What's Included" display card.
+Format: "[Count/Type] [deliverable]" (no benefits, just scannable items)
+Examples: ["3 Reel Formats", "Filming Tutorials", "Case Studies", "Implementation Guide"]`;
+
 // Helper: Safely parse sections from Claude response with validation
 function safeParseSections(responseText, expectedCount, taskName) {
   if (!responseText) {
@@ -1262,11 +1317,31 @@ Output 5 JSON objects separated by ===SECTION_BREAK=== (no markdown headers, raw
 }
 
 // Task 11: Marketplace Batch 1 (Lead Magnet + Front-End + Bump)
+// Uses 7-section framework with Unicode bold for Etsy/Gumroad
 export async function generateMarketplaceBatch1(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 11: Generating marketplace listings for Lead Magnet + Front-End + Bump`);
 
   const funnel = await getFunnelData(funnelId);
   const { lead_magnet, frontend, bump } = funnel;
+
+  // Get TLDRs for product context (framework uses TLDR as source of truth)
+  const { data: tldrData } = await supabase
+    .from('funnels')
+    .select('front_end_tldr, bump_tldr')
+    .eq('id', funnelId)
+    .single();
+
+  // Get lead magnet TLDR if exists
+  let leadMagnetTldr = null;
+  if (lead_magnet?.id) {
+    const { data: lmData } = await supabase
+      .from('lead_magnets')
+      .select('tldr')
+      .eq('id', lead_magnet.id)
+      .single();
+    leadMagnetTldr = lmData?.tldr;
+  }
+
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} marketplace product listings`, {
     limit: 40,
     threshold: 0.3,
@@ -1275,30 +1350,98 @@ export async function generateMarketplaceBatch1(funnelId) {
 
   const prompt = `${knowledge}
 
-Generate MARKETPLACE LISTINGS for 3 products.
+Generate MARKETPLACE LISTINGS for 3 products using the 7-SECTION FRAMEWORK.
 
-AUDIENCE: ${funnel.audience}
+TARGET AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
-PRODUCTS:
-1. Lead Magnet: "${lead_magnet?.name || 'Lead Magnet'}" (FREE - entry point)
-2. Front-End: "${frontend.name}" (Low-ticket paid product)
-3. Bump: "${bump.name}" (Order bump - quick win)
+== PRODUCT 1: LEAD MAGNET (FREE) ==
+Name: "${lead_magnet?.name || 'Lead Magnet'}"
+Format: ${lead_magnet?.format || 'PDF guide'}
+TLDR (use as source of truth):
+${JSON.stringify(leadMagnetTldr, null, 2) || 'No TLDR available - generate based on name/format'}
 
-Generate 3 sections separated by: ${SECTION_SEPARATOR}
+== PRODUCT 2: FRONT-END ($${frontend?.price || '17'}) ==
+Name: "${frontend?.name}"
+Format: ${frontend?.format || 'Digital product'}
+TLDR (use as source of truth):
+${JSON.stringify(tldrData?.front_end_tldr, null, 2) || 'No TLDR available'}
 
-Output 3 JSON objects separated by ===SECTION_BREAK=== (no markdown, raw JSON only):
+== PRODUCT 3: BUMP ($${bump?.price || '9'}) ==
+Name: "${bump?.name}"
+Format: ${bump?.format || 'Quick-win resource'}
+TLDR (use as source of truth):
+${JSON.stringify(tldrData?.bump_tldr, null, 2) || 'No TLDR available'}
 
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}
-===SECTION_BREAK===
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}
-===SECTION_BREAK===
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}`;
+== 7-SECTION FRAMEWORK FOR marketplace_description ==
+
+For EACH product, create a description with these 7 sections:
+
+𝗪𝗛𝗔𝗧 𝗜𝗧 𝗜𝗦:
+[One sentence - use TLDR "what_it_is" field, refine into clear benefit statement]
+
+𝗪𝗛𝗢 𝗜𝗧'𝗦 𝗙𝗢𝗥:
+[1-2 sentences - use TLDR "who_its_for" field, add situation + frustration]
+
+𝗣𝗥𝗢𝗕𝗟𝗘𝗠 𝗦𝗢𝗟𝗩𝗘𝗗:
+[1 sentence - use TLDR "problem_solved" field, make it emotional]
+
+𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:
+• [Transformation statement 1]
+• [Transformation statement 2]
+• [Transformation statement 3]
+• [Transformation statement 4]
+
+𝗪𝗛𝗔𝗧'𝗦 𝗜𝗡𝗦𝗜𝗗𝗘:
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟭 so you can [specific benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟮 so you can [specific benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟯 so you can [specific benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟰 so you can [specific benefit]
+
+𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢:
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟭 [result they'll achieve]
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟮 [result they'll achieve]
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟯 [result they'll achieve]
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟰 [result they'll achieve]
+
+[CTA - one action-oriented line]
+
+== CRITICAL FORMATTING RULES ==
+
+1. Use Unicode bold characters (𝗔-𝗭, 𝗮-𝘇, 𝟬-𝟵) for:
+   - Section headers
+   - Deliverables in "What's Inside"
+   - Actions in "What You'll Be Able To Do"
+
+2. Use ━━━━━━━━━━ as section dividers
+
+3. NO markdown ** symbols - they show as raw text on Etsy/Gumroad
+
+4. Keep benefits in "Key Benefits" DIFFERENT from benefits in "What's Inside"
+
+== OUTPUT FORMAT ==
+
+marketplace_title: SEO title (MAX 140 chars)
+- Front-load keywords, use | separators
+- Example: "3 Reels That Convert 100 Views to $50 | Proven Formats for Small Creators"
+
+marketplace_bullets: Array of 4-6 short items for display card
+- Format: ["Deliverable 1", "Deliverable 2", ...]
+- No benefits here, just scannable items
+
+marketplace_tags: Array of EXACTLY 13 SEO tags (each MAX 20 chars)
+
+Output 3 JSON objects separated by ${SECTION_SEPARATOR}:
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
+${SECTION_SEPARATOR}
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
+${SECTION_SEPARATOR}
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 12000,
-    system: 'Output exactly 3 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.',
+    max_tokens: 16000,
+    system: MARKETPLACE_SYSTEM + '\n\nOutput exactly 3 JSON objects separated by ===SECTION_BREAK===. Raw JSON only, no markdown code blocks.',
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1329,11 +1472,20 @@ Output 3 JSON objects separated by ===SECTION_BREAK=== (no markdown, raw JSON on
 }
 
 // Task 12: Marketplace Batch 2 (Upsell 1 + Upsell 2)
+// Uses 7-section framework with Unicode bold for Etsy/Gumroad
 export async function generateMarketplaceBatch2(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 12: Generating marketplace listings for Upsell 1 + Upsell 2`);
 
   const funnel = await getFunnelData(funnelId);
   const { upsell1, upsell2 } = funnel;
+
+  // Get TLDRs for product context (framework uses TLDR as source of truth)
+  const { data: tldrData } = await supabase
+    .from('funnels')
+    .select('upsell_1_tldr, upsell_2_tldr')
+    .eq('id', funnelId)
+    .single();
+
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${funnel.audience} premium upsell products`, {
     limit: 40,
     threshold: 0.3,
@@ -1342,27 +1494,94 @@ export async function generateMarketplaceBatch2(funnelId) {
 
   const prompt = `${knowledge}
 
-Generate MARKETPLACE LISTINGS for 2 PREMIUM UPSELLS.
+Generate MARKETPLACE LISTINGS for 2 PREMIUM UPSELL products using the 7-SECTION FRAMEWORK.
 
-AUDIENCE: ${funnel.audience}
+TARGET AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
-PRODUCTS:
-1. Upsell 1: "${upsell1.name}" (Premium upgrade - higher value)
-2. Upsell 2: "${upsell2.name}" (Ultimate solution - complete transformation)
+== PRODUCT 1: UPSELL 1 ($${upsell1?.price || '47'}) ==
+Name: "${upsell1?.name}"
+Format: ${upsell1?.format || 'Comprehensive system'}
+TLDR (use as source of truth):
+${JSON.stringify(tldrData?.upsell_1_tldr, null, 2) || 'No TLDR available'}
 
-Generate 2 sections separated by: ${SECTION_SEPARATOR}
+== PRODUCT 2: UPSELL 2 ($${upsell2?.price || '97'}) ==
+Name: "${upsell2?.name}"
+Format: ${upsell2?.format || 'Complete automation'}
+TLDR (use as source of truth):
+${JSON.stringify(tldrData?.upsell_2_tldr, null, 2) || 'No TLDR available'}
 
-Output 2 JSON objects separated by ===SECTION_BREAK=== (no markdown, raw JSON only):
+== 7-SECTION FRAMEWORK FOR marketplace_description ==
 
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}
-===SECTION_BREAK===
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}`;
+For EACH product, create a description with these 7 sections:
+
+𝗪𝗛𝗔𝗧 𝗜𝗧 𝗜𝗦:
+[One sentence - use TLDR "what_it_is" field, refine into clear benefit statement]
+
+𝗪𝗛𝗢 𝗜𝗧'𝗦 𝗙𝗢𝗥:
+[1-2 sentences - use TLDR "who_its_for" field, add situation + frustration]
+
+𝗣𝗥𝗢𝗕𝗟𝗘𝗠 𝗦𝗢𝗟𝗩𝗘𝗗:
+[1 sentence - use TLDR "problem_solved" field, make it emotional]
+
+𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:
+• [Transformation statement 1]
+• [Transformation statement 2]
+• [Transformation statement 3]
+• [Transformation statement 4]
+
+𝗪𝗛𝗔𝗧'𝗦 𝗜𝗡𝗦𝗜𝗗𝗘:
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟭 so you can [specific benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟮 so you can [specific benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟯 so you can [specific benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟰 so you can [specific benefit]
+
+𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢:
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟭 [result they'll achieve]
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟮 [result they'll achieve]
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟯 [result they'll achieve]
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟰 [result they'll achieve]
+
+[CTA - one action-oriented line]
+
+== CRITICAL FORMATTING RULES ==
+
+1. Use Unicode bold characters (𝗔-𝗭, 𝗮-𝘇, 𝟬-𝟵) for:
+   - Section headers
+   - Deliverables in "What's Inside"
+   - Actions in "What You'll Be Able To Do"
+
+2. Use ━━━━━━━━━━ as section dividers
+
+3. NO markdown ** symbols - they show as raw text on Etsy/Gumroad
+
+4. Keep benefits in "Key Benefits" DIFFERENT from benefits in "What's Inside"
+
+5. Emphasize PREMIUM value - these are higher-ticket products
+
+== OUTPUT FORMAT ==
+
+marketplace_title: SEO title (MAX 140 chars)
+- Front-load keywords, use | separators
+- Emphasize comprehensive/premium value
+- Example: "Complete 5-Week Content System | Daily Revenue Blueprint for Creators"
+
+marketplace_bullets: Array of 4-6 short items for display card
+- Format: ["Deliverable 1", "Deliverable 2", ...]
+- Emphasize completeness and premium value
+- No benefits here, just scannable items
+
+marketplace_tags: Array of EXACTLY 13 SEO tags (each MAX 20 chars)
+
+Output 2 JSON objects separated by ${SECTION_SEPARATOR}:
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
+${SECTION_SEPARATOR}
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 12000,
-    system: 'Output exactly 2 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.',
+    system: MARKETPLACE_SYSTEM + '\n\nOutput exactly 2 JSON objects separated by ===SECTION_BREAK===. Raw JSON only, no markdown code blocks.',
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1482,6 +1701,7 @@ Output 6 JSON objects separated by ===SECTION_BREAK=== (no markdown, no headers,
 }
 
 // Task 14: Bundle Listing
+// Uses enhanced framework with 7 sections for high-converting Etsy/Gumroad descriptions
 export async function generateBundleListing(funnelId) {
   console.log(`📝 ${LOG_TAG} Task 14: Generating bundle listing for complete funnel`);
 
@@ -1493,37 +1713,98 @@ export async function generateBundleListing(funnelId) {
     sourceFunction: 'batched-generators'
   });
 
+  // Get TLDRs for product context
+  const { data: tldrData } = await supabase
+    .from('funnels')
+    .select('front_end_tldr, bump_tldr, upsell_1_tldr, upsell_2_tldr')
+    .eq('id', funnelId)
+    .single();
+
   const prompt = `${knowledge}
 
-Generate BUNDLE LISTING for complete funnel package.
+Generate an ENHANCED BUNDLE LISTING following this exact structure.
 
-AUDIENCE: ${funnel.audience}
+TARGET AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
-COMPLETE BUNDLE INCLUDES:
-1. Lead Magnet: "${lead_magnet?.name || 'Lead Magnet'}"
-2. Front-End: "${frontend?.name || 'Front-End'}"
-3. Bump: "${bump?.name || 'Bump'}"
-4. Upsell 1: "${upsell1?.name || 'Upsell 1'}"
-5. Upsell 2: "${upsell2?.name || 'Upsell 2'}"
+THE 4 PAID PRODUCTS IN THIS BUNDLE (Lead Magnet is FREE, not included in bundle):
 
-Generate bundle listing that positions this as COMPLETE TRANSFORMATION package. Return valid JSON:
+1. FRONT-END: "${frontend?.name || 'Front-End'}" ($${frontend?.price || 17})
+   - Format: ${frontend?.format || 'Digital product'}
+   - TLDR: ${JSON.stringify(tldrData?.front_end_tldr) || 'Entry-level product'}
+
+2. BUMP: "${bump?.name || 'Bump'}" ($${bump?.price || 9})
+   - Format: ${bump?.format || 'Quick-win resource'}
+   - TLDR: ${JSON.stringify(tldrData?.bump_tldr) || 'Complementary add-on'}
+
+3. UPSELL 1: "${upsell1?.name || 'Upsell 1'}" ($${upsell1?.price || 47})
+   - Format: ${upsell1?.format || 'Comprehensive system'}
+   - TLDR: ${JSON.stringify(tldrData?.upsell_1_tldr) || 'Premium upgrade'}
+
+4. UPSELL 2: "${upsell2?.name || 'Upsell 2'}" ($${upsell2?.price || 97})
+   - Format: ${upsell2?.format || 'Complete automation'}
+   - TLDR: ${JSON.stringify(tldrData?.upsell_2_tldr) || 'Ultimate solution'}
+
+== BUNDLE DESCRIPTION FRAMEWORK ==
+
+Generate a description with these 7 SECTIONS (use line breaks between sections):
+
+**SECTION 1 - WHAT IT IS:** (1 sentence)
+Synthesize all 4 products into ONE combined outcome. Focus on the END RESULT.
+Example: "The complete content-to-cash system that turns small audiences into consistent $100+ daily revenue..."
+
+**SECTION 2 - WHO IT'S FOR:** (1-2 sentences)
+Specific person with situation + frustration + readiness for complete solution.
+
+**SECTION 3 - PROBLEM SOLVED:** (1 sentence)
+The ROOT emotional problem - describe the frustrating CYCLE they're stuck in.
+
+**SECTION 4 - KEY BENEFITS:** (5-7 bullet points)
+Transformation statements. Progress from awareness → action → results → freedom.
+Format: "• [Transformation benefit]"
+
+**SECTION 5 - WHAT'S INSIDE:** (one block per product)
+For EACH of the 4 products, use this structure:
+
+[Product Name]
+
+[Unique problem framing - USE DIFFERENT ONE FOR EACH:]
+- Product 1: "The wall every [audience] eventually hits: [problem]"
+- Product 2: "Fixes the problem X% of [audience] have: [problem]"
+- Product 3: "The thing nobody tells you when you start: [problem]"
+- Product 4: "The trap you only discover after [time]: [problem]"
+
+Then 3-4 deliverable bullets:
+• [Deliverable] so you can [benefit]
+• [Deliverable] so you can [benefit]
+
+Use a line divider (---) between products.
+
+**SECTION 6 - WHAT YOU'LL BE ABLE TO DO AFTER:** (5-7 bullet points)
+Transformation statements showing life on the other side.
+Format: "• [Action they can take] [result they'll achieve]"
+
+**SECTION 7 - CTA:** (1 line)
+Short, action-oriented. Example: "Get the complete content-to-cash system"
+
+== OUTPUT FORMAT ==
+
+Return valid JSON:
 {
-  "bundle_title": "Compelling bundle name",
-  "bundle_subtitle": "Short tagline describing complete value",
-  "bundle_description": "4-5 paragraph description highlighting complete journey and transformation across all products",
-  "bundle_bullets": [
-    "What's included item 1",
-    "What's included item 2",
-    ...10-12 bullets covering all products
-  ],
-  "bundle_tags": ["tag1", "tag2", ...5-7 tags],
-  "value_proposition": "Why this bundle is better than buying separately (2-3 sentences)"
-}`;
+  "bundle_title": "SEO-optimized title (max 140 chars)",
+  "bundle_subtitle": "Short tagline",
+  "bundle_description": "[The full 7-section description with proper line breaks]",
+  "bundle_bullets": ["Short what's included 1", "Short what's included 2", ...10-12 items],
+  "bundle_tags": ["tag1", "tag2", ...5-7 SEO tags],
+  "value_proposition": "2-3 sentences on why bundle > buying separately"
+}
+
+CRITICAL: Use plain text only. NO markdown symbols like ** or *. Use line breaks for structure.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 8000,
+    max_tokens: 12000,
+    system: 'You are an expert Etsy/Gumroad marketplace copywriter. Output valid JSON only, no markdown code blocks.',
     messages: [{ role: 'user', content: prompt }]
   });
 

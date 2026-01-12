@@ -151,6 +151,150 @@ export async function handler(event) {
       }
     }
 
+    // Transform marketplace descriptions to 7-section format using TLDRs
+    if (action === 'transform_marketplace') {
+      const levels = ['front_end', 'bump', 'upsell_1', 'upsell_2'];
+      const tldrColumns = {
+        front_end: funnel.front_end_tldr,
+        bump: funnel.bump_tldr,
+        upsell_1: funnel.upsell_1_tldr,
+        upsell_2: funnel.upsell_2_tldr
+      };
+
+      // Helper: Convert text to Unicode bold
+      const toBold = (text) => {
+        if (!text) return '';
+        const boldMap = {
+          'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜',
+          'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥',
+          'S': '𝗦', 'T': '𝗧', 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
+          'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶',
+          'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿',
+          's': '𝘀', 't': '𝘁', 'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
+          '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰', '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵'
+        };
+        return text.split('').map(c => boldMap[c] || c).join('');
+      };
+
+      // Helper: Transform TLDR to 7-section description
+      const transformTldr = (tldr, productName) => {
+        if (!tldr) return null;
+
+        const divider = '━━━━━━━━━━';
+
+        // Build the 7-section description
+        let description = '';
+
+        // Section 1: WHAT IT IS
+        description += `${toBold("WHAT IT IS:")}\n`;
+        description += `${tldr.what_it_is || 'A powerful resource to help you succeed'}\n\n`;
+        description += `${divider}\n\n`;
+
+        // Section 2: WHO IT'S FOR
+        description += `${toBold("WHO IT'S FOR:")}\n`;
+        description += `${tldr.who_its_for || 'Creators ready to take action'}\n\n`;
+        description += `${divider}\n\n`;
+
+        // Section 3: PROBLEM SOLVED
+        description += `${toBold("PROBLEM SOLVED:")}\n`;
+        description += `${tldr.problem_solved || 'Overcoming common challenges in your niche'}\n\n`;
+        description += `${divider}\n\n`;
+
+        // Section 4: KEY BENEFITS
+        description += `${toBold("KEY BENEFITS:")}\n`;
+        const benefits = tldr.key_benefits || [];
+        benefits.forEach(b => {
+          description += `• ${b}\n`;
+        });
+        description += `\n${divider}\n\n`;
+
+        // Section 5: WHAT'S INSIDE
+        description += `${toBold("WHAT'S INSIDE:")}\n`;
+        const items = tldr.whats_inside || [];
+        items.forEach(item => {
+          // Make the main item bold, add generic benefit
+          const boldItem = toBold(item);
+          description += `• ${boldItem} so you can implement immediately\n`;
+        });
+        description += `\n${divider}\n\n`;
+
+        // Section 6: WHAT YOU'LL BE ABLE TO DO
+        description += `${toBold("WHAT YOU'LL BE ABLE TO DO AFTER GETTING THIS:")}\n`;
+        // Generate transformation statements from benefits
+        benefits.slice(0, 4).forEach(b => {
+          const action = b.split(' ').slice(0, 4).join(' ');
+          description += `• ${toBold(action)} and see real results\n`;
+        });
+        description += `\n${divider}\n\n`;
+
+        // Section 7: CTA
+        description += `${tldr.call_to_action || 'Get instant access now'}`;
+
+        return description;
+      };
+
+      const transformResults = {};
+
+      for (const level of levels) {
+        const product = funnel[level];
+        const tldr = tldrColumns[level];
+
+        if (!product || !tldr) {
+          transformResults[level] = { skipped: true, reason: !product ? 'No product' : 'No TLDR' };
+          continue;
+        }
+
+        const newDescription = transformTldr(tldr, product.name);
+        if (!newDescription) {
+          transformResults[level] = { skipped: true, reason: 'Transform failed' };
+          continue;
+        }
+
+        // Get existing marketplace_listing or create new
+        const existingListing = product.marketplace_listing || {};
+
+        // Keep existing title and tags, update description
+        const updatedListing = {
+          ...existingListing,
+          marketplace_description: newDescription,
+          // Keep bullets as short items for display card
+          marketplace_bullets: (tldr.whats_inside || []).slice(0, 5)
+        };
+
+        // Update the product with new marketplace_listing
+        const updateObj = {
+          [level]: { ...product, marketplace_listing: updatedListing },
+          updated_at: new Date().toISOString()
+        };
+
+        const { error } = await supabase
+          .from('funnels')
+          .update(updateObj)
+          .eq('id', funnel_id);
+
+        if (error) {
+          transformResults[level] = { error: error.message };
+        } else {
+          transformResults[level] = {
+            success: true,
+            description_length: newDescription.length,
+            bullets_count: updatedListing.marketplace_bullets.length
+          };
+        }
+      }
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          funnel_id,
+          results: transformResults,
+          message: 'Marketplace descriptions transformed to 7-section format'
+        })
+      };
+    }
+
     // Fix 2: Transform bundle_listing field names
     if (action === 'all' || action === 'bundle') {
       const oldBundle = funnel.bundle_listing;

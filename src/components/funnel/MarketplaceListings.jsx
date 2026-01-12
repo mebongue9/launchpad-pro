@@ -95,6 +95,14 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
 
       {expanded && (
         <div className="p-4 bg-white border-t border-gray-200 space-y-6">
+          {/* Copy Full Listing Button - copies title + description for Etsy/Gumroad */}
+          <div className="flex justify-end">
+            <CopyButton
+              text={`${listing.marketplace_title || ''}\n\n${listing.marketplace_description || ''}`}
+              label="Copy Full Listing (Title + Description)"
+            />
+          </div>
+
           {/* Marketplace Title */}
           <div>
             <div className="flex items-center justify-between mb-2">
