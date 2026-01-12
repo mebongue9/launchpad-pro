@@ -177,84 +177,84 @@ export async function handler(event) {
         return text.split('').map(c => boldMap[c] || c).join('');
       };
 
-      // Helper: Generate unique "so you can" benefit for each deliverable
-      const generateSoYouCan = (item, index, totalItems) => {
-        const itemLower = item.toLowerCase();
+      // Helper: Generate unique "so you can" benefits for all items (no duplicates)
+      const generateAllSoYouCans = (items) => {
+        const usedBenefits = new Set();
 
-        // Match patterns to generate contextual benefits
-        if (itemLower.includes('template') || itemLower.includes('script')) {
-          return 'so you can copy, paste, and start using them immediately without writing from scratch';
-        }
-        if (itemLower.includes('step-by-step') || itemLower.includes('guide') || itemLower.includes('blueprint')) {
-          return 'so you can follow along and implement without getting stuck or confused';
-        }
-        if (itemLower.includes('case stud') || itemLower.includes('example')) {
-          return 'so you can see exactly what works and model your approach after proven successes';
-        }
-        if (itemLower.includes('format') || itemLower.includes('framework') || itemLower.includes('structure')) {
-          return 'so you can use proven structures instead of guessing what might work';
-        }
-        if (itemLower.includes('automat') || itemLower.includes('system')) {
-          return 'so you can set it up once and let it work for you on autopilot';
-        }
-        if (itemLower.includes('calendar') || itemLower.includes('schedule') || itemLower.includes('plan')) {
-          return 'so you can stay consistent without constantly figuring out what to do next';
-        }
-        if (itemLower.includes('strateg') || itemLower.includes('method')) {
-          return 'so you can approach this with confidence knowing the path is proven';
-        }
-        if (itemLower.includes('tutorial') || itemLower.includes('training') || itemLower.includes('lesson')) {
-          return 'so you can learn exactly how to do it even if you\'re starting from zero';
-        }
-        if (itemLower.includes('checklist') || itemLower.includes('worksheet')) {
-          return 'so you can track your progress and make sure you don\'t miss anything important';
-        }
-        if (itemLower.includes('swipe') || itemLower.includes('copy-paste') || itemLower.includes('ready-to-use')) {
-          return 'so you can start using them today without any additional work';
-        }
-        if (itemLower.includes('email') || itemLower.includes('sequence')) {
-          return 'so you can nurture leads and close sales even while you sleep';
-        }
-        if (itemLower.includes('dm') || itemLower.includes('message') || itemLower.includes('conversation')) {
-          return 'so you can confidently turn conversations into sales without feeling pushy';
-        }
-        if (itemLower.includes('objection') || itemLower.includes('negotiat')) {
-          return 'so you can handle any pushback and close the sale anyway';
-        }
-        if (itemLower.includes('monetiz') || itemLower.includes('revenue') || itemLower.includes('income')) {
-          return 'so you can start making money faster instead of leaving cash on the table';
-        }
-        if (itemLower.includes('content') || itemLower.includes('post')) {
-          return 'so you can create content that actually converts instead of just getting likes';
-        }
-        if (itemLower.includes('follow-up') || itemLower.includes('followup')) {
-          return 'so you can stay top of mind and close deals that would otherwise slip away';
-        }
-        if (itemLower.includes('closing') || itemLower.includes('close')) {
-          return 'so you can seal the deal confidently every single time';
-        }
-        if (itemLower.includes('lead magnet') || itemLower.includes('freebie')) {
-          return 'so you can attract qualified leads who are ready to buy';
-        }
-        if (itemLower.includes('funnel') || itemLower.includes('sales page')) {
-          return 'so you can guide prospects smoothly from interest to purchase';
-        }
-        if (itemLower.includes('pricing') || itemLower.includes('price')) {
-          return 'so you can charge what you\'re worth and have buyers happily pay it';
-        }
-        if (itemLower.includes('tracking') || itemLower.includes('analytics') || itemLower.includes('metric')) {
-          return 'so you can see what\'s working and double down on your best performers';
-        }
+        // All possible benefits organized by priority/specificity
+        const benefitPatterns = [
+          { keywords: ['step-by-step', 'guide', 'blueprint', 'implementation'], benefit: 'so you can follow along and implement without getting stuck or confused' },
+          { keywords: ['case stud', 'example', 'showing how'], benefit: 'so you can see exactly what works and model your approach after proven successes' },
+          { keywords: ['format', 'framework', 'structure'], benefit: 'so you can use proven structures instead of guessing what might work' },
+          { keywords: ['automat', 'system'], benefit: 'so you can set it up once and let it work for you on autopilot' },
+          { keywords: ['tutorial', 'training', 'lesson'], benefit: 'so you can learn exactly how to do it even if you\'re starting from zero' },
+          { keywords: ['checklist', 'worksheet'], benefit: 'so you can track your progress and make sure you don\'t miss anything important' },
+          { keywords: ['swipe', 'copy-paste', 'ready-to-use'], benefit: 'so you can start using them today without any additional work' },
+          { keywords: ['follow-up', 'followup'], benefit: 'so you can stay top of mind and close deals that would otherwise slip away' },
+          { keywords: ['closing', 'close'], benefit: 'so you can seal the deal confidently every single time' },
+          { keywords: ['objection'], benefit: 'so you can handle any pushback and close the sale anyway' },
+          { keywords: ['negotiat', 'price negotiation'], benefit: 'so you can maintain your value while still closing the deal' },
+          { keywords: ['email', 'sequence'], benefit: 'so you can nurture leads and close sales even while you sleep' },
+          { keywords: ['dm', 'message', 'conversation'], benefit: 'so you can confidently turn conversations into sales without feeling pushy' },
+          { keywords: ['monetiz', 'revenue', 'income'], benefit: 'so you can start making money faster instead of leaving cash on the table' },
+          { keywords: ['content', 'post'], benefit: 'so you can create content that actually converts instead of just getting likes' },
+          { keywords: ['calendar', 'schedule', 'plan', 'days of'], benefit: 'so you can stay consistent without constantly figuring out what to do next' },
+          { keywords: ['template'], benefit: 'so you can copy, paste, and start using them immediately without writing from scratch' },
+          { keywords: ['script'], benefit: 'so you can know exactly what to say in every situation' },
+          { keywords: ['lead magnet', 'freebie'], benefit: 'so you can attract qualified leads who are ready to buy' },
+          { keywords: ['funnel', 'sales page'], benefit: 'so you can guide prospects smoothly from interest to purchase' },
+          { keywords: ['pricing', 'price'], benefit: 'so you can charge what you\'re worth and have buyers happily pay it' },
+          { keywords: ['tracking', 'analytics', 'metric'], benefit: 'so you can see what\'s working and double down on your best performers' },
+          { keywords: ['strateg', 'method'], benefit: 'so you can approach this with confidence knowing the path is proven' },
+          { keywords: ['product pitch', 'pitch'], benefit: 'so you can seamlessly weave in offers without sounding salesy' },
+          { keywords: ['integration'], benefit: 'so you can connect everything and have it work together smoothly' },
+          { keywords: ['optimization', 'tips'], benefit: 'so you can continually improve your results over time' }
+        ];
 
-        // Fallback options based on position (ensure variety)
-        const fallbacks = [
+        // Fallback benefits (used when no pattern matches or benefit already used)
+        const fallbackBenefits = [
           'so you can implement right away without any guesswork',
           'so you can skip the trial and error and get results faster',
           'so you can have everything you need in one place',
           'so you can take action immediately with complete confidence',
-          'so you can see results without wasting time figuring it out yourself'
+          'so you can see results without wasting time figuring it out yourself',
+          'so you can get started today and see progress immediately',
+          'so you can avoid common mistakes that slow others down',
+          'so you can focus on what matters instead of figuring out the basics'
         ];
-        return fallbacks[index % fallbacks.length];
+
+        const results = [];
+        let fallbackIndex = 0;
+
+        for (const item of items) {
+          const itemLower = item.toLowerCase();
+          let matchedBenefit = null;
+
+          // Try to find a matching pattern that hasn't been used yet
+          for (const pattern of benefitPatterns) {
+            const hasKeyword = pattern.keywords.some(kw => itemLower.includes(kw));
+            if (hasKeyword && !usedBenefits.has(pattern.benefit)) {
+              matchedBenefit = pattern.benefit;
+              usedBenefits.add(pattern.benefit);
+              break;
+            }
+          }
+
+          // If no match found or already used, use a fallback
+          if (!matchedBenefit) {
+            // Find next unused fallback
+            while (usedBenefits.has(fallbackBenefits[fallbackIndex % fallbackBenefits.length]) && fallbackIndex < fallbackBenefits.length * 2) {
+              fallbackIndex++;
+            }
+            matchedBenefit = fallbackBenefits[fallbackIndex % fallbackBenefits.length];
+            usedBenefits.add(matchedBenefit);
+            fallbackIndex++;
+          }
+
+          results.push(matchedBenefit);
+        }
+
+        return results;
       };
 
       // Helper: Transform TLDR to 7-section description
@@ -287,12 +287,12 @@ export async function handler(event) {
         description += benefits.map(b => `• ${b}`).join('\n');
         description += `\n\n${divider}\n\n`;
 
-        // Section 5: WHAT'S INSIDE - Each item gets UNIQUE "so you can" benefit
+        // Section 5: WHAT'S INSIDE - Each item gets UNIQUE "so you can" benefit (no duplicates)
         description += `${toBold("WHAT'S INSIDE:")}\n\n`;
         const items = tldr.whats_inside || [];
+        const soYouCans = generateAllSoYouCans(items);
         description += items.map((item, idx) => {
-          const soYouCan = generateSoYouCan(item, idx, items.length);
-          return `• ${toBold(item)} ${soYouCan}`;
+          return `• ${toBold(item)} ${soYouCans[idx]}`;
         }).join('\n');
         description += `\n\n${divider}\n\n`;
 
