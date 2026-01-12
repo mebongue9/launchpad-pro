@@ -63,6 +63,13 @@ export function useMarketplaceListings() {
       if (fetchError) throw fetchError
 
       // Extract marketplace_listing from each product's JSONB
+      // MARKETPLACE STRUCTURE (funnels.{product}.marketplace_listing JSONB):
+      // {
+      //   marketplace_title: "SEO title (max 140 chars)",
+      //   marketplace_description: "Etsy/Gumroad description",
+      //   marketplace_bullets: ["What's Included bullet 1", "bullet 2", ...],
+      //   marketplace_tags: ["tag1", "tag2", ...] (array of strings)
+      // }
       const listings = {}
       const levels = ['front_end', 'bump', 'upsell_1', 'upsell_2']
 
@@ -76,7 +83,7 @@ export function useMarketplaceListings() {
             marketplace_tags: Array.isArray(ml.marketplace_tags)
               ? ml.marketplace_tags.join(', ')
               : (ml.marketplace_tags || ''),
-            marketplace_bullets: ml.marketplace_bullets || []
+            marketplace_bullets: ml.marketplace_bullets || []  // "What's Included" section
           }
         }
       }

@@ -125,6 +125,12 @@ export function useLeadMagnets() {
             format: leadMagnetData.format || 'guide',
             topic: leadMagnetData.topic,
             keyword: leadMagnetData.keyword,
+            // CONTENT STRUCTURE (lead_magnets.content JSONB):
+            // {
+            //   cover: { type: "cover", title, author, tagline, subtitle },
+            //   chapters: [{ type: "chapter", number, title, content }, ...]
+            // }
+            // NOTE: Generator may use "chapters" or "sections" - handle both
             content: (leadMagnetData.sections || leadMagnetData.chapters) ? leadMagnetData : null,
             caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
             caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version,
@@ -148,6 +154,7 @@ export function useLeadMagnets() {
             format: leadMagnetData.format || 'guide',
             topic: leadMagnetData.topic,
             keyword: leadMagnetData.keyword,
+            // CONTENT STRUCTURE: { cover: {...}, chapters: [...] }
             content: (leadMagnetData.sections || leadMagnetData.chapters) ? leadMagnetData : null,
             caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
             caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version
