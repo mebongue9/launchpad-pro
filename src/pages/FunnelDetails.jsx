@@ -404,7 +404,35 @@ export default function FunnelDetails() {
 
         {/* TLDR Tab - Shows all 4 product TLDRs */}
         {activeTab === 'tldr' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
+            {/* Copy All TLDRs Button */}
+            <div className="flex justify-end">
+              <CopyButton
+                text={productLevels.map(level => {
+                  const product = funnel[level]
+                  const tldr = funnel[`${level}_tldr`]
+                  if (!product || !tldr) return ''
+
+                  let text = `=== ${productLabels[level].toUpperCase()}: ${product.name} ($${product.price}) ===\n\n`
+                  if (tldr.what_it_is) text += `WHAT IT IS:\n${tldr.what_it_is}\n\n`
+                  if (tldr.who_its_for) text += `WHO IT'S FOR:\n${tldr.who_its_for}\n\n`
+                  if (tldr.problem_solved) text += `PROBLEM SOLVED:\n${tldr.problem_solved}\n\n`
+                  if (tldr.whats_inside) {
+                    const items = Array.isArray(tldr.whats_inside) ? tldr.whats_inside.join('\n• ') : tldr.whats_inside
+                    text += `WHAT'S INSIDE:\n• ${items}\n\n`
+                  }
+                  if (tldr.key_benefits) {
+                    const benefits = Array.isArray(tldr.key_benefits) ? tldr.key_benefits.join('\n• ') : tldr.key_benefits
+                    text += `KEY BENEFITS:\n• ${benefits}\n\n`
+                  }
+                  if (tldr.cta) text += `CALL TO ACTION:\n${tldr.cta}\n\n`
+                  return text
+                }).filter(Boolean).join('\n' + '─'.repeat(50) + '\n\n')}
+                label="Copy All TLDRs"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {productLevels.map((level) => {
               const product = funnel[level]
               const tldr = funnel[`${level}_tldr`]
@@ -516,6 +544,7 @@ export default function FunnelDetails() {
                 </Card>
               )
             })}
+            </div>
           </div>
         )}
       </div>
