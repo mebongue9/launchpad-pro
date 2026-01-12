@@ -440,6 +440,25 @@ export default function FunnelDetails() {
 
               if (!product) return null
 
+              // Build copy text for this product's TLDR
+              const buildTldrCopyText = () => {
+                if (!tldr) return ''
+                let text = `${productLabels[level].toUpperCase()}: ${product.name}\n\n`
+                if (tldr.what_it_is) text += `WHAT IT IS:\n${tldr.what_it_is}\n\n`
+                if (tldr.who_its_for) text += `WHO IT'S FOR:\n${tldr.who_its_for}\n\n`
+                if (tldr.problem_solved) text += `PROBLEM SOLVED:\n${tldr.problem_solved}\n\n`
+                if (tldr.whats_inside) {
+                  const items = Array.isArray(tldr.whats_inside) ? tldr.whats_inside.join('\n• ') : tldr.whats_inside
+                  text += `WHAT'S INSIDE:\n• ${items}\n\n`
+                }
+                if (tldr.key_benefits) {
+                  const benefits = Array.isArray(tldr.key_benefits) ? tldr.key_benefits.join('\n• ') : tldr.key_benefits
+                  text += `KEY BENEFITS:\n• ${benefits}\n\n`
+                }
+                if (tldr.cta) text += `CALL TO ACTION:\n${tldr.cta}`
+                return text.trim()
+              }
+
               return (
                 <Card key={level}>
                   <div className="flex items-center justify-between mb-4">
@@ -449,7 +468,10 @@ export default function FunnelDetails() {
                         {productLabels[level]}
                       </span>
                     </div>
-                    <span className="text-green-600 font-semibold">${product.price}</span>
+                    <div className="flex items-center gap-3">
+                      {tldr && <CopyButton text={buildTldrCopyText()} label="Copy All" />}
+                      <span className="text-green-600 font-semibold">${product.price}</span>
+                    </div>
                   </div>
                   <h3 className="font-semibold text-gray-900 mb-4">{product.name}</h3>
 
