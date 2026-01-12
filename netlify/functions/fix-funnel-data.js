@@ -202,31 +202,25 @@ export async function handler(event) {
         description += `${divider}\n\n`;
 
         // Section 4: KEY BENEFITS
-        description += `${toBold("KEY BENEFITS:")}\n`;
+        description += `${toBold("KEY BENEFITS:")}\n\n`;
         const benefits = tldr.key_benefits || [];
-        benefits.forEach(b => {
-          description += `• ${b}\n`;
-        });
-        description += `\n${divider}\n\n`;
+        description += benefits.map(b => `• ${b}`).join('\n');
+        description += `\n\n${divider}\n\n`;
 
         // Section 5: WHAT'S INSIDE
-        description += `${toBold("WHAT'S INSIDE:")}\n`;
+        description += `${toBold("WHAT'S INSIDE:")}\n\n`;
         const items = tldr.whats_inside || [];
-        items.forEach(item => {
-          // Make the main item bold, add generic benefit
+        description += items.map(item => {
           const boldItem = toBold(item);
-          description += `• ${boldItem} so you can implement immediately\n`;
-        });
-        description += `\n${divider}\n\n`;
+          return `• ${boldItem} so you can implement immediately`;
+        }).join('\n');
+        description += `\n\n${divider}\n\n`;
 
         // Section 6: WHAT YOU'LL BE ABLE TO DO
-        description += `${toBold("WHAT YOU'LL BE ABLE TO DO AFTER GETTING THIS:")}\n`;
-        // Generate transformation statements from benefits
-        benefits.slice(0, 4).forEach(b => {
-          const action = b.split(' ').slice(0, 4).join(' ');
-          description += `• ${toBold(action)} and see real results\n`;
-        });
-        description += `\n${divider}\n\n`;
+        description += `${toBold("WHAT YOU'LL BE ABLE TO DO AFTER GETTING THIS:")}\n\n`;
+        // Use full benefit text as transformation statement
+        description += benefits.slice(0, 4).map(b => `• ${toBold(b)}`).join('\n');
+        description += `\n\n${divider}\n\n`;
 
         // Section 7: CTA
         description += `${tldr.cta || tldr.call_to_action || 'Get instant access now'}`;

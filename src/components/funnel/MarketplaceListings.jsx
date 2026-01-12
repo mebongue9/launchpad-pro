@@ -131,14 +131,39 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
               </span>
               <CopyButton text={listing.marketplace_description || ''} label="Copy" />
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-80 overflow-y-auto">
+            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-[500px] overflow-y-auto">
               {listing.marketplace_description ? (
                 <div className="space-y-3">
-                  {listing.marketplace_description.split(/\n\n+/).map((paragraph, idx) => (
-                    <p key={idx} className="leading-relaxed">
-                      {paragraph.trim()}
-                    </p>
-                  ))}
+                  {listing.marketplace_description.split(/\n\n+/).map((paragraph, idx) => {
+                    const trimmed = paragraph.trim()
+
+                    // Handle Unicode dividers (━━━━━━━━━━)
+                    if (trimmed.match(/^[━─]+$/)) {
+                      return <hr key={idx} className="my-4 border-gray-200" />
+                    }
+
+                    // Handle bullet points (• or -)
+                    if (trimmed.startsWith('•') || trimmed.startsWith('-')) {
+                      const lines = trimmed.split('\n').filter(l => l.trim())
+                      return (
+                        <ul key={idx} className="space-y-2 pl-1">
+                          {lines.map((line, lineIdx) => (
+                            <li key={lineIdx} className="flex items-start gap-2">
+                              <span className="text-green-500 mt-0.5">•</span>
+                              <span>{line.replace(/^[•\-]\s*/, '')}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )
+                    }
+
+                    // Regular paragraph
+                    return (
+                      <p key={idx} className="leading-relaxed">
+                        {trimmed}
+                      </p>
+                    )
+                  })}
                 </div>
               ) : (
                 'No description generated'
