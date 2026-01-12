@@ -52,6 +52,37 @@ export async function handler(event) {
       };
     }
 
+    // Debug all - show TLDRs and bundle data for building new bundle description
+    if (action === 'debug_tldrs_bundle') {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          front_end: {
+            name: funnel.front_end?.name,
+            price: funnel.front_end?.price,
+            tldr: funnel.front_end?.tldr || funnel.front_end_tldr
+          },
+          bump: {
+            name: funnel.bump?.name,
+            price: funnel.bump?.price,
+            tldr: funnel.bump?.tldr || funnel.bump_tldr
+          },
+          upsell_1: {
+            name: funnel.upsell_1?.name,
+            price: funnel.upsell_1?.price,
+            tldr: funnel.upsell_1?.tldr || funnel.upsell_1_tldr
+          },
+          upsell_2: {
+            name: funnel.upsell_2?.name,
+            price: funnel.upsell_2?.price,
+            tldr: funnel.upsell_2?.tldr || funnel.upsell_2_tldr
+          },
+          bundle_listing: funnel.bundle_listing || null
+        }, null, 2)
+      };
+    }
+
     // Fix 1: Copy TLDRs from nested JSONB to top-level columns
     if (action === 'all' || action === 'tldrs') {
       const tldrUpdate = {};
