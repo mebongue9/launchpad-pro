@@ -184,14 +184,77 @@ export default function BundlePreview({ funnel, language = 'English', onRefresh 
               </span>
               <CopyButton text={bundle.etsy_description || bundle.normal_description} label="Copy" />
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-80 overflow-y-auto">
+            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-[600px] overflow-y-auto">
               {(bundle.etsy_description || bundle.normal_description) ? (
                 <div className="space-y-3">
-                  {(bundle.etsy_description || bundle.normal_description).split(/\n\n+/).map((paragraph, idx) => (
-                    <p key={idx} className="leading-relaxed">
-                      {paragraph.trim()}
-                    </p>
-                  ))}
+                  {(bundle.etsy_description || bundle.normal_description).split(/\n\n+/).map((paragraph, idx) => {
+                    const trimmed = paragraph.trim()
+                    // Handle section headers (lines starting with **)
+                    if (trimmed.startsWith('**') && trimmed.endsWith('**')) {
+                      return (
+                        <h4 key={idx} className="font-bold text-gray-900 mt-4 first:mt-0">
+                          {trimmed.replace(/\*\*/g, '')}
+                        </h4>
+                      )
+                    }
+                    // Handle headers with colons (like "WHAT IT IS:")
+                    if (trimmed.match(/^\*\*[A-Z\s']+:\*\*$/)) {
+                      return (
+                        <h4 key={idx} className="font-bold text-gray-900 mt-4 first:mt-0 text-base">
+                          {trimmed.replace(/\*\*/g, '')}
+                        </h4>
+                      )
+                    }
+                    // Handle dividers
+                    if (trimmed === '---') {
+                      return <hr key={idx} className="my-4 border-gray-200" />
+                    }
+                    // Handle bullet points
+                    if (trimmed.startsWith('•') || trimmed.startsWith('-') || trimmed.startsWith('✓')) {
+                      const lines = trimmed.split('\n').filter(l => l.trim())
+                      return (
+                        <ul key={idx} className="space-y-2 pl-1">
+                          {lines.map((line, lineIdx) => {
+                            // Parse bold text within bullets
+                            const parts = line.replace(/^[•\-✓]\s*/, '').split(/(\*\*[^*]+\*\*)/)
+                            return (
+                              <li key={lineIdx} className="flex items-start gap-2">
+                                <span className="text-green-500 mt-0.5">•</span>
+                                <span>
+                                  {parts.map((part, partIdx) => {
+                                    if (part.startsWith('**') && part.endsWith('**')) {
+                                      return <strong key={partIdx}>{part.slice(2, -2)}</strong>
+                                    }
+                                    return part
+                                  })}
+                                </span>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )
+                    }
+                    // Handle italic problem framings
+                    if (trimmed.startsWith('*') && trimmed.endsWith('*') && !trimmed.startsWith('**')) {
+                      return (
+                        <p key={idx} className="italic text-gray-600 leading-relaxed">
+                          {trimmed.slice(1, -1)}
+                        </p>
+                      )
+                    }
+                    // Regular paragraph - parse inline bold
+                    const parts = trimmed.split(/(\*\*[^*]+\*\*)/)
+                    return (
+                      <p key={idx} className="leading-relaxed">
+                        {parts.map((part, partIdx) => {
+                          if (part.startsWith('**') && part.endsWith('**')) {
+                            return <strong key={partIdx}>{part.slice(2, -2)}</strong>
+                          }
+                          return part
+                        })}
+                      </p>
+                    )
+                  })}
                 </div>
               ) : (
                 'No description generated'

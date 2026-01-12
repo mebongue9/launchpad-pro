@@ -83,6 +83,43 @@ export async function handler(event) {
       };
     }
 
+    // Update bundle description with new structured format
+    if (action === 'update_bundle_description') {
+      const { new_description } = JSON.parse(event.body || '{}');
+      if (!new_description) {
+        return {
+          statusCode: 400,
+          body: JSON.stringify({ error: 'Missing new_description' })
+        };
+      }
+
+      const updatedBundle = {
+        ...funnel.bundle_listing,
+        etsy_description: new_description,
+        normal_description: new_description
+      };
+
+      const { error: updateError } = await supabase
+        .from('funnels')
+        .update({
+          bundle_listing: updatedBundle,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', funnel_id);
+
+      if (updateError) throw updateError;
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          message: 'Bundle description updated',
+          description_length: new_description.length
+        })
+      };
+    }
+
     // Fix 1: Copy TLDRs from nested JSONB to top-level columns
     if (action === 'all' || action === 'tldrs') {
       const tldrUpdate = {};
