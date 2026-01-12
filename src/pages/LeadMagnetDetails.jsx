@@ -255,9 +255,14 @@ export default function LeadMagnetDetails() {
   // Parse content safely - prevents page crash on invalid JSON
   const content = safeJsonParse(leadMagnet.content, { chapters: [] })
 
-  // Get chapters from content
-  const chapters = content?.chapters || []
-  const cover = content?.cover || {}
+  // Get chapters from content - handle both old format (chapters/cover) and new format (sections array)
+  const sections = content?.sections || []
+  const chapters = sections.length > 0
+    ? sections.filter(s => s.type === 'chapter')
+    : (content?.chapters || [])
+  const cover = sections.length > 0
+    ? (sections.find(s => s.type === 'cover') || {})
+    : (content?.cover || {})
 
   // Get TLDR data safely
   const tldr = safeJsonParse(leadMagnet.tldr, null)

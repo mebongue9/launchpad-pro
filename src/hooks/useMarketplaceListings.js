@@ -75,7 +75,8 @@ export function useMarketplaceListings() {
             marketplace_description: ml.marketplace_description || '',
             marketplace_tags: Array.isArray(ml.marketplace_tags)
               ? ml.marketplace_tags.join(', ')
-              : (ml.marketplace_tags || '')
+              : (ml.marketplace_tags || ''),
+            marketplace_bullets: ml.marketplace_bullets || []
           }
         }
       }

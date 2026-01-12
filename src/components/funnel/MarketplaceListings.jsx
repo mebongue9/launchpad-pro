@@ -138,23 +138,22 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
             </div>
           </div>
 
-          {/* Marketplace Bullets */}
+          {/* What's Included */}
           {listing.marketplace_bullets && listing.marketplace_bullets.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Key Selling Points ({listing.marketplace_bullets.length})
+                <span className="text-sm font-medium text-gray-700">
+                  What's Included
                 </span>
                 <CopyButton
                   text={listing.marketplace_bullets.map(b => `• ${b}`).join('\n')}
                   label="Copy All"
                 />
               </div>
-              <ul className="p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg space-y-2">
+              <ul className="space-y-2 p-3 bg-gray-50 rounded-lg">
                 {listing.marketplace_bullets.map((bullet, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
-                    <span className="text-green-500 mt-0.5">✓</span>
+                    <span className="text-green-500 mt-0.5">•</span>
                     {bullet}
                   </li>
                 ))}
