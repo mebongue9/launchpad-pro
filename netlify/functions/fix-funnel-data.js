@@ -218,8 +218,8 @@ export async function handler(event) {
 
         // Section 6: WHAT YOU'LL BE ABLE TO DO
         description += `${toBold("WHAT YOU'LL BE ABLE TO DO AFTER GETTING THIS:")}\n\n`;
-        // Use full benefit text as transformation statement
-        description += benefits.slice(0, 4).map(b => `• ${toBold(b)}`).join('\n');
+        // Use benefit text as transformation statements (not bold)
+        description += benefits.slice(0, 4).map(b => `• ${b}`).join('\n');
         description += `\n\n${divider}\n\n`;
 
         // Section 7: CTA
