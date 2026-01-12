@@ -112,7 +112,7 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
             </p>
           </div>
 
-          {/* Etsy/Gumroad Description */}
+          {/* Etsy/Gumroad Description - formatted for readability */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
@@ -123,8 +123,18 @@ function ProductListing({ level, listing, productName, expanded, onToggle }) {
               </span>
               <CopyButton text={listing.marketplace_description || ''} label="Copy" />
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-              {listing.marketplace_description || 'No description generated'}
+            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-80 overflow-y-auto">
+              {listing.marketplace_description ? (
+                <div className="space-y-3">
+                  {listing.marketplace_description.split(/\n\n+/).map((paragraph, idx) => (
+                    <p key={idx} className="leading-relaxed">
+                      {paragraph.trim()}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                'No description generated'
+              )}
             </div>
           </div>
 

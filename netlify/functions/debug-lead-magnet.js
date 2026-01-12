@@ -31,11 +31,60 @@ export async function handler(event) {
 
     if (error) throw error;
 
+    // Check funnel's lead_magnet_id if funnel_id exists
+    let funnelCheck = null;
+    let otherLeadMagnet = null;
+    if (lm.funnel_id) {
+      const { data: funnel, error: funnelError } = await supabase
+        .from('funnels')
+        .select('id, lead_magnet_id')
+        .eq('id', lm.funnel_id)
+        .single();
+      funnelCheck = {
+        funnel_id: funnel?.id || null,
+        funnel_lead_magnet_id: funnel?.lead_magnet_id || 'NULL_OR_UNDEFINED',
+        this_lead_magnet_id: lead_magnet_id,
+        match: funnel?.lead_magnet_id === lead_magnet_id,
+        query_error: funnelError?.message || null,
+        diagnosis: funnelError
+          ? 'Query error: ' + funnelError.message
+          : funnel?.lead_magnet_id
+            ? 'Funnel points to DIFFERENT lead magnet'
+            : 'Funnel lead_magnet_id is NULL - FK not set!'
+      };
+
+      // If there's a mismatch, check what the OTHER lead magnet has
+      if (funnel?.lead_magnet_id && funnel.lead_magnet_id !== lead_magnet_id) {
+        const { data: other } = await supabase
+          .from('lead_magnets')
+          .select('id, name, content, marketplace_listing, email_sequence, created_at')
+          .eq('id', funnel.lead_magnet_id)
+          .single();
+        otherLeadMagnet = {
+          id: other?.id,
+          name: other?.name,
+          created_at: other?.created_at,
+          has_content: !!other?.content,
+          has_marketplace: !!other?.marketplace_listing,
+          has_emails: !!other?.email_sequence
+        };
+      }
+    }
+
+    // Check if there are other lead_magnets with same funnel_id
+    const { data: allLeadMagnets } = await supabase
+      .from('lead_magnets')
+      .select('id, name, created_at')
+      .eq('funnel_id', lm.funnel_id);
+
     // Analyze what data exists
     const analysis = {
       lead_magnet_id,
       name: lm.name,
-      funnel_id: lm.funnel_id,  // Check if funnel_id is set
+      funnel_id: lm.funnel_id,
+      funnel_check: funnelCheck,
+      other_lead_magnet_funnel_points_to: otherLeadMagnet,
+      other_lead_magnets_with_same_funnel: allLeadMagnets,
 
       // Content analysis
       content: {

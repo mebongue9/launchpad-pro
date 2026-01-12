@@ -44,6 +44,10 @@ ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS marketplace_title TEXT;
 ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS etsy_description TEXT;
 ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS normal_description TEXT;
 ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS marketplace_tags TEXT;
+-- Missing columns that generators save to:
+ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS content JSONB;
+ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS marketplace_listing JSONB;
+ALTER TABLE lead_magnets ADD COLUMN IF NOT EXISTS email_sequence JSONB;
 
 -- NEW TABLE: EMAIL_SEQUENCES
 CREATE TABLE IF NOT EXISTS email_sequences (

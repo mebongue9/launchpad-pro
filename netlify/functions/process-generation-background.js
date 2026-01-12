@@ -1006,20 +1006,21 @@ export async function handler(event) {
             throw new Error('funnel_id is required for lead_magnet_content');
           }
 
-          // Step A: Ensure lead_magnet exists in DB and is linked to funnel
+          // Step A: Ensure lead_magnet exists in DB (linked via lead_magnets.funnel_id)
+          // SCHEMA: lead_magnets.funnel_id → funnels.id (no funnels.lead_magnet_id column)
           const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
           const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
           const { createClient } = await import('@supabase/supabase-js');
           const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
 
-          // Check if funnel already has a lead_magnet
-          const { data: funnel } = await supabaseClient
-            .from('funnels')
-            .select('lead_magnet_id')
-            .eq('id', funnel_id)
-            .single();
+          // Check if lead_magnet already exists for this funnel
+          const { data: existingLM } = await supabaseClient
+            .from('lead_magnets')
+            .select('id')
+            .eq('funnel_id', funnel_id)
+            .maybeSingle();
 
-          let leadMagnetId = funnel?.lead_magnet_id;
+          let leadMagnetId = existingLM?.id;
 
           if (!leadMagnetId) {
             // USER ALREADY VALIDATED: This only runs after user clicked "Generate" button
@@ -1042,13 +1043,9 @@ export async function handler(event) {
             if (lmError) throw new Error(`Failed to create lead magnet: ${lmError.message}`);
             leadMagnetId = newLM.id;
 
-            // Link to funnel
-            await supabaseClient
-              .from('funnels')
-              .update({ lead_magnet_id: leadMagnetId })
-              .eq('id', funnel_id);
-
-            console.log('✅ [PROCESS-GENERATION-BG] Created and linked lead_magnet:', leadMagnetId);
+            console.log('✅ [PROCESS-GENERATION-BG] Created lead_magnet:', leadMagnetId, 'for funnel:', funnel_id);
+          } else {
+            console.log('✅ [PROCESS-GENERATION-BG] Using existing lead_magnet:', leadMagnetId, 'for funnel:', funnel_id);
           }
 
           // Step B: Import and call batched generators (2 API calls total with RAG)

@@ -351,7 +351,7 @@ export default function LeadMagnetDetails() {
                   </p>
                 </div>
 
-                {/* Description */}
+                {/* Description - formatted like TLDR for readability */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700">
@@ -362,8 +362,18 @@ export default function LeadMagnetDetails() {
                     </span>
                     <CopyButton text={marketplace.description} />
                   </div>
-                  <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-                    {marketplace.description || 'No description generated'}
+                  <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-80 overflow-y-auto">
+                    {marketplace.description ? (
+                      <div className="space-y-3">
+                        {marketplace.description.split(/\n\n+/).map((paragraph, idx) => (
+                          <p key={idx} className="leading-relaxed">
+                            {paragraph.trim()}
+                          </p>
+                        ))}
+                      </div>
+                    ) : (
+                      'No description generated'
+                    )}
                   </div>
                 </div>
 
@@ -450,10 +460,25 @@ export default function LeadMagnetDetails() {
         {/* TLDR Tab */}
         {activeTab === 'tldr' && (
           <Card>
-            <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-yellow-500" />
-              TLDR Summary
-            </h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-yellow-500" />
+                TLDR Summary
+              </h3>
+              {tldr && (
+                <CopyButton
+                  text={[
+                    tldr.what_it_is && `WHAT IT IS:\n${tldr.what_it_is}`,
+                    tldr.who_its_for && `WHO IT'S FOR:\n${tldr.who_its_for}`,
+                    tldr.problem_solved && `PROBLEM SOLVED:\n${tldr.problem_solved}`,
+                    tldr.whats_inside && `WHAT'S INSIDE:\n${Array.isArray(tldr.whats_inside) ? tldr.whats_inside.map(i => `- ${i}`).join('\n') : tldr.whats_inside}`,
+                    tldr.key_benefits && `KEY BENEFITS:\n${Array.isArray(tldr.key_benefits) ? tldr.key_benefits.map(i => `- ${i}`).join('\n') : tldr.key_benefits}`,
+                    tldr.cta && `CALL TO ACTION:\n${tldr.cta}`
+                  ].filter(Boolean).join('\n\n')}
+                  label="Copy All"
+                />
+              )}
+            </div>
 
             {!tldr ? (
               <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -464,40 +489,28 @@ export default function LeadMagnetDetails() {
               <div className="space-y-6">
                 {tldr.what_it_is && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">What It Is</span>
-                      <CopyButton text={tldr.what_it_is} />
-                    </div>
+                    <span className="text-sm font-medium text-gray-700 block mb-2">What It Is</span>
                     <p className="p-3 bg-gray-50 rounded-lg text-gray-700">{tldr.what_it_is}</p>
                   </div>
                 )}
 
                 {tldr.who_its_for && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Who It's For</span>
-                      <CopyButton text={tldr.who_its_for} />
-                    </div>
+                    <span className="text-sm font-medium text-gray-700 block mb-2">Who It's For</span>
                     <p className="p-3 bg-gray-50 rounded-lg text-gray-700">{tldr.who_its_for}</p>
                   </div>
                 )}
 
                 {tldr.problem_solved && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Problem Solved</span>
-                      <CopyButton text={tldr.problem_solved} />
-                    </div>
+                    <span className="text-sm font-medium text-gray-700 block mb-2">Problem Solved</span>
                     <p className="p-3 bg-gray-50 rounded-lg text-gray-700">{tldr.problem_solved}</p>
                   </div>
                 )}
 
                 {tldr.whats_inside && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">What's Inside</span>
-                      <CopyButton text={Array.isArray(tldr.whats_inside) ? tldr.whats_inside.join('\n') : tldr.whats_inside} />
-                    </div>
+                    <span className="text-sm font-medium text-gray-700 block mb-2">What's Inside</span>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       {Array.isArray(tldr.whats_inside) ? (
                         <ul className="list-disc list-inside space-y-1 text-gray-700">
@@ -514,10 +527,7 @@ export default function LeadMagnetDetails() {
 
                 {tldr.key_benefits && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Key Benefits</span>
-                      <CopyButton text={Array.isArray(tldr.key_benefits) ? tldr.key_benefits.join('\n') : tldr.key_benefits} />
-                    </div>
+                    <span className="text-sm font-medium text-gray-700 block mb-2">Key Benefits</span>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       {Array.isArray(tldr.key_benefits) ? (
                         <ul className="list-disc list-inside space-y-1 text-gray-700">
@@ -534,10 +544,7 @@ export default function LeadMagnetDetails() {
 
                 {tldr.cta && (
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-700">Call to Action</span>
-                      <CopyButton text={tldr.cta} />
-                    </div>
+                    <span className="text-sm font-medium text-gray-700 block mb-2">Call to Action</span>
                     <p className="p-3 bg-blue-50 rounded-lg text-blue-700 font-medium">{tldr.cta}</p>
                   </div>
                 )}
