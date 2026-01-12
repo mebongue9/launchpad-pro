@@ -125,7 +125,7 @@ export function useLeadMagnets() {
             format: leadMagnetData.format || 'guide',
             topic: leadMagnetData.topic,
             keyword: leadMagnetData.keyword,
-            content: leadMagnetData.sections ? leadMagnetData : null,
+            content: (leadMagnetData.sections || leadMagnetData.chapters) ? leadMagnetData : null,
             caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
             caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version,
             updated_at: new Date().toISOString()
@@ -148,7 +148,7 @@ export function useLeadMagnets() {
             format: leadMagnetData.format || 'guide',
             topic: leadMagnetData.topic,
             keyword: leadMagnetData.keyword,
-            content: leadMagnetData.sections ? leadMagnetData : null,
+            content: (leadMagnetData.sections || leadMagnetData.chapters) ? leadMagnetData : null,
             caption_comment: leadMagnetData.promotion_kit?.captions?.comment_version,
             caption_dm: leadMagnetData.promotion_kit?.captions?.dm_version
           })
