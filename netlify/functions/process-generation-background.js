@@ -1174,6 +1174,17 @@ export async function handler(event) {
             total_chunks: tasks.length
           });
 
+          // Update funnel status to 'ready' (text content complete)
+          console.log('🔄 [PROCESS-GENERATION-BG] Updating funnel status to ready...');
+          await supabase
+            .from('funnels')
+            .update({
+              status: 'ready',
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', funnel_id);
+          console.log('✅ [PROCESS-GENERATION-BG] Funnel status updated to ready');
+
           result = { success: true, tasksCompleted: tasks.length };
           break;
         }

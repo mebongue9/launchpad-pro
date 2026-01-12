@@ -29,6 +29,25 @@ const openai = new OpenAI({
 const LOG_TAG = '[BATCHED-GENERATORS]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
+// Helper: Safely parse sections from Claude response with validation
+function safeParseSections(responseText, expectedCount, taskName) {
+  if (!responseText) {
+    throw new Error(`${taskName}: Empty response from Claude API`);
+  }
+
+  const sections = responseText.split(SECTION_SEPARATOR).map(s => s.trim()).filter(s => s.length > 0);
+
+  console.log(`${LOG_TAG} ${taskName}: Got ${sections.length} sections (expected ${expectedCount})`);
+
+  if (sections.length < expectedCount) {
+    console.error(`${LOG_TAG} ${taskName}: Response doesn't contain expected ${expectedCount} sections`);
+    console.error(`${LOG_TAG} Response preview: ${responseText.substring(0, 500)}...`);
+    throw new Error(`${taskName}: Response contains ${sections.length} sections instead of ${expectedCount}. Claude may not have followed the format.`);
+  }
+
+  return sections;
+}
+
 // THE 6 APPROVED FORMATS - Data-proven from Maria Wendt's research
 // These are the ONLY formats allowed. No others.
 const APPROVED_FORMATS = ['Checklist', 'Worksheet', 'Planner', 'Swipe File', 'Blueprint', 'Cheat Sheet'];
@@ -536,23 +555,27 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 4, 'FrontendPart1');
 
   const cover = parseClaudeJSON(sections[0]);
   const chapter1 = parseClaudeJSON(sections[1]);
   const chapter2 = parseClaudeJSON(sections[2]);
   const chapter3 = parseClaudeJSON(sections[3]);
 
-  await supabase
-    .from('existing_products')
-    .update({
-      cover_data: cover,
-      chapters: [chapter1, chapter2, chapter3],
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', frontend.id);
+  // Store content in funnel's JSONB column (front_end is JSONB, not a separate table)
+  const updatedFrontend = {
+    ...funnel.front_end,
+    cover_data: cover,
+    chapters: [chapter1, chapter2, chapter3]
+  };
 
-  console.log(`✅ ${LOG_TAG} Front-end part 1 saved`);
+  await supabase.from('funnels').update({
+    front_end: updatedFrontend,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Front-end part 1 saved to funnel JSONB`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'frontend-part1', ragMetrics);
@@ -567,13 +590,8 @@ export async function generateFrontendPart2(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { frontend, main_product } = funnel;
 
-  const { data: existingData } = await supabase
-    .from('existing_products')
-    .select('chapters')
-    .eq('id', frontend.id)
-    .single();
-
-  const previousChapters = existingData?.chapters || [];
+  // Read previous chapters from funnel's JSONB column (saved by Part 1)
+  const previousChapters = funnel.front_end?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${frontend.name} final chapters`, {
     limit: 40,
@@ -648,7 +666,8 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 3, 'FrontendPart2');
 
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
@@ -661,15 +680,18 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
 
   const allChapters = [...previousChapters, chapter4, chapter5, chapter6];
 
-  await supabase
-    .from('existing_products')
-    .update({
-      chapters: allChapters,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', frontend.id);
+  // Store content in funnel's JSONB column (front_end is JSONB, not a separate table)
+  const updatedFrontend = {
+    ...funnel.front_end,
+    chapters: allChapters
+  };
 
-  console.log(`✅ ${LOG_TAG} Front-end part 2 saved (cross-promo embedded promoting Main Product)`);
+  await supabase.from('funnels').update({
+    front_end: updatedFrontend,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Front-end part 2 saved to funnel JSONB (cross-promo embedded)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'frontend-part2', ragMetrics);
@@ -756,7 +778,8 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITIC
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 3, 'BumpFull');
 
   const cover = parseClaudeJSON(sections[0]);
   const chapter1 = parseClaudeJSON(sections[1]);
@@ -767,16 +790,19 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITIC
     chapter2.content += crossPromo;
   }
 
-  await supabase
-    .from('existing_products')
-    .update({
-      cover_data: cover,
-      chapters: [chapter1, chapter2],
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', bump.id);
+  // Store content in funnel's JSONB column (bump is JSONB, not a separate table)
+  const updatedBump = {
+    ...funnel.bump,
+    cover_data: cover,
+    chapters: [chapter1, chapter2]
+  };
 
-  console.log(`✅ ${LOG_TAG} Bump product saved (cross-promo embedded promoting Main Product)`);
+  await supabase.from('funnels').update({
+    bump: updatedBump,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Bump product saved to funnel JSONB (cross-promo embedded)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'bump', ragMetrics);
@@ -825,17 +851,24 @@ Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JS
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 4, 'Upsell1Part1');
   const cover = parseClaudeJSON(sections[0]);
   const chapters = [parseClaudeJSON(sections[1]), parseClaudeJSON(sections[2]), parseClaudeJSON(sections[3])];
 
-  await supabase.from('existing_products').update({
+  // Store content in funnel's JSONB column (upsell_1 is JSONB, not a separate table)
+  const updatedUpsell1 = {
+    ...funnel.upsell_1,
     cover_data: cover,
-    chapters,
-    updated_at: new Date().toISOString()
-  }).eq('id', upsell1.id);
+    chapters: chapters
+  };
 
-  console.log(`✅ ${LOG_TAG} Upsell 1 part 1 saved`);
+  await supabase.from('funnels').update({
+    upsell_1: updatedUpsell1,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Upsell 1 part 1 saved to funnel JSONB`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell1-part1', ragMetrics);
@@ -850,8 +883,8 @@ export async function generateUpsell1Part2(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell1, main_product } = funnel;
 
-  const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell1.id).single();
-  const previousChapters = existingData?.chapters || [];
+  // Read previous chapters from funnel's JSONB column (saved by Part 1)
+  const previousChapters = funnel.upsell_1?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell1.name} final chapters`, {
     limit: 40,
@@ -921,7 +954,8 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 3, 'Upsell1Part2');
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
@@ -931,12 +965,18 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
     chapter6.content += crossPromo;
   }
 
-  await supabase.from('existing_products').update({
-    chapters: [...previousChapters, chapter4, chapter5, chapter6],
-    updated_at: new Date().toISOString()
-  }).eq('id', upsell1.id);
+  // Store content in funnel's JSONB column (upsell_1 is JSONB, not a separate table)
+  const updatedUpsell1 = {
+    ...funnel.upsell_1,
+    chapters: [...previousChapters, chapter4, chapter5, chapter6]
+  };
 
-  console.log(`✅ ${LOG_TAG} Upsell 1 part 2 saved (cross-promo embedded promoting Main Product)`);
+  await supabase.from('funnels').update({
+    upsell_1: updatedUpsell1,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Upsell 1 part 2 saved to funnel JSONB (cross-promo embedded)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell1-part2', ragMetrics);
@@ -962,7 +1002,7 @@ export async function generateUpsell2Part1(funnelId) {
 
   const prompt = `${knowledge}
 
-Generate COVER and FIRST HALF for final upsell.
+Generate COVER and FIRST 3 CHAPTERS for this upsell product.
 
 PRODUCT: ${upsell2.name} ($${upsell2.price})
 FORMAT: ${upsell2?.format || 'General'}
@@ -970,31 +1010,47 @@ FORMAT: ${upsell2?.format || 'General'}
 FORMAT INSTRUCTIONS (CRITICAL - FOLLOW EXACTLY):
 ${formatInstructions}
 
-The content structure MUST match the format above. If the format is "Checklist", output checkbox items, NOT paragraphs. If the format is "Swipe File", output ready-to-use templates, NOT essays.
+**CRITICAL OUTPUT FORMAT:**
+You MUST output exactly 4 JSON sections separated by the EXACT text: ===SECTION_BREAK===
 
-Generate 4 sections separated by: ${SECTION_SEPARATOR}
+Your response MUST follow this EXACT structure:
 
-Section 1: COVER, Sections 2-4: CHAPTERS 1-3 (following FORMAT INSTRUCTIONS)
+{"type":"cover","title":"...","subtitle":"...","author":"...","price":"..."}
+===SECTION_BREAK===
+{"type":"chapter","number":1,"title":"Chapter 1: ...","content":"..."}
+===SECTION_BREAK===
+{"type":"chapter","number":2,"title":"Chapter 2: ...","content":"..."}
+===SECTION_BREAK===
+{"type":"chapter","number":3,"title":"Chapter 3: ...","content":"..."}
 
-600-800 words per chapter following FORMAT INSTRUCTIONS. Return valid JSON.`;
+Each chapter content should be 600-800 words following the FORMAT INSTRUCTIONS above.
+Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== between each.`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
+    system: 'You are a content generator. You MUST output exactly 4 JSON objects separated by ===SECTION_BREAK===. Do NOT use markdown formatting. Output raw JSON with the exact separator between sections.',
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 4, 'Upsell2Part1');
   const cover = parseClaudeJSON(sections[0]);
   const chapters = [parseClaudeJSON(sections[1]), parseClaudeJSON(sections[2]), parseClaudeJSON(sections[3])];
 
-  await supabase.from('existing_products').update({
+  // Store content in funnel's JSONB column (upsell_2 is JSONB, not a separate table)
+  const updatedUpsell2 = {
+    ...funnel.upsell_2,
     cover_data: cover,
-    chapters,
-    updated_at: new Date().toISOString()
-  }).eq('id', upsell2.id);
+    chapters: chapters
+  };
 
-  console.log(`✅ ${LOG_TAG} Upsell 2 part 1 saved`);
+  await supabase.from('funnels').update({
+    upsell_2: updatedUpsell2,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Upsell 2 part 1 saved to funnel JSONB`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell2-part1', ragMetrics);
@@ -1009,8 +1065,8 @@ export async function generateUpsell2Part2(funnelId) {
   const funnel = await getFunnelData(funnelId);
   const { upsell2, main_product } = funnel;
 
-  const { data: existingData } = await supabase.from('existing_products').select('chapters').eq('id', upsell2.id).single();
-  const previousChapters = existingData?.chapters || [];
+  // Read previous chapters from funnel's JSONB column (saved by Part 1)
+  const previousChapters = funnel.upsell_2?.chapters || [];
 
   const { context: knowledge, metrics: ragMetrics } = await searchKnowledgeWithMetrics(`${upsell2.name} final chapters conclusion`, {
     limit: 40,
@@ -1081,7 +1137,8 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 3, 'Upsell2Part2');
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
@@ -1091,12 +1148,18 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
     chapter6.content += crossPromo;
   }
 
-  await supabase.from('existing_products').update({
-    chapters: [...previousChapters, chapter4, chapter5, chapter6],
-    updated_at: new Date().toISOString()
-  }).eq('id', upsell2.id);
+  // Store content in funnel's JSONB column (upsell_2 is JSONB, not a separate table)
+  const updatedUpsell2 = {
+    ...funnel.upsell_2,
+    chapters: [...previousChapters, chapter4, chapter5, chapter6]
+  };
 
-  console.log(`✅ ${LOG_TAG} Upsell 2 part 2 saved (cross-promo embedded promoting Main Product)`);
+  await supabase.from('funnels').update({
+    upsell_2: updatedUpsell2,
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} Upsell 2 part 2 saved to funnel JSONB (cross-promo embedded)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell2-part2', ragMetrics);
@@ -1133,38 +1196,44 @@ PRODUCTS:
 
 Generate 5 sections separated by: ${SECTION_SEPARATOR}
 
-Each TLDR: 2-3 sentences, highlight key benefit and transformation. Return valid JSON:
-{
-  "tldr": "Short compelling summary..."
-}
+Output 5 JSON objects separated by ===SECTION_BREAK=== (no markdown headers, raw JSON only):
 
-Section 1: Lead Magnet TLDR
-${SECTION_SEPARATOR}
-Section 2: Front-End TLDR
-${SECTION_SEPARATOR}
-Section 3: Bump TLDR
-${SECTION_SEPARATOR}
-Section 4: Upsell 1 TLDR
-${SECTION_SEPARATOR}
-Section 5: Upsell 2 TLDR`;
+{"tldr":"2-3 sentence summary for Lead Magnet..."}
+===SECTION_BREAK===
+{"tldr":"2-3 sentence summary for Front-End..."}
+===SECTION_BREAK===
+{"tldr":"2-3 sentence summary for Bump..."}
+===SECTION_BREAK===
+{"tldr":"2-3 sentence summary for Upsell 1..."}
+===SECTION_BREAK===
+{"tldr":"2-3 sentence summary for Upsell 2..."}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8000,
+    system: 'Output exactly 5 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.',
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 5, 'AllTldrs');
   const tldrs = sections.map(s => parseClaudeJSON(s));
 
-  // Save TLDRs to respective products
-  await supabase.from('lead_magnets').update({ tldr: tldrs[0].tldr }).eq('id', lead_magnet.id);
-  await supabase.from('existing_products').update({ tldr: tldrs[1].tldr }).eq('id', frontend.id);
-  await supabase.from('existing_products').update({ tldr: tldrs[2].tldr }).eq('id', bump.id);
-  await supabase.from('existing_products').update({ tldr: tldrs[3].tldr }).eq('id', upsell1.id);
-  await supabase.from('existing_products').update({ tldr: tldrs[4].tldr }).eq('id', upsell2.id);
+  // Save TLDRs to lead_magnets table if it exists
+  if (lead_magnet?.id) {
+    await supabase.from('lead_magnets').update({ tldr: tldrs[0].tldr }).eq('id', lead_magnet.id);
+  }
 
-  console.log(`✅ ${LOG_TAG} All 5 TLDRs saved`);
+  // Save TLDRs to funnel's JSONB columns (products are JSONB, not separate tables)
+  await supabase.from('funnels').update({
+    front_end: { ...funnel.front_end, tldr: tldrs[1].tldr },
+    bump: { ...funnel.bump, tldr: tldrs[2].tldr },
+    upsell_1: { ...funnel.upsell_1, tldr: tldrs[3].tldr },
+    upsell_2: { ...funnel.upsell_2, tldr: tldrs[4].tldr },
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
+
+  console.log(`✅ ${LOG_TAG} All 5 TLDRs saved to funnel JSONB`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'all-tldrs', ragMetrics);
@@ -1198,43 +1267,40 @@ PRODUCTS:
 
 Generate 3 sections separated by: ${SECTION_SEPARATOR}
 
-Each listing includes: catchy title, compelling description (2-3 paragraphs), 5-7 benefit bullets, 3-5 tags. Return valid JSON:
-{
-  "marketplace_title": "Catchy marketplace title",
-  "marketplace_description": "Compelling 2-3 paragraph description...",
-  "marketplace_bullets": ["Benefit 1", "Benefit 2", ...],
-  "marketplace_tags": ["tag1", "tag2", ...]
-}
+Output 3 JSON objects separated by ===SECTION_BREAK=== (no markdown, raw JSON only):
 
-Section 1: Lead Magnet Marketplace Listing
-${SECTION_SEPARATOR}
-Section 2: Front-End Marketplace Listing
-${SECTION_SEPARATOR}
-Section 3: Bump Marketplace Listing`;
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}
+===SECTION_BREAK===
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}
+===SECTION_BREAK===
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 12000,
+    system: 'Output exactly 3 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.',
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 3, 'MarketplaceBatch1');
   const listings = sections.map(s => parseClaudeJSON(s));
 
-  // Save marketplace listings
-  await supabase.from('lead_magnets').update({
-    marketplace_listing: listings[0]
-  }).eq('id', lead_magnet.id);
+  // Save marketplace listing to lead_magnets table if it exists
+  if (lead_magnet?.id) {
+    await supabase.from('lead_magnets').update({
+      marketplace_listing: listings[0]
+    }).eq('id', lead_magnet.id);
+  }
 
-  await supabase.from('existing_products').update({
-    marketplace_listing: listings[1]
-  }).eq('id', frontend.id);
+  // Save marketplace listings to funnel's JSONB columns
+  await supabase.from('funnels').update({
+    front_end: { ...funnel.front_end, marketplace_listing: listings[1] },
+    bump: { ...funnel.bump, marketplace_listing: listings[2] },
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
 
-  await supabase.from('existing_products').update({
-    marketplace_listing: listings[2]
-  }).eq('id', bump.id);
-
-  console.log(`✅ ${LOG_TAG} Marketplace batch 1 saved (3 listings)`);
+  console.log(`✅ ${LOG_TAG} Marketplace batch 1 saved to funnel JSONB (3 listings)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'marketplace-batch1', ragMetrics);
@@ -1267,37 +1333,31 @@ PRODUCTS:
 
 Generate 2 sections separated by: ${SECTION_SEPARATOR}
 
-Each listing includes: premium-positioned title, compelling description (3-4 paragraphs emphasizing transformation), 7-10 benefit bullets, 5-7 tags. Return valid JSON:
-{
-  "marketplace_title": "Premium marketplace title",
-  "marketplace_description": "Compelling 3-4 paragraph description highlighting complete transformation...",
-  "marketplace_bullets": ["Benefit 1", "Benefit 2", ...],
-  "marketplace_tags": ["tag1", "tag2", ...]
-}
+Output 2 JSON objects separated by ===SECTION_BREAK=== (no markdown, raw JSON only):
 
-Section 1: Upsell 1 Marketplace Listing
-${SECTION_SEPARATOR}
-Section 2: Upsell 2 Marketplace Listing`;
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}
+===SECTION_BREAK===
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":["..."],"marketplace_tags":["..."]}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 12000,
+    system: 'Output exactly 2 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.',
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 2, 'MarketplaceBatch2');
   const listings = sections.map(s => parseClaudeJSON(s));
 
-  // Save marketplace listings
-  await supabase.from('existing_products').update({
-    marketplace_listing: listings[0]
-  }).eq('id', upsell1.id);
+  // Save marketplace listings to funnel's JSONB columns
+  await supabase.from('funnels').update({
+    upsell_1: { ...funnel.upsell_1, marketplace_listing: listings[0] },
+    upsell_2: { ...funnel.upsell_2, marketplace_listing: listings[1] },
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
 
-  await supabase.from('existing_products').update({
-    marketplace_listing: listings[1]
-  }).eq('id', upsell2.id);
-
-  console.log(`✅ ${LOG_TAG} Marketplace batch 2 saved (2 listings)`);
+  console.log(`✅ ${LOG_TAG} Marketplace batch 2 saved to funnel JSONB (2 listings)`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'marketplace-batch2', ragMetrics);
@@ -1346,38 +1406,45 @@ Each email JSON:
   "body": "Full email body with clear structure and CTA..."
 }
 
-Section 1: Lead Magnet Email 1
-${SECTION_SEPARATOR}
-Section 2: Lead Magnet Email 2
-${SECTION_SEPARATOR}
-Section 3: Lead Magnet Email 3 (Bridge)
-${SECTION_SEPARATOR}
-Section 4: Front-End Email 1
-${SECTION_SEPARATOR}
-Section 5: Front-End Email 2
-${SECTION_SEPARATOR}
-Section 6: Front-End Email 3 (Close)`;
+Output 6 JSON objects separated by ===SECTION_BREAK=== (no markdown, no headers, raw JSON only):
+
+{"subject":"...","preview_text":"...","body":"..."}
+===SECTION_BREAK===
+{"subject":"...","preview_text":"...","body":"..."}
+===SECTION_BREAK===
+{"subject":"...","preview_text":"...","body":"..."}
+===SECTION_BREAK===
+{"subject":"...","preview_text":"...","body":"..."}
+===SECTION_BREAK===
+{"subject":"...","preview_text":"...","body":"..."}
+===SECTION_BREAK===
+{"subject":"...","preview_text":"...","body":"..."}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
+    system: 'Output exactly 6 JSON objects separated by ===SECTION_BREAK===. No markdown formatting. Raw JSON only.',
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const sections = response.content[0].text.split(SECTION_SEPARATOR).map(s => s.trim());
+  // Use safe section parsing with validation
+  const sections = safeParseSections(response.content[0].text, 6, 'AllEmails');
   const emails = sections.map(s => parseClaudeJSON(s));
 
-  // Save lead magnet emails (first 3)
-  await supabase.from('lead_magnets').update({
-    email_sequence: emails.slice(0, 3)
-  }).eq('id', lead_magnet.id);
+  // Save lead magnet emails to lead_magnets table if it exists
+  if (lead_magnet?.id) {
+    await supabase.from('lead_magnets').update({
+      email_sequence: emails.slice(0, 3)
+    }).eq('id', lead_magnet.id);
+  }
 
-  // Save front-end emails (last 3)
-  await supabase.from('existing_products').update({
-    email_sequence: emails.slice(3, 6)
-  }).eq('id', frontend.id);
+  // Save front-end emails to funnel's JSONB column
+  await supabase.from('funnels').update({
+    front_end: { ...funnel.front_end, email_sequence: emails.slice(3, 6) },
+    updated_at: new Date().toISOString()
+  }).eq('id', funnelId);
 
-  console.log(`✅ ${LOG_TAG} All 6 emails saved (3 lead magnet + 3 front-end)`);
+  console.log(`✅ ${LOG_TAG} All 6 emails saved to funnel JSONB`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'all-emails', ragMetrics);
