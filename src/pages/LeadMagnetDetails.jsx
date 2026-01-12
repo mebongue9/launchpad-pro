@@ -207,11 +207,14 @@ export default function LeadMagnetDetails() {
     ? leadMagnet.email_sequence
     : []
 
-  // Get marketplace data
+  // Get marketplace data from JSONB column (not flat columns)
+  // Generator saves to: lead_magnets.marketplace_listing JSONB
+  const marketplaceListing = safeJsonParse(leadMagnet.marketplace_listing, {})
   const marketplace = {
-    title: leadMagnet.marketplace_title,
-    description: leadMagnet.marketplace_description || leadMagnet.etsy_description,
-    tags: leadMagnet.marketplace_tags
+    title: marketplaceListing.marketplace_title || '',
+    description: marketplaceListing.marketplace_description || '',
+    tags: marketplaceListing.marketplace_tags || [],
+    bullets: marketplaceListing.marketplace_bullets || []
   }
 
   return (
@@ -364,25 +367,45 @@ export default function LeadMagnetDetails() {
                   </div>
                 </div>
 
-                {/* Tags */}
+                {/* Bullets (What's Included) */}
+                {marketplace.bullets && marketplace.bullets.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700">What's Included</span>
+                      <CopyButton text={marketplace.bullets.join('\n')} label="Copy All" />
+                    </div>
+                    <ul className="space-y-2 p-3 bg-gray-50 rounded-lg">
+                      {marketplace.bullets.map((bullet, index) => (
+                        <li key={index} className="flex items-start gap-2 text-sm text-gray-700">
+                          <span className="text-green-500 mt-0.5">•</span>
+                          {bullet}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Tags - handles both array and string formats */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       <Tag className="w-4 h-4" />
                       SEO Tags
                     </span>
-                    <CopyButton text={marketplace.tags} label="Copy All" />
+                    <CopyButton text={Array.isArray(marketplace.tags) ? marketplace.tags.join(', ') : marketplace.tags} label="Copy All" />
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {(marketplace.tags || '').split(',').filter(tag => tag.trim()).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm"
-                      >
-                        {tag.trim()}
-                      </span>
-                    ))}
-                    {!marketplace.tags && (
+                    {(Array.isArray(marketplace.tags) ? marketplace.tags : (marketplace.tags || '').split(','))
+                      .filter(tag => tag && tag.trim())
+                      .map((tag, index) => (
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm"
+                        >
+                          {typeof tag === 'string' ? tag.trim() : tag}
+                        </span>
+                      ))}
+                    {(!marketplace.tags || (Array.isArray(marketplace.tags) && marketplace.tags.length === 0)) && (
                       <p className="text-gray-500 text-sm">No tags generated</p>
                     )}
                   </div>

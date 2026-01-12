@@ -1243,17 +1243,17 @@ Output 5 JSON objects separated by ===SECTION_BREAK=== (no markdown headers, raw
     await supabase.from('lead_magnets').update({ tldr: tldrs[0] }).eq('id', lead_magnet.id);
   }
 
-  // Save TLDRs to funnel's JSONB columns (products are JSONB, not separate tables)
-  // Now saves the FULL structured object for each product
+  // Save TLDRs to TOP-LEVEL columns (frontend reads from front_end_tldr, not front_end.tldr)
+  // FIX: Was saving nested, but frontend expects top-level columns
   await supabase.from('funnels').update({
-    front_end: { ...funnel.front_end, tldr: tldrs[1] },
-    bump: { ...funnel.bump, tldr: tldrs[2] },
-    upsell_1: { ...funnel.upsell_1, tldr: tldrs[3] },
-    upsell_2: { ...funnel.upsell_2, tldr: tldrs[4] },
+    front_end_tldr: tldrs[1],
+    bump_tldr: tldrs[2],
+    upsell_1_tldr: tldrs[3],
+    upsell_2_tldr: tldrs[4],
     updated_at: new Date().toISOString()
   }).eq('id', funnelId);
 
-  console.log(`✅ ${LOG_TAG} All 5 TLDRs saved to funnel JSONB`);
+  console.log(`✅ ${LOG_TAG} All 5 TLDRs saved to top-level columns`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'all-tldrs', ragMetrics);
@@ -1527,15 +1527,40 @@ Generate bundle listing that positions this as COMPLETE TRANSFORMATION package. 
     messages: [{ role: 'user', content: prompt }]
   });
 
-  const bundleListing = parseClaudeJSON(response.content[0].text);
+  const rawBundle = parseClaudeJSON(response.content[0].text);
 
-  // Save bundle listing to funnel
+  // Calculate pricing from product prices
+  const fePrice = parseFloat(frontend?.price) || 17;
+  const bumpPrice = parseFloat(bump?.price) || 9;
+  const u1Price = parseFloat(upsell1?.price) || 47;
+  const u2Price = parseFloat(upsell2?.price) || 97;
+  const totalPrice = fePrice + bumpPrice + u1Price + u2Price;
+  const bundlePrice = Math.round(totalPrice * 0.45); // 55% discount
+  const savings = totalPrice - bundlePrice;
+
+  // Transform to match frontend expectations (BundlePreview.jsx)
+  // Frontend expects: title, etsy_description, normal_description, tags (string), bundle_price, etc.
+  const bundleListing = {
+    title: rawBundle.bundle_title || '',
+    etsy_description: rawBundle.bundle_description || '',
+    normal_description: rawBundle.bundle_description || '',
+    tags: Array.isArray(rawBundle.bundle_tags) ? rawBundle.bundle_tags.join(', ') : '',
+    bundle_price: bundlePrice,
+    total_individual_price: totalPrice,
+    savings: savings,
+    // Keep original fields for reference
+    bundle_subtitle: rawBundle.bundle_subtitle || '',
+    bundle_bullets: rawBundle.bundle_bullets || [],
+    value_proposition: rawBundle.value_proposition || ''
+  };
+
+  // Save bundle listing to funnel with correct field names
   await supabase.from('funnels').update({
     bundle_listing: bundleListing,
     updated_at: new Date().toISOString()
   }).eq('id', funnelId);
 
-  console.log(`✅ ${LOG_TAG} Bundle listing saved`);
+  console.log(`✅ ${LOG_TAG} Bundle listing saved with pricing: $${bundlePrice} (was $${totalPrice}, save $${savings})`);
 
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'bundle-listing', ragMetrics);
