@@ -83,15 +83,16 @@ export function useBundles() {
     }
   }, [user])
 
-  // Delete bundle for a funnel
+  // Delete bundle for a funnel (clears bundle_listing JSONB column)
   const deleteBundle = useCallback(async (funnelId) => {
     if (!user || !funnelId) return
 
     try {
+      // FIX: Bundle is stored in funnels.bundle_listing JSONB, not separate bundles table
       const { error: deleteError } = await supabase
-        .from('bundles')
-        .delete()
-        .eq('funnel_id', funnelId)
+        .from('funnels')
+        .update({ bundle_listing: null, updated_at: new Date().toISOString() })
+        .eq('id', funnelId)
         .eq('user_id', user.id)
 
       if (deleteError) throw deleteError

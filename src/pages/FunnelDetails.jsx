@@ -26,16 +26,20 @@ import {
   ChevronRight,
   Loader2,
   Eye,
-  Edit3
+  Edit3,
+  Sparkles,
+  Copy,
+  Check
 } from 'lucide-react'
 
-// Tab definitions
+// Tab definitions - Order: Products → Marketplace → Bundle → Emails → TLDR → Export
 const TABS = [
   { id: 'products', label: 'Products', icon: Package },
-  { id: 'export', label: 'Export', icon: Download },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
+  { id: 'bundle', label: 'Bundle', icon: Gift },
   { id: 'emails', label: 'Emails', icon: Mail },
-  { id: 'bundle', label: 'Bundle', icon: Gift }
+  { id: 'tldr', label: 'TLDR', icon: Sparkles },
+  { id: 'export', label: 'Export', icon: Download }
 ]
 
 // Product level configuration
@@ -51,6 +55,34 @@ const productColors = {
   bump: 'green',
   upsell_1: 'orange',
   upsell_2: 'purple'
+}
+
+// Copy button component
+function CopyButton({ text, label = 'Copy' }) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(text || '')
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch (err) {
+      console.error('Failed to copy:', err)
+    }
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+    >
+      {copied ? (
+        <><Check className="w-3 h-3" /> Copied</>
+      ) : (
+        <><Copy className="w-3 h-3" /> {label}</>
+      )}
+    </button>
+  )
 }
 
 export default function FunnelDetails() {
@@ -346,6 +378,123 @@ export default function FunnelDetails() {
         {/* Bundle Tab */}
         {activeTab === 'bundle' && (
           <BundlePreview funnel={funnel} />
+        )}
+
+        {/* TLDR Tab - Shows all 4 product TLDRs */}
+        {activeTab === 'tldr' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {productLevels.map((level) => {
+              const product = funnel[level]
+              const tldr = funnel[`${level}_tldr`]
+              const color = productColors[level]
+
+              if (!product) return null
+
+              return (
+                <Card key={level}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className={`w-5 h-5 text-${color}-500`} />
+                      <span className={`text-xs font-medium text-${color}-600 uppercase`}>
+                        {productLabels[level]}
+                      </span>
+                    </div>
+                    <span className="text-green-600 font-semibold">${product.price}</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-4">{product.name}</h3>
+
+                  {!tldr ? (
+                    <div className="text-center py-6 bg-gray-50 rounded-lg">
+                      <Sparkles className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                      <p className="text-sm text-gray-500">No TLDR generated</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 text-sm">
+                      {tldr.what_it_is && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase">What It Is</span>
+                            <CopyButton text={tldr.what_it_is} />
+                          </div>
+                          <p className="p-2 bg-gray-50 rounded text-gray-700">{tldr.what_it_is}</p>
+                        </div>
+                      )}
+
+                      {tldr.who_its_for && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase">Who It's For</span>
+                            <CopyButton text={tldr.who_its_for} />
+                          </div>
+                          <p className="p-2 bg-gray-50 rounded text-gray-700">{tldr.who_its_for}</p>
+                        </div>
+                      )}
+
+                      {tldr.problem_solved && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase">Problem Solved</span>
+                            <CopyButton text={tldr.problem_solved} />
+                          </div>
+                          <p className="p-2 bg-gray-50 rounded text-gray-700">{tldr.problem_solved}</p>
+                        </div>
+                      )}
+
+                      {tldr.whats_inside && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase">What's Inside</span>
+                            <CopyButton text={Array.isArray(tldr.whats_inside) ? tldr.whats_inside.join(', ') : tldr.whats_inside} />
+                          </div>
+                          <div className="p-2 bg-gray-50 rounded">
+                            {Array.isArray(tldr.whats_inside) ? (
+                              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                                {tldr.whats_inside.map((item, idx) => (
+                                  <li key={idx}>{item}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-gray-700">{tldr.whats_inside}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {tldr.key_benefits && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase">Key Benefits</span>
+                            <CopyButton text={Array.isArray(tldr.key_benefits) ? tldr.key_benefits.join(', ') : tldr.key_benefits} />
+                          </div>
+                          <div className="p-2 bg-gray-50 rounded">
+                            {Array.isArray(tldr.key_benefits) ? (
+                              <ul className="list-disc list-inside space-y-1 text-gray-700">
+                                {tldr.key_benefits.map((item, idx) => (
+                                  <li key={idx}>{item}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-gray-700">{tldr.key_benefits}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {tldr.cta && (
+                        <div>
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs font-medium text-gray-500 uppercase">Call to Action</span>
+                            <CopyButton text={tldr.cta} />
+                          </div>
+                          <p className={`p-2 bg-${color}-50 rounded text-${color}-700 font-medium`}>{tldr.cta}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </Card>
+              )
+            })}
+          </div>
         )}
       </div>
 

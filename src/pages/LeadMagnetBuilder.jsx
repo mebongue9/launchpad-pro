@@ -5,6 +5,7 @@
 // RELEVANT FILES: src/hooks/useGenerationJob.jsx, netlify/functions/process-generation-background.js
 
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { useProfiles } from '../hooks/useProfiles'
@@ -84,6 +85,7 @@ function GenerationError({ error, canResume, onRetry, onCancel }) {
 }
 
 export default function LeadMagnetBuilder() {
+  const navigate = useNavigate()
   const { profiles } = useProfiles()
   const { audiences } = useAudiences()
   const { funnels } = useFunnels()
@@ -765,15 +767,13 @@ export default function LeadMagnetBuilder() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {lm.content && (
-                    <button
-                      onClick={() => setViewingLeadMagnet(lm)}
-                      className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-                      title="View content"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => navigate(`/lead-magnets/${lm.id}`)}
+                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                    title="View details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={async () => {
                       if (confirm(`Delete "${lm.name}"? This cannot be undone.`)) {
