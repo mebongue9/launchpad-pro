@@ -154,11 +154,12 @@ export async function handler(event) {
     // Transform marketplace descriptions to 7-section format using TLDRs
     if (action === 'transform_marketplace') {
       const levels = ['front_end', 'bump', 'upsell_1', 'upsell_2'];
+      // TLDRs are nested inside each product's JSONB (e.g., front_end.tldr)
       const tldrColumns = {
-        front_end: funnel.front_end_tldr,
-        bump: funnel.bump_tldr,
-        upsell_1: funnel.upsell_1_tldr,
-        upsell_2: funnel.upsell_2_tldr
+        front_end: funnel.front_end?.tldr || funnel.front_end_tldr,
+        bump: funnel.bump?.tldr || funnel.bump_tldr,
+        upsell_1: funnel.upsell_1?.tldr || funnel.upsell_1_tldr,
+        upsell_2: funnel.upsell_2?.tldr || funnel.upsell_2_tldr
       };
 
       // Helper: Convert text to Unicode bold
@@ -228,7 +229,7 @@ export async function handler(event) {
         description += `\n${divider}\n\n`;
 
         // Section 7: CTA
-        description += `${tldr.call_to_action || 'Get instant access now'}`;
+        description += `${tldr.cta || tldr.call_to_action || 'Get instant access now'}`;
 
         return description;
       };
