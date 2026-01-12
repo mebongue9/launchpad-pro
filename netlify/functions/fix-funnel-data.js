@@ -38,6 +38,20 @@ export async function handler(event) {
 
     const results = {};
 
+    // Debug action - show marketplace_listing data
+    if (action === 'debug_marketplace') {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          front_end_marketplace: funnel.front_end?.marketplace_listing || null,
+          bump_marketplace: funnel.bump?.marketplace_listing || null,
+          upsell_1_marketplace: funnel.upsell_1?.marketplace_listing || null,
+          upsell_2_marketplace: funnel.upsell_2?.marketplace_listing || null
+        }, null, 2)
+      };
+    }
+
     // Fix 1: Copy TLDRs from nested JSONB to top-level columns
     if (action === 'all' || action === 'tldrs') {
       const tldrUpdate = {};
