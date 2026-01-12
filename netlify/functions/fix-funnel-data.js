@@ -210,10 +210,7 @@ export async function handler(event) {
         // Section 5: WHAT'S INSIDE
         description += `${toBold("WHAT'S INSIDE:")}\n\n`;
         const items = tldr.whats_inside || [];
-        description += items.map(item => {
-          const boldItem = toBold(item);
-          return `• ${boldItem} so you can implement immediately`;
-        }).join('\n');
+        description += items.map(item => `• ${toBold(item)}`).join('\n');
         description += `\n\n${divider}\n\n`;
 
         // Section 6: WHAT YOU'LL BE ABLE TO DO
