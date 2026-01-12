@@ -24,7 +24,10 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
-  Sparkles
+  Sparkles,
+  Edit2,
+  Save,
+  X
 } from 'lucide-react'
 
 // Safe JSON parse helper - prevents crashes from invalid JSON
@@ -140,6 +143,11 @@ export default function LeadMagnetDetails() {
   const [leadMagnet, setLeadMagnet] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  // Edit mode state
+  const [isEditing, setIsEditing] = useState(false)
+  const [editedContent, setEditedContent] = useState(null)
+  const [saving, setSaving] = useState(false)
+
   // Fetch lead magnet with all fields
   const fetchLeadMagnetDetails = useCallback(async () => {
     if (!user || !id) return
@@ -166,6 +174,58 @@ export default function LeadMagnetDetails() {
   useEffect(() => {
     fetchLeadMagnetDetails()
   }, [fetchLeadMagnetDetails])
+
+  // Start editing - copy current content to edited state
+  const startEditing = () => {
+    const content = safeJsonParse(leadMagnet.content, { chapters: [] })
+    setEditedContent(JSON.parse(JSON.stringify(content))) // Deep copy
+    setIsEditing(true)
+  }
+
+  // Cancel editing - discard changes
+  const cancelEditing = () => {
+    setEditedContent(null)
+    setIsEditing(false)
+  }
+
+  // Update chapter in edit mode
+  const updateChapter = (idx, field, value) => {
+    if (!editedContent) return
+    const updated = { ...editedContent }
+    if (!updated.chapters) updated.chapters = []
+    if (!updated.chapters[idx]) updated.chapters[idx] = {}
+    updated.chapters[idx][field] = value
+    setEditedContent(updated)
+  }
+
+  // Save edited content
+  const saveContent = async () => {
+    if (!editedContent) return
+
+    setSaving(true)
+    try {
+      const { error } = await supabase
+        .from('lead_magnets')
+        .update({
+          content: editedContent,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+
+      if (error) throw error
+
+      // Update local state
+      setLeadMagnet(prev => ({ ...prev, content: editedContent }))
+      setIsEditing(false)
+      setEditedContent(null)
+      addToast('Content saved successfully', 'success')
+    } catch (err) {
+      console.error('Failed to save content:', err)
+      addToast('Failed to save content', 'error')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   if (loading || leadMagnetsLoading) {
     return (
@@ -271,10 +331,37 @@ export default function LeadMagnetDetails() {
           <div className="space-y-6">
             {/* Chapters Section */}
             <Card>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-blue-500" />
-                Content ({chapters.length} chapters)
-              </h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-blue-500" />
+                  Content ({chapters.length} chapters)
+                </h3>
+                {chapters.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    {isEditing ? (
+                      <>
+                        <Button variant="secondary" size="sm" onClick={cancelEditing} disabled={saving}>
+                          <X className="w-4 h-4 mr-1" />
+                          Cancel
+                        </Button>
+                        <Button variant="primary" size="sm" onClick={saveContent} disabled={saving}>
+                          {saving ? (
+                            <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                          ) : (
+                            <Save className="w-4 h-4 mr-1" />
+                          )}
+                          Save
+                        </Button>
+                      </>
+                    ) : (
+                      <Button variant="secondary" size="sm" onClick={startEditing}>
+                        <Edit2 className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {chapters.length === 0 ? (
                 <div className="text-center py-8 bg-gray-50 rounded-lg">
@@ -283,7 +370,7 @@ export default function LeadMagnetDetails() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {chapters.map((chapter, idx) => (
+                  {(isEditing ? editedContent?.chapters : chapters).map((chapter, idx) => (
                     <div key={idx} className="border border-gray-200 rounded-lg overflow-hidden">
                       <button
                         onClick={() => setExpandedChapter(expandedChapter === idx ? -1 : idx)}
@@ -293,9 +380,20 @@ export default function LeadMagnetDetails() {
                           <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-sm font-semibold">
                             {idx + 1}
                           </div>
-                          <span className="font-medium text-gray-900">
-                            {chapter.title || `Chapter ${idx + 1}`}
-                          </span>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={chapter.title || ''}
+                              onChange={(e) => updateChapter(idx, 'title', e.target.value)}
+                              onClick={(e) => e.stopPropagation()}
+                              className="font-medium text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder={`Chapter ${idx + 1}`}
+                            />
+                          ) : (
+                            <span className="font-medium text-gray-900">
+                              {chapter.title || `Chapter ${idx + 1}`}
+                            </span>
+                          )}
                         </div>
                         {expandedChapter === idx
                           ? <ChevronUp className="w-5 h-5 text-gray-400" />
@@ -304,12 +402,23 @@ export default function LeadMagnetDetails() {
                       </button>
                       {expandedChapter === idx && (
                         <div className="p-4 bg-white border-t border-gray-200">
-                          <div className="flex justify-end mb-2">
-                            <CopyButton text={chapter.content} label="Copy Content" />
-                          </div>
-                          <div className="text-gray-700 whitespace-pre-wrap text-sm">
-                            {chapter.content || 'No content'}
-                          </div>
+                          {!isEditing && (
+                            <div className="flex justify-end mb-2">
+                              <CopyButton text={chapter.content} label="Copy Content" />
+                            </div>
+                          )}
+                          {isEditing ? (
+                            <textarea
+                              value={chapter.content || ''}
+                              onChange={(e) => updateChapter(idx, 'content', e.target.value)}
+                              className="w-full h-64 p-3 text-sm text-gray-700 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+                              placeholder="Enter chapter content..."
+                            />
+                          ) : (
+                            <div className="text-gray-700 whitespace-pre-wrap text-sm">
+                              {chapter.content || 'No content'}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

@@ -173,29 +173,29 @@ export default function BundlePreview({ funnel, language = 'English', onRefresh 
             </p>
           </div>
 
-          {/* Etsy Description */}
+          {/* Description - single field (no duplicate) */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
-                Etsy Description
+                Description
+                <span className="text-xs text-gray-400 ml-2">
+                  ({(bundle.etsy_description || bundle.normal_description || '').length} chars)
+                </span>
               </span>
-              <CopyButton text={bundle.etsy_description} label="Copy" />
+              <CopyButton text={bundle.etsy_description || bundle.normal_description} label="Copy" />
             </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap">
-              {bundle.etsy_description}
-            </div>
-          </div>
-
-          {/* Gumroad Description */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Gumroad Description
-              </span>
-              <CopyButton text={bundle.normal_description} label="Copy" />
-            </div>
-            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm whitespace-pre-wrap max-h-60 overflow-y-auto">
-              {bundle.normal_description}
+            <div className="p-3 bg-gray-50 rounded-lg text-gray-700 text-sm max-h-80 overflow-y-auto">
+              {(bundle.etsy_description || bundle.normal_description) ? (
+                <div className="space-y-3">
+                  {(bundle.etsy_description || bundle.normal_description).split(/\n\n+/).map((paragraph, idx) => (
+                    <p key={idx} className="leading-relaxed">
+                      {paragraph.trim()}
+                    </p>
+                  ))}
+                </div>
+              ) : (
+                'No description generated'
+              )}
             </div>
           </div>
 
