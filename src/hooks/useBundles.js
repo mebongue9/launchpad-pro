@@ -2,6 +2,7 @@
 // Hook for managing bundle listings (4-product bundles at discount)
 // Creates and retrieves bundle data for funnels
 // RELEVANT FILES: netlify/functions/generate-bundle-listings.js, src/components/funnel/BundlePreview.jsx
+// BUG FIX: Bundle data is stored in funnel.bundle_listing JSONB, not separate bundles table
 
 import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
@@ -14,7 +15,7 @@ export function useBundles() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState(null)
 
-  // Fetch bundle for a funnel
+  // Fetch bundle for a funnel from bundle_listing JSONB column
   const fetchBundle = useCallback(async (funnelId) => {
     if (!user || !funnelId) return null
 
@@ -22,11 +23,11 @@ export function useBundles() {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await supabase
-        .from('bundles')
-        .select('*')
-        .eq('funnel_id', funnelId)
-        .eq('user_id', user.id)
+      // Bundle data is stored in funnel.bundle_listing JSONB column
+      const { data: funnel, error: fetchError } = await supabase
+        .from('funnels')
+        .select('bundle_listing')
+        .eq('id', funnelId)
         .single()
 
       if (fetchError && fetchError.code !== 'PGRST116') {
@@ -34,8 +35,10 @@ export function useBundles() {
         throw fetchError
       }
 
-      setBundle(data || null)
-      return data
+      // Extract bundle_listing from funnel JSONB
+      const bundleData = funnel?.bundle_listing || null
+      setBundle(bundleData)
+      return bundleData
     } catch (err) {
       setError(err.message)
       return null

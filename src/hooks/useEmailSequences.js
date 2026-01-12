@@ -14,7 +14,8 @@ export function useEmailSequences() {
   const [generating, setGenerating] = useState(false)
   const [error, setError] = useState(null)
 
-  // Fetch email sequences for a funnel
+  // Fetch email sequences from funnel JSONB and lead_magnets table
+  // BUG FIX: Emails are stored as arrays in JSONB, not in separate email_sequences table
   const fetchSequences = useCallback(async (funnelId) => {
     if (!user || !funnelId) return []
 
@@ -22,16 +23,61 @@ export function useEmailSequences() {
     setError(null)
 
     try {
-      const { data, error: fetchError } = await supabase
-        .from('email_sequences')
-        .select('*')
-        .eq('funnel_id', funnelId)
-        .eq('user_id', user.id)
-        .order('sequence_type')
+      // Fetch front-end emails from funnel JSONB
+      const { data: funnel, error: funnelError } = await supabase
+        .from('funnels')
+        .select('front_end')
+        .eq('id', funnelId)
+        .single()
 
-      if (fetchError) throw fetchError
-      setSequences(data || [])
-      return data || []
+      if (funnelError) throw funnelError
+
+      // Fetch lead magnet emails from lead_magnets table
+      const { data: leadMagnet } = await supabase
+        .from('lead_magnets')
+        .select('email_sequence')
+        .eq('funnel_id', funnelId)
+        .single()
+
+      // Build sequences array in the format the UI expects
+      const sequences = []
+
+      // Lead magnet emails (stored as array in lead_magnets.email_sequence)
+      if (leadMagnet?.email_sequence && Array.isArray(leadMagnet.email_sequence)) {
+        const lmEmails = leadMagnet.email_sequence
+        sequences.push({
+          sequence_type: 'lead_magnet',
+          email_1_subject: lmEmails[0]?.subject || '',
+          email_1_preview: lmEmails[0]?.preview || '',
+          email_1_body: lmEmails[0]?.body || '',
+          email_2_subject: lmEmails[1]?.subject || '',
+          email_2_preview: lmEmails[1]?.preview || '',
+          email_2_body: lmEmails[1]?.body || '',
+          email_3_subject: lmEmails[2]?.subject || '',
+          email_3_preview: lmEmails[2]?.preview || '',
+          email_3_body: lmEmails[2]?.body || ''
+        })
+      }
+
+      // Front-end emails (stored as array in funnel.front_end.email_sequence)
+      if (funnel?.front_end?.email_sequence && Array.isArray(funnel.front_end.email_sequence)) {
+        const feEmails = funnel.front_end.email_sequence
+        sequences.push({
+          sequence_type: 'front_end',
+          email_1_subject: feEmails[0]?.subject || '',
+          email_1_preview: feEmails[0]?.preview || '',
+          email_1_body: feEmails[0]?.body || '',
+          email_2_subject: feEmails[1]?.subject || '',
+          email_2_preview: feEmails[1]?.preview || '',
+          email_2_body: feEmails[1]?.body || '',
+          email_3_subject: feEmails[2]?.subject || '',
+          email_3_preview: feEmails[2]?.preview || '',
+          email_3_body: feEmails[2]?.body || ''
+        })
+      }
+
+      setSequences(sequences)
+      return sequences
     } catch (err) {
       setError(err.message)
       return []

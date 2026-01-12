@@ -48,47 +48,35 @@ export function useMarketplaceListings() {
     }
   }, [user])
 
-  // Fetch marketplace data from funnel
+  // Fetch marketplace data from funnel JSONB columns
+  // Data is stored as: front_end.marketplace_listing, bump.marketplace_listing, etc.
   const fetchListings = useCallback(async (funnelId) => {
     if (!user || !funnelId) return null
 
     try {
       const { data, error: fetchError } = await supabase
         .from('funnels')
-        .select(`
-          front_end_marketplace_title,
-          front_end_etsy_description,
-          front_end_normal_description,
-          front_end_marketplace_tags,
-          bump_marketplace_title,
-          bump_etsy_description,
-          bump_normal_description,
-          bump_marketplace_tags,
-          upsell_1_marketplace_title,
-          upsell_1_etsy_description,
-          upsell_1_normal_description,
-          upsell_1_marketplace_tags,
-          upsell_2_marketplace_title,
-          upsell_2_etsy_description,
-          upsell_2_normal_description,
-          upsell_2_marketplace_tags
-        `)
+        .select('front_end, bump, upsell_1, upsell_2')
         .eq('id', funnelId)
         .single()
 
       if (fetchError) throw fetchError
 
-      // Restructure into object by product level
+      // Extract marketplace_listing from each product's JSONB
       const listings = {}
       const levels = ['front_end', 'bump', 'upsell_1', 'upsell_2']
 
       for (const level of levels) {
-        if (data[`${level}_marketplace_title`]) {
+        const product = data[level]
+        if (product?.marketplace_listing) {
+          const ml = product.marketplace_listing
           listings[level] = {
-            marketplace_title: data[`${level}_marketplace_title`],
-            etsy_description: data[`${level}_etsy_description`],
-            normal_description: data[`${level}_normal_description`],
-            marketplace_tags: data[`${level}_marketplace_tags`]
+            marketplace_title: ml.marketplace_title || '',
+            etsy_description: ml.marketplace_description || '',
+            normal_description: ml.marketplace_description || '',
+            marketplace_tags: Array.isArray(ml.marketplace_tags)
+              ? ml.marketplace_tags.join(', ')
+              : (ml.marketplace_tags || '')
           }
         }
       }

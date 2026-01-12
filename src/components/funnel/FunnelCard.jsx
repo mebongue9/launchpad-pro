@@ -38,16 +38,19 @@ function formatDate(dateString) {
 }
 
 // Status border colors
+// Workflow: draft → in_progress → ready → complete
 const STATUS_BORDERS = {
   draft: 'border-l-gray-300',
-  content_generated: 'border-l-blue-500',
+  in_progress: 'border-l-yellow-500',
+  ready: 'border-l-blue-500',
   complete: 'border-l-green-500'
 }
 
 // Status labels
 const STATUS_LABELS = {
   draft: { label: 'Draft', bg: 'bg-gray-100', text: 'text-gray-700' },
-  content_generated: { label: 'In Progress', bg: 'bg-blue-100', text: 'text-blue-700' },
+  in_progress: { label: 'In Progress', bg: 'bg-yellow-100', text: 'text-yellow-700' },
+  ready: { label: 'Ready', bg: 'bg-blue-100', text: 'text-blue-700' },
   complete: { label: 'Complete', bg: 'bg-green-100', text: 'text-green-700' }
 }
 

@@ -14,7 +14,8 @@ import { useExistingProducts } from '../hooks/useExistingProducts'
 import { useLeadMagnets } from '../hooks/useLeadMagnets'
 import { useLeadMagnetIdeasJob, useLeadMagnetContentJob, useFunnelRemainingContentJob } from '../hooks/useGenerationJob'
 import { useToast } from '../components/ui/Toast'
-import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package, Trash2, Eye } from 'lucide-react'
+import { Magnet, Sparkles, Check, Loader2, FileText, Tag, ArrowRight, AlertCircle, RefreshCw, Package, Trash2, Eye, X, Edit3 } from 'lucide-react'
+import ContentEditor from '../components/editor/ContentEditor'
 import { AdminRagLogsPanel } from '../components/AdminRagLogsPanel'
 
 // Progress bar component for generation
@@ -108,6 +109,9 @@ export default function LeadMagnetBuilder() {
   const [ideasToastShown, setIdeasToastShown] = useState(false)
   const [contentToastShown, setContentToastShown] = useState(false)
   const [savedFunnelId, setSavedFunnelId] = useState(null)
+  const [viewingLeadMagnet, setViewingLeadMagnet] = useState(null)
+  const [editingLeadMagnet, setEditingLeadMagnet] = useState(null)
+  const [editContent, setEditContent] = useState('')
 
   // Get the target product based on destination type
   const targetProduct = destinationType === 'funnel'
@@ -763,11 +767,7 @@ export default function LeadMagnetBuilder() {
                 <div className="flex items-center gap-2">
                   {lm.content && (
                     <button
-                      onClick={() => {
-                        // View lead magnet content in a modal or expand
-                        alert('View functionality coming soon!\n\nContent preview:\n' +
-                          (lm.content?.chapters?.[0]?.content?.substring(0, 200) || 'No content') + '...')
-                      }}
+                      onClick={() => setViewingLeadMagnet(lm)}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
                       title="View content"
                     >
@@ -813,7 +813,36 @@ export default function LeadMagnetBuilder() {
         </Card>
       )}
 
-      {/* Note: BatchedGenerationManager removed - now using job-based progress display above */}
+      {/* Lead Magnet View Modal */}
+      {viewingLeadMagnet && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h2 className="text-lg font-semibold text-gray-900">{viewingLeadMagnet.name}</h2>
+              <button
+                onClick={() => setViewingLeadMagnet(null)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6">
+              <div className="mb-4">
+                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{viewingLeadMagnet.keyword}</span>
+                <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded ml-2">{viewingLeadMagnet.format}</span>
+              </div>
+              <div className="space-y-6">
+                {viewingLeadMagnet.content?.chapters?.map((chapter, idx) => (
+                  <div key={idx} className="border-l-4 border-blue-200 pl-4">
+                    <h3 className="font-semibold text-gray-900 mb-2">{chapter.title}</h3>
+                    <p className="text-gray-700 whitespace-pre-wrap text-sm">{chapter.content}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

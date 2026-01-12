@@ -1,10 +1,9 @@
 // /src/components/editor/ContentEditor.jsx
-// Classic WYSIWYG rich text editor for editing generated content
-// Uses TinyMCE - NO semantic/block editor, NO heading styles
+// Simple text editor for editing generated content
+// Uses plain textarea - lightweight, no external dependencies
 // RELEVANT FILES: src/pages/FunnelDetails.jsx, src/hooks/useExistingProducts.jsx
 
-import { useRef, useState } from 'react'
-import { Editor } from '@tinymce/tinymce-react'
+import { useState, useEffect } from 'react'
 import { X, Save, Loader2 } from 'lucide-react'
 import { Button } from '../ui/Button'
 
@@ -16,16 +15,17 @@ export default function ContentEditor({
   title = 'Edit Content',
   saving = false
 }) {
-  const editorRef = useRef(null)
   const [editorContent, setEditorContent] = useState(content || '')
+
+  // Update content when prop changes
+  useEffect(() => {
+    setEditorContent(content || '')
+  }, [content])
 
   if (!isOpen) return null
 
   const handleSave = () => {
-    if (editorRef.current) {
-      const html = editorRef.current.getContent()
-      onSave(html)
-    }
+    onSave(editorContent)
   }
 
   return (
@@ -44,63 +44,11 @@ export default function ContentEditor({
 
         {/* Editor */}
         <div className="flex-1 overflow-auto p-4">
-          <Editor
-            apiKey="no-api-key"
-            onInit={(evt, editor) => editorRef.current = editor}
-            initialValue={content}
-            onEditorChange={(newContent) => setEditorContent(newContent)}
-            init={{
-              height: 500,
-              menubar: false,
-              plugins: [
-                'advlist', 'autolink', 'lists', 'link', 'image', 'charmap',
-                'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                'insertdatetime', 'media', 'table', 'preview', 'help', 'wordcount'
-              ],
-              // Toolbar per vision spec - NO heading styles (H1, H2, H3)
-              toolbar: 'undo redo | fontfamily fontsize | ' +
-                'bold italic underline | link image | ' +
-                'alignleft aligncenter alignright | ' +
-                'removeformat | help',
-              // Specific font sizes per task document
-              fontsize_formats: '8pt 10pt 12pt 14pt 16pt 18pt 20pt 24pt 28pt 32pt 36pt 48pt',
-              // Font families
-              font_family_formats: 'Arial=arial,helvetica,sans-serif; ' +
-                'Georgia=georgia,palatino,serif; ' +
-                'Helvetica=helvetica,arial,sans-serif; ' +
-                'Times New Roman=times new roman,times,serif; ' +
-                'Verdana=verdana,geneva,sans-serif; ' +
-                'Inter=inter,sans-serif; ' +
-                'Roboto=roboto,sans-serif',
-              // Disable heading formats - NO H1, H2, H3 per vision spec
-              block_formats: 'Paragraph=p',
-              // Image upload handler
-              images_upload_handler: async (blobInfo) => {
-                // For now, return blob URL. Can integrate with Supabase storage later
-                return URL.createObjectURL(blobInfo.blob())
-              },
-              // Content styling
-              content_style: `
-                body {
-                  font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
-                  font-size: 14pt;
-                  line-height: 1.6;
-                  padding: 16px;
-                }
-                img { max-width: 100%; height: auto; }
-              `,
-              // Disable status bar showing element path (no semantic hints)
-              elementpath: false,
-              // Disable resize
-              resize: false,
-              // Remove branding
-              branding: false,
-              // Paste as plain text by default to avoid format issues
-              paste_as_text: false,
-              // Allow all elements for maximum formatting flexibility
-              valid_elements: '*[*]',
-              extended_valid_elements: '*[*]'
-            }}
+          <textarea
+            value={editorContent}
+            onChange={(e) => setEditorContent(e.target.value)}
+            className="w-full h-[500px] p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-sans text-sm leading-relaxed resize-none"
+            placeholder="Enter content here..."
           />
         </div>
 
