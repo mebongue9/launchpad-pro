@@ -53,6 +53,9 @@ export default function VisualBuilder() {
   const [handle, setHandle] = useState('')
   const [handleSize, setHandleSize] = useState(100)
 
+  // Product format (for preview highlighting)
+  const [productFormat, setProductFormat] = useState(null)
+
   // Generation state
   const [generating, setGenerating] = useState(false)
   const [generatedHtml, setGeneratedHtml] = useState(null)
@@ -67,13 +70,17 @@ export default function VisualBuilder() {
       if (lm) {
         setTitle(lm.name || '')
         setSubtitle(lm.topic || '')
+        setProductFormat(lm.format || null)
       }
     } else if (sourceType === 'funnel' && selectedSource && selectedProduct) {
       const funnel = funnels.find(f => f.id === selectedSource)
       if (funnel && funnel[selectedProduct]) {
         setTitle(funnel[selectedProduct].name || '')
         setSubtitle(funnel[selectedProduct].description?.substring(0, 100) || '')
+        setProductFormat(funnel[selectedProduct].format || null)
       }
+    } else {
+      setProductFormat(null)
     }
   }, [sourceType, selectedSource, selectedProduct, leadMagnets, funnels])
 
@@ -224,6 +231,7 @@ export default function VisualBuilder() {
     setAuthorSize(100)
     setHandle('')
     setHandleSize(100)
+    setProductFormat(null)
     setGeneratedHtml(null)
   }
 
@@ -467,6 +475,7 @@ export default function VisualBuilder() {
               authorSize={authorSize}
               handle={handle}
               handleSize={handleSize}
+              productFormat={productFormat}
               onGenerate={handleGenerate}
               generating={generating}
             />
