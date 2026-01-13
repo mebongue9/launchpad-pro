@@ -4,14 +4,22 @@
 // RELEVANT FILES: src/pages/VisualBuilder.jsx, src/components/visual-builder/StyleEditor.jsx
 
 import { useMemo, useState } from 'react'
+import { Button } from '../ui/Button'
+import { Loader2, Sparkles } from 'lucide-react'
 
 export function PreviewPanel({
   template,
   title,
   subtitle,
+  titleSize = 100,
+  subtitleSize = 100,
   authorName,
+  authorSize = 100,
   handle,
-  content
+  handleSize = 100,
+  onGenerate,
+  generating = false,
+  disabled = false
 }) {
   const [activeTab, setActiveTab] = useState('cover')
 
@@ -34,9 +42,13 @@ export function PreviewPanel({
       subtitle: subtitle || 'Your subtitle goes here',
       author: displayAuthor,
       handle: displayHandle,
-      year
+      year,
+      titleSize,
+      subtitleSize,
+      authorSize,
+      handleSize
     })
-  }, [template, title, subtitle, displayAuthor, displayHandle, year])
+  }, [template, title, subtitle, displayAuthor, displayHandle, year, titleSize, subtitleSize, authorSize, handleSize])
 
   // Generate interior page HTML
   const interiorHtml = useMemo(() => {
@@ -58,21 +70,39 @@ export function PreviewPanel({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab switcher */}
-      <div className="flex gap-2 mb-4">
-        {tabs.map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-              activeTab === tab.id
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
+      {/* Tab switcher + Generate button */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex gap-2">
+          {tabs.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-purple-600 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <Button
+          onClick={onGenerate}
+          disabled={disabled || generating || !title}
+        >
+          {generating ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Generate PDF
+            </>
+          )}
+        </Button>
       </div>
 
       {/* Large preview area */}
@@ -134,7 +164,7 @@ export function PreviewPanel({
 
 // Generate cover HTML from template
 function generateCoverHtml(template, data) {
-  const { title, subtitle, author, handle, year } = data
+  const { title, subtitle, author, handle, year, titleSize = 100, subtitleSize = 100, authorSize = 100, handleSize = 100 } = data
 
   // Replace placeholders in template HTML
   let html = template.html_template
@@ -144,7 +174,7 @@ function generateCoverHtml(template, data) {
     .replace(/\{\{handle\}\}/g, escapeHtml(handle))
     .replace(/\{\{year\}\}/g, year)
 
-  // Build full HTML document
+  // Build full HTML document with size CSS variables
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -153,6 +183,12 @@ function generateCoverHtml(template, data) {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; }
+    :root {
+      --title-scale: ${titleSize / 100};
+      --subtitle-scale: ${subtitleSize / 100};
+      --author-scale: ${authorSize / 100};
+      --handle-scale: ${handleSize / 100};
+    }
     ${template.css_styles}
   </style>
 </head>

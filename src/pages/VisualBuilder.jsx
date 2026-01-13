@@ -45,9 +45,13 @@ export default function VisualBuilder() {
 
   // Step 3: Styling
   const [title, setTitle] = useState('')
+  const [titleSize, setTitleSize] = useState(100)
   const [subtitle, setSubtitle] = useState('')
+  const [subtitleSize, setSubtitleSize] = useState(100)
   const [authorName, setAuthorName] = useState('')
+  const [authorSize, setAuthorSize] = useState(100)
   const [handle, setHandle] = useState('')
+  const [handleSize, setHandleSize] = useState(100)
 
   // Generation state
   const [generating, setGenerating] = useState(false)
@@ -113,9 +117,13 @@ export default function VisualBuilder() {
           productType: selectedProduct,
           coverTemplateId: selectedTemplate.id,
           title,
+          titleSize,
           subtitle,
+          subtitleSize,
           authorName,
-          handle
+          authorSize,
+          handle,
+          handleSize
         })
       })
 
@@ -209,9 +217,13 @@ export default function VisualBuilder() {
     setSelectedProduct(null)
     setSelectedTemplate(null)
     setTitle('')
+    setTitleSize(100)
     setSubtitle('')
+    setSubtitleSize(100)
     setAuthorName('')
+    setAuthorSize(100)
     setHandle('')
+    setHandleSize(100)
     setGeneratedHtml(null)
   }
 
@@ -427,24 +439,36 @@ export default function VisualBuilder() {
           <StyleEditor
             title={title}
             setTitle={setTitle}
+            titleSize={titleSize}
+            setTitleSize={setTitleSize}
             subtitle={subtitle}
             setSubtitle={setSubtitle}
+            subtitleSize={subtitleSize}
+            setSubtitleSize={setSubtitleSize}
             authorName={authorName}
             setAuthorName={setAuthorName}
+            authorSize={authorSize}
+            setAuthorSize={setAuthorSize}
             handle={handle}
             setHandle={setHandle}
-            onGenerate={handleGenerate}
-            generating={generating}
+            handleSize={handleSize}
+            setHandleSize={setHandleSize}
           />
 
           {/* Large preview area */}
-          <Card className="p-4" style={{ minHeight: '600px' }}>
+          <Card className="p-4" style={{ minHeight: '550px' }}>
             <PreviewPanel
               template={selectedTemplate}
               title={title}
+              titleSize={titleSize}
               subtitle={subtitle}
+              subtitleSize={subtitleSize}
               authorName={authorName}
+              authorSize={authorSize}
               handle={handle}
+              handleSize={handleSize}
+              onGenerate={handleGenerate}
+              generating={generating}
             />
           </Card>
         </div>

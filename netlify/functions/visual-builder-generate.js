@@ -33,9 +33,13 @@ export async function handler(event) {
       productType,
       coverTemplateId,
       title,
+      titleSize = 100,
       subtitle,
+      subtitleSize = 100,
       authorName,
-      handle: handleInput
+      authorSize = 100,
+      handle: handleInput,
+      handleSize = 100
     } = body
 
     console.log(`📥 ${LOG_TAG} Request:`, { funnelId, leadMagnetId, productType, coverTemplateId })
@@ -127,6 +131,11 @@ export async function handler(event) {
       author,
       handle,
       year
+    }, {
+      titleSize,
+      subtitleSize,
+      authorSize,
+      handleSize
     })
 
     // 4. Render interior HTML

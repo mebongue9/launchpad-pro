@@ -6,15 +6,17 @@
  * Render cover HTML from template
  * @param {Object} template - Cover template from database
  * @param {Object} data - Data to inject (title, subtitle, author, handle, year)
- * @param {Object} options - Size options (titleSize, subtitleSize as percentages)
+ * @param {Object} options - Size options (titleSize, subtitleSize, authorSize, handleSize as percentages)
  * @returns {string} Complete HTML document
  */
 export function renderCover(template, data, options = {}) {
   const { title, subtitle, author, handle, year } = data
-  const { titleSize = 100, subtitleSize = 100 } = options
+  const { titleSize = 100, subtitleSize = 100, authorSize = 100, handleSize = 100 } = options
 
   const titleScale = titleSize / 100
   const subtitleScale = subtitleSize / 100
+  const authorScale = authorSize / 100
+  const handleScale = handleSize / 100
 
   // Replace placeholders in template HTML
   let html = template.html_template
@@ -51,6 +53,8 @@ export function renderCover(template, data, options = {}) {
     :root {
       --title-scale: ${titleScale};
       --subtitle-scale: ${subtitleScale};
+      --author-scale: ${authorScale};
+      --handle-scale: ${handleScale};
     }
     ${template.css_styles}
   </style>

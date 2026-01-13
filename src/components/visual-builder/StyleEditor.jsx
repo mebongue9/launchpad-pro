@@ -1,31 +1,31 @@
 // src/components/visual-builder/StyleEditor.jsx
-// Compact horizontal bar for cover customization
+// Compact dark bar with text inputs and size sliders
+// Generate button moved to PreviewPanel
 // RELEVANT FILES: src/pages/VisualBuilder.jsx, src/components/visual-builder/PreviewPanel.jsx
-
-import { Button } from '../ui/Button'
-import { Loader2, Sparkles } from 'lucide-react'
 
 export function StyleEditor({
   title,
   setTitle,
+  titleSize,
+  setTitleSize,
   subtitle,
   setSubtitle,
+  subtitleSize,
+  setSubtitleSize,
   authorName,
   setAuthorName,
+  authorSize,
+  setAuthorSize,
   handle,
   setHandle,
-  onGenerate,
-  generating = false,
+  handleSize,
+  setHandleSize,
   disabled = false
 }) {
   return (
-    <div className="bg-gray-900 rounded-xl p-4">
-      <p className="text-gray-400 text-xs mb-3">
-        Edit the fields below and watch the cover update in real-time
-      </p>
-
-      {/* Compact horizontal form */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="bg-gray-900 rounded-xl px-4 py-3">
+      {/* 4-column grid: each field has input + size slider */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Title */}
         <div>
           <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">
@@ -37,8 +37,21 @@ export function StyleEditor({
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Your Title"
             disabled={disabled}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm placeholder-gray-500 focus:ring-1 focus:ring-purple-500 focus:border-transparent"
           />
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-gray-500 w-8">{titleSize}%</span>
+            <input
+              type="range"
+              min="60"
+              max="140"
+              step="5"
+              value={titleSize}
+              onChange={(e) => setTitleSize(parseInt(e.target.value))}
+              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              disabled={disabled}
+            />
+          </div>
         </div>
 
         {/* Subtitle */}
@@ -52,8 +65,21 @@ export function StyleEditor({
             onChange={(e) => setSubtitle(e.target.value)}
             placeholder="Your subtitle"
             disabled={disabled}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm placeholder-gray-500 focus:ring-1 focus:ring-purple-500 focus:border-transparent"
           />
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-gray-500 w-8">{subtitleSize}%</span>
+            <input
+              type="range"
+              min="60"
+              max="140"
+              step="5"
+              value={subtitleSize}
+              onChange={(e) => setSubtitleSize(parseInt(e.target.value))}
+              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              disabled={disabled}
+            />
+          </div>
         </div>
 
         {/* Author Name */}
@@ -67,8 +93,21 @@ export function StyleEditor({
             onChange={(e) => setAuthorName(e.target.value)}
             placeholder="Your Name"
             disabled={disabled}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm placeholder-gray-500 focus:ring-1 focus:ring-purple-500 focus:border-transparent"
           />
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-gray-500 w-8">{authorSize}%</span>
+            <input
+              type="range"
+              min="60"
+              max="140"
+              step="5"
+              value={authorSize}
+              onChange={(e) => setAuthorSize(parseInt(e.target.value))}
+              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              disabled={disabled}
+            />
+          </div>
         </div>
 
         {/* Handle / Brand */}
@@ -82,30 +121,22 @@ export function StyleEditor({
             onChange={(e) => setHandle(e.target.value)}
             placeholder="Your Brand"
             disabled={disabled}
-            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-sm placeholder-gray-500 focus:ring-1 focus:ring-purple-500 focus:border-transparent"
           />
+          <div className="flex items-center gap-2 mt-1">
+            <span className="text-xs text-gray-500 w-8">{handleSize}%</span>
+            <input
+              type="range"
+              min="60"
+              max="140"
+              step="5"
+              value={handleSize}
+              onChange={(e) => setHandleSize(parseInt(e.target.value))}
+              className="flex-1 h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-purple-500"
+              disabled={disabled}
+            />
+          </div>
         </div>
-      </div>
-
-      {/* Generate button - inline */}
-      <div className="mt-4 flex justify-end">
-        <Button
-          onClick={onGenerate}
-          disabled={disabled || generating || !title}
-          className="px-6"
-        >
-          {generating ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate PDF
-            </>
-          )}
-        </Button>
       </div>
     </div>
   )
