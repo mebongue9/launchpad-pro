@@ -16,8 +16,37 @@ const supabase = createClient(
 const LOG_TAG = '[VISUAL-BUILDER-GENERATE]'
 const STORAGE_BUCKET = 'visual-designs'
 
+// Ensure storage bucket exists (runs once per cold start)
+let bucketVerified = false
+async function ensureBucketExists() {
+  if (bucketVerified) return
+
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets()
+    const exists = buckets?.some(b => b.id === STORAGE_BUCKET)
+
+    if (!exists) {
+      console.log(`📦 ${LOG_TAG} Creating storage bucket: ${STORAGE_BUCKET}`)
+      const { error } = await supabase.storage.createBucket(STORAGE_BUCKET, {
+        public: true,
+        fileSizeLimit: 52428800, // 50MB
+        allowedMimeTypes: ['application/pdf', 'image/png', 'image/jpeg']
+      })
+      if (error && !error.message.includes('already exists')) {
+        console.error(`❌ ${LOG_TAG} Bucket creation error:`, error)
+      }
+    }
+    bucketVerified = true
+  } catch (err) {
+    console.error(`⚠️ ${LOG_TAG} Bucket check error:`, err)
+  }
+}
+
 export async function handler(event) {
   console.log(`🎨 ${LOG_TAG} Function invoked`)
+
+  // Ensure storage bucket exists
+  await ensureBucketExists()
 
   if (event.httpMethod !== 'POST') {
     return {
