@@ -24,6 +24,19 @@ import {
   Check
 } from 'lucide-react'
 
+// Format ID to display label
+function formatLabel(format) {
+  const labels = {
+    'checklist': 'Checklist',
+    'worksheet': 'Worksheet',
+    'planner': 'Planner',
+    'swipe-file': 'Swipe File',
+    'blueprint': 'Blueprint',
+    'cheat-sheet': 'Cheat Sheet'
+  }
+  return labels[format] || format
+}
+
 export default function VisualBuilder() {
   const { profiles } = useProfiles()
   const { funnels } = useFunnels()
@@ -354,7 +367,9 @@ export default function VisualBuilder() {
               >
                 <option value="">Choose a lead magnet...</option>
                 {leadMagnets.map(lm => (
-                  <option key={lm.id} value={lm.id}>{lm.name}</option>
+                  <option key={lm.id} value={lm.id}>
+                    {lm.name}{lm.format ? ` (${formatLabel(lm.format)})` : ''}
+                  </option>
                 ))}
               </select>
             </div>

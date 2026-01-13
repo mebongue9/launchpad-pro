@@ -96,16 +96,17 @@ export function PreviewPanel({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
-                  isMatchingFormat
-                    ? 'ring-2 ring-amber-400 ring-offset-1 bg-amber-50 text-amber-700'
-                    : isActive
+                className={`relative px-3 py-1.5 text-sm font-medium rounded-lg transition-all ${
+                  isActive
                     ? 'bg-purple-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
+                {/* Blue dot indicator for matching format - always visible */}
+                {isMatchingFormat && (
+                  <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm" />
+                )}
                 {tab.label}
-                {isMatchingFormat && <span className="ml-1">★</span>}
               </button>
             )
           })}
@@ -162,14 +163,16 @@ export function PreviewPanel({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-shrink-0 transition-all ${
-                isMatchingFormat
-                  ? 'ring-2 ring-amber-400 ring-offset-2'
-                  : isActive
+              className={`relative flex-shrink-0 transition-all ${
+                isActive
                   ? 'ring-2 ring-purple-500 ring-offset-2'
                   : 'opacity-60 hover:opacity-100'
               }`}
             >
+              {/* Blue dot indicator for matching format - always visible */}
+              {isMatchingFormat && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white shadow-sm z-10" />
+              )}
               <div className="w-14 h-20 bg-white rounded shadow overflow-hidden">
                 <iframe
                   srcDoc={getTabHtml(tab.id)}
@@ -184,10 +187,9 @@ export function PreviewPanel({
                 />
               </div>
               <div className={`text-xs mt-1 text-center truncate w-14 ${
-                isMatchingFormat ? 'text-amber-600 font-medium' : 'text-gray-500'
+                isMatchingFormat ? 'text-blue-600 font-medium' : 'text-gray-500'
               }`}>
                 {tab.label.split(' ')[0]}
-                {isMatchingFormat && ' ★'}
               </div>
             </button>
           )
