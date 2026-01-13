@@ -73,6 +73,7 @@ export default function VisualBuilder() {
 
   // Generation state
   const [generating, setGenerating] = useState(false)
+  const [generationStatus, setGenerationStatus] = useState(null) // 'starting' | 'processing' | 'completed' | 'failed'
   const [generatedPdf, setGeneratedPdf] = useState(null) // { pdfUrl, coverPngUrl }
 
   // Get profile data for preview
@@ -121,6 +122,35 @@ export default function VisualBuilder() {
     return products
   }
 
+  // Poll for job status
+  async function pollJobStatus(jobId, maxAttempts = 60, intervalMs = 2000) {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        const response = await fetch(`/.netlify/functions/visual-builder-status?jobId=${jobId}`)
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Status check failed')
+        }
+
+        if (data.status === 'completed') {
+          return { success: true, pdfUrl: data.pdfUrl, coverPngUrl: data.coverPngUrl }
+        } else if (data.status === 'failed') {
+          return { success: false, error: data.error || 'Generation failed' }
+        }
+
+        // Still processing, wait and retry
+        await new Promise(resolve => setTimeout(resolve, intervalMs))
+      } catch (error) {
+        console.error('Poll error:', error)
+        // Continue polling on network errors
+        await new Promise(resolve => setTimeout(resolve, intervalMs))
+      }
+    }
+
+    return { success: false, error: 'Generation timed out. Please try again.' }
+  }
+
   // Handle PDF generation
   async function handleGenerate() {
     if (!selectedTemplate || !title) {
@@ -129,7 +159,11 @@ export default function VisualBuilder() {
     }
 
     setGenerating(true)
+    setGenerationStatus('starting')
+    setGeneratedPdf(null)
+
     try {
+      // Step 1: Start the generation job
       const response = await fetch('/.netlify/functions/visual-builder-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -153,104 +187,48 @@ export default function VisualBuilder() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Generation failed')
+        throw new Error(data.error || 'Failed to start generation')
       }
 
-      // Server returns PDF URL (preferred) or HTML fallback
-      if (data.pdfUrl) {
-        setGeneratedPdf({
-          pdfUrl: data.pdfUrl,
-          coverPngUrl: data.coverPngUrl,
-          html: null
-        })
-        addToast('PDF generated! Click Download to save.', 'success')
-      } else if (data.coverHtml && data.interiorHtml) {
-        // Fallback to client-side generation
-        setGeneratedPdf({
-          pdfUrl: null,
-          coverPngUrl: null,
-          html: { cover: data.coverHtml, interior: data.interiorHtml }
-        })
-        addToast('Design ready! Click Download to generate PDF.', 'success')
+      // Check if we got a job ID (background processing)
+      if (data.jobId) {
+        setGenerationStatus('processing')
+        addToast('Generating your PDF... This may take a moment.', 'info')
+
+        // Step 2: Poll for completion
+        const result = await pollJobStatus(data.jobId)
+
+        if (result.success) {
+          setGeneratedPdf({
+            pdfUrl: result.pdfUrl,
+            coverPngUrl: result.coverPngUrl,
+            html: null
+          })
+          setGenerationStatus('completed')
+          addToast('PDF generated! Click Download to save.', 'success')
+        } else {
+          setGenerationStatus('failed')
+          throw new Error(result.error)
+        }
       } else {
-        throw new Error('No PDF data returned')
+        // Direct response (shouldn't happen with new architecture, but handle it)
+        throw new Error('Unexpected response format')
       }
 
     } catch (error) {
       console.error('Generation error:', error)
+      setGenerationStatus('failed')
       addToast(error.message || 'Failed to generate', 'error')
     } finally {
       setGenerating(false)
     }
   }
 
-  // Download PDF - from server URL or generate client-side
-  async function handleDownloadPDF() {
-    if (!generatedPdf) return
-
-    // If we have a server-generated PDF URL, open it
-    if (generatedPdf.pdfUrl) {
-      window.open(generatedPdf.pdfUrl, '_blank')
-      addToast('PDF opened in new tab', 'success')
-      return
-    }
-
-    // Otherwise, generate client-side from HTML
-    if (generatedPdf.html) {
-      addToast('Generating PDF...', 'info')
-      try {
-        // Load html2pdf.js from CDN if not already loaded
-        if (!window.html2pdf) {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement('script')
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
-            script.onload = resolve
-            script.onerror = reject
-            document.head.appendChild(script)
-          })
-        }
-
-        // Combine cover + interior
-        const fullHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="UTF-8">
-            <style>
-              @page { size: A4; margin: 0; }
-              body { margin: 0; padding: 0; }
-            </style>
-          </head>
-          <body>
-            ${generatedPdf.html.cover}
-            ${generatedPdf.html.interior}
-          </body>
-          </html>
-        `
-
-        const container = document.createElement('div')
-        container.innerHTML = fullHtml
-        container.style.width = '210mm'
-        document.body.appendChild(container)
-
-        await window.html2pdf()
-          .set({
-            margin: 0,
-            filename: `${title || 'design'}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-          })
-          .from(container)
-          .save()
-
-        document.body.removeChild(container)
-        addToast('PDF downloaded!', 'success')
-      } catch (error) {
-        console.error('Client PDF generation error:', error)
-        addToast('PDF generation failed', 'error')
-      }
-    }
+  // Download PDF from server URL
+  function handleDownloadPDF() {
+    if (!generatedPdf?.pdfUrl) return
+    window.open(generatedPdf.pdfUrl, '_blank')
+    addToast('PDF opened in new tab', 'success')
   }
 
   // Reset everything
@@ -270,6 +248,7 @@ export default function VisualBuilder() {
     setHandleSize(100)
     setProductFormat(null)
     setGeneratedPdf(null)
+    setGenerationStatus(null)
   }
 
   // Can proceed to next step?
@@ -520,6 +499,7 @@ export default function VisualBuilder() {
               productFormat={productFormat}
               onGenerate={handleGenerate}
               generating={generating}
+              generationStatus={generationStatus}
             />
           </Card>
         </div>

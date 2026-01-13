@@ -20,6 +20,7 @@ export function PreviewPanel({
   productFormat = null,
   onGenerate,
   generating = false,
+  generationStatus = null,
   disabled = false
 }) {
   const [activeTab, setActiveTab] = useState('cover')
@@ -118,7 +119,9 @@ export function PreviewPanel({
           {generating ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating...
+              {generationStatus === 'starting' && 'Starting...'}
+              {generationStatus === 'processing' && 'Generating PDF...'}
+              {!generationStatus && 'Generating...'}
             </>
           ) : (
             <>

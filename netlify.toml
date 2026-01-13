@@ -12,9 +12,13 @@
   # External packages that shouldn't be bundled (native binaries)
   external_node_modules = ["@sparticuz/chromium"]
 
-# Extended timeout for PDF generation (requires Netlify Pro for full 26s)
+# Job starter - returns immediately with job ID
 [functions."visual-builder-generate"]
-  # Include chromium binary files
+  included_files = ["node_modules/@sparticuz/chromium/**"]
+
+# Background function - 15 minute timeout for PDF generation
+# Files ending in -background automatically get background function behavior
+[functions."visual-builder-generate-background"]
   included_files = ["node_modules/@sparticuz/chromium/**"]
 
 # Cache headers - prevent browser caching of HTML, allow caching of hashed assets
