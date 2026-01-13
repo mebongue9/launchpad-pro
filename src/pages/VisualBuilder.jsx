@@ -2,7 +2,6 @@
 // Visual Builder - Phase 1: 4 professional cover templates
 // Generates styled PDFs with cover + interior pages
 // RELEVANT FILES: src/components/visual-builder/*.jsx, src/hooks/useCoverTemplates.js
-// Build: 2026-01-13-v2
 
 import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
@@ -216,7 +215,7 @@ export default function VisualBuilder() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Visual Builder v2</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Visual Builder</h1>
         <p className="text-gray-500 mt-1">
           Transform your content into beautifully designed PDFs
         </p>
