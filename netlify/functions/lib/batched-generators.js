@@ -103,6 +103,30 @@ function safeParseSections(responseText, expectedCount, taskName) {
   return sections;
 }
 
+// Helper: Ensure bullet points have proper newlines between them
+// Fixes cases where Claude outputs "• item1 • item2" instead of "• item1\n• item2"
+function fixBulletNewlines(text) {
+  if (!text) return text;
+  // Replace " • " (space-bullet-space) with newline-bullet
+  // This handles cases where bullets are on the same line
+  return text.replace(/ • /g, '\n• ').replace(/ - /g, '\n- ');
+}
+
+// Helper: Convert text to Unicode bold
+function toUnicodeBold(text) {
+  if (!text) return '';
+  const boldMap = {
+    'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜',
+    'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥',
+    'S': '𝗦', 'T': '𝗧', 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
+    'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶',
+    'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿',
+    's': '𝘀', 't': '𝘁', 'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
+    '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰', '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵'
+  };
+  return text.split('').map(c => boldMap[c] || c).join('');
+}
+
 // THE 6 APPROVED FORMATS - Data-proven from Maria Wendt's research
 // These are the ONLY formats allowed. No others.
 const APPROVED_FORMATS = ['Checklist', 'Worksheet', 'Planner', 'Swipe File', 'Blueprint', 'Cheat Sheet'];
@@ -1419,6 +1443,14 @@ For EACH product, create a description with these 7 sections:
 
 4. Keep benefits in "Key Benefits" DIFFERENT from benefits in "What's Inside"
 
+5. CRITICAL - BULLET POINT FORMATTING:
+   Each bullet point MUST be on its own line with a newline character between them.
+   WRONG: "• Item 1 • Item 2 • Item 3" (all on one line)
+   CORRECT:
+   "• Item 1
+   • Item 2
+   • Item 3"
+
 == OUTPUT FORMAT ==
 
 marketplace_title: SEO title (MAX 140 chars)
@@ -1447,7 +1479,14 @@ ${SECTION_SEPARATOR}
 
   // Use safe section parsing with validation
   const sections = safeParseSections(response.content[0].text, 3, 'MarketplaceBatch1');
-  const listings = sections.map(s => parseClaudeJSON(s));
+  const listings = sections.map(s => {
+    const parsed = parseClaudeJSON(s);
+    // Fix bullet newlines in marketplace_description
+    if (parsed.marketplace_description) {
+      parsed.marketplace_description = fixBulletNewlines(parsed.marketplace_description);
+    }
+    return parsed;
+  });
 
   // Save marketplace listing to lead_magnets table if it exists
   if (lead_magnet?.id) {
@@ -1557,6 +1596,14 @@ For EACH product, create a description with these 7 sections:
 
 4. Keep benefits in "Key Benefits" DIFFERENT from benefits in "What's Inside"
 
+5. CRITICAL - BULLET POINT FORMATTING:
+   Each bullet point MUST be on its own line with a newline character between them.
+   WRONG: "• Item 1 • Item 2 • Item 3" (all on one line)
+   CORRECT:
+   "• Item 1
+   • Item 2
+   • Item 3"
+
 5. Emphasize PREMIUM value - these are higher-ticket products
 
 == OUTPUT FORMAT ==
@@ -1587,7 +1634,14 @@ ${SECTION_SEPARATOR}
 
   // Use safe section parsing with validation
   const sections = safeParseSections(response.content[0].text, 2, 'MarketplaceBatch2');
-  const listings = sections.map(s => parseClaudeJSON(s));
+  const listings = sections.map(s => {
+    const parsed = parseClaudeJSON(s);
+    // Fix bullet newlines in marketplace_description
+    if (parsed.marketplace_description) {
+      parsed.marketplace_description = fixBulletNewlines(parsed.marketplace_description);
+    }
+    return parsed;
+  });
 
   // Save marketplace listings to funnel's JSONB columns
   await supabase.from('funnels').update({
@@ -1631,6 +1685,7 @@ NICHE: ${funnel.niche}
 
 LEAD MAGNET: "${lead_magnet?.name || 'Lead Magnet'}"
 FRONT-END PRODUCT: "${frontend?.name || 'Front-End Product'}"
+FRONT-END PRODUCT URL: ${frontend?.url || '[PRODUCT_URL]'}
 
 Generate 6 sections separated by: ${SECTION_SEPARATOR}
 
@@ -1646,6 +1701,9 @@ FRONT-END SEQUENCE (3 emails):
 
 IMPORTANT: Sign off all emails with the creator's name: "${creatorFirstName}"
 Do NOT use placeholder names like "Maria" or generic sign-offs. Use the CREATOR NAME provided above.
+
+IMPORTANT: When including links to the front-end product, use the ACTUAL URL provided above: ${frontend?.url || '[PRODUCT_URL]'}
+Do NOT use placeholder text like "[LINK]" or "[CLICK HERE]". Use the actual URL.
 
 Each email JSON:
 {
@@ -1677,7 +1735,22 @@ Output 6 JSON objects separated by ===SECTION_BREAK=== (no markdown, no headers,
 
   // Use safe section parsing with validation
   const sections = safeParseSections(response.content[0].text, 6, 'AllEmails');
-  const emails = sections.map(s => parseClaudeJSON(s));
+
+  // Get the product URL for placeholder replacement
+  const productUrl = frontend?.url || '';
+
+  const emails = sections.map(s => {
+    const parsed = parseClaudeJSON(s);
+    // Replace any remaining [LINK] or [PRODUCT_URL] placeholders with actual URL
+    if (parsed.body && productUrl) {
+      parsed.body = parsed.body
+        .replace(/\[LINK\]/gi, productUrl)
+        .replace(/\[PRODUCT_URL\]/gi, productUrl)
+        .replace(/\[CLICK HERE\]/gi, productUrl)
+        .replace(/\[URL\]/gi, productUrl);
+    }
+    return parsed;
+  });
 
   // Save lead magnet emails to lead_magnets table if it exists
   if (lead_magnet?.id) {
@@ -1747,26 +1820,34 @@ THE 4 PAID PRODUCTS IN THIS BUNDLE (Lead Magnet is FREE, not included in bundle)
 
 == BUNDLE DESCRIPTION FRAMEWORK ==
 
-Generate a description with these 7 SECTIONS (use line breaks between sections):
+Generate a description with ALL 7 SECTIONS (use line breaks between sections):
 
-**SECTION 1 - WHAT IT IS:** (1 sentence)
+== UNICODE BOLD CHARACTERS (REQUIRED FOR PRODUCT NAMES AND HEADERS) ==
+You MUST use Unicode bold for section headers and product names. This is how bold displays on Etsy/Gumroad.
+Unicode bold alphabet: 𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭 𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇 𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵
+DO NOT use markdown ** symbols - they show as raw text on marketplaces.
+
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟭 - 𝗪𝗛𝗔𝗧 𝗜𝗧 𝗜𝗦: (1 sentence)
 Synthesize all 4 products into ONE combined outcome. Focus on the END RESULT.
 Example: "The complete content-to-cash system that turns small audiences into consistent $100+ daily revenue..."
 
-**SECTION 2 - WHO IT'S FOR:** (1-2 sentences)
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟮 - 𝗪𝗛𝗢 𝗜𝗧'𝗦 𝗙𝗢𝗥: (1-2 sentences)
 Specific person with situation + frustration + readiness for complete solution.
 
-**SECTION 3 - PROBLEM SOLVED:** (1 sentence)
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟯 - 𝗣𝗥𝗢𝗕𝗟𝗘𝗠 𝗦𝗢𝗟𝗩𝗘𝗗: (1 sentence)
 The ROOT emotional problem - describe the frustrating CYCLE they're stuck in.
 
-**SECTION 4 - KEY BENEFITS:** (5-7 bullet points)
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟰 - 𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦: (5-7 bullet points)
 Transformation statements. Progress from awareness → action → results → freedom.
-Format: "• [Transformation benefit]"
+Format each on its own line:
+• Transformation benefit 1
+• Transformation benefit 2
+• Transformation benefit 3
 
-**SECTION 5 - WHAT'S INSIDE:** (one block per product)
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟱 - 𝗪𝗛𝗔𝗧'𝗦 𝗜𝗡𝗦𝗜𝗗𝗘: (one block per product)
 For EACH of the 4 products, use this structure:
 
-[Product Name]
+𝗣𝗿𝗼𝗱𝘂𝗰𝘁 𝗡𝗮𝗺𝗲 (USE UNICODE BOLD FOR THE ACTUAL PRODUCT NAME)
 
 [Unique problem framing - USE DIFFERENT ONE FOR EACH:]
 - Product 1: "The wall every [audience] eventually hits: [problem]"
@@ -1774,17 +1855,20 @@ For EACH of the 4 products, use this structure:
 - Product 3: "The thing nobody tells you when you start: [problem]"
 - Product 4: "The trap you only discover after [time]: [problem]"
 
-Then 3-4 deliverable bullets:
-• [Deliverable] so you can [benefit]
-• [Deliverable] so you can [benefit]
+Then 3-4 deliverable bullets (each on its own line):
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 so you can [benefit]
+• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 so you can [benefit]
 
-Use a line divider (---) between products.
+Use a line divider (━━━━━━━━━━) between products.
 
-**SECTION 6 - WHAT YOU'LL BE ABLE TO DO AFTER:** (5-7 bullet points)
-Transformation statements showing life on the other side.
-Format: "• [Action they can take] [result they'll achieve]"
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟲 - 𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢 𝗔𝗙𝗧𝗘𝗥 𝗚𝗘𝗧𝗧𝗜𝗡𝗚 𝗧𝗛𝗜𝗦: (5-7 bullet points)
+THIS SECTION IS REQUIRED - DO NOT SKIP IT.
+Transformation statements showing life on the other side. Each on its own line:
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝘁𝗵𝗲𝘆 𝗰𝗮𝗻 𝘁𝗮𝗸𝗲 result they'll achieve
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝘁𝗵𝗲𝘆 𝗰𝗮𝗻 𝘁𝗮𝗸𝗲 result they'll achieve
+• 𝗔𝗰𝘁𝗶𝗼𝗻 𝘁𝗵𝗲𝘆 𝗰𝗮𝗻 𝘁𝗮𝗸𝗲 result they'll achieve
 
-**SECTION 7 - CTA:** (1 line)
+𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟳 - 𝗖𝗧𝗔: (1 line)
 Short, action-oriented. Example: "Get the complete content-to-cash system"
 
 == OUTPUT FORMAT ==
@@ -1793,13 +1877,16 @@ Return valid JSON:
 {
   "bundle_title": "SEO-optimized title (max 140 chars)",
   "bundle_subtitle": "Short tagline",
-  "bundle_description": "[The full 7-section description with proper line breaks]",
+  "bundle_description": "[The full 7-section description with proper line breaks - MUST include all 7 sections]",
   "bundle_bullets": ["Short what's included 1", "Short what's included 2", ...10-12 items],
   "bundle_tags": ["tag1", "tag2", ...5-7 SEO tags],
   "value_proposition": "2-3 sentences on why bundle > buying separately"
 }
 
-CRITICAL: Use plain text only. NO markdown symbols like ** or *. Use line breaks for structure.`;
+CRITICAL FORMATTING:
+- Use Unicode bold (𝗔-𝗭) for product names and section headers - NO markdown ** symbols
+- Each bullet point MUST be on its own line
+- Include ALL 7 sections, especially Section 6 (What You'll Be Able To Do)`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -1809,6 +1896,11 @@ CRITICAL: Use plain text only. NO markdown symbols like ** or *. Use line breaks
   });
 
   const rawBundle = parseClaudeJSON(response.content[0].text);
+
+  // Fix bullet newlines in bundle description
+  if (rawBundle.bundle_description) {
+    rawBundle.bundle_description = fixBulletNewlines(rawBundle.bundle_description);
+  }
 
   // Calculate pricing from product prices
   const fePrice = parseFloat(frontend?.price) || 17;

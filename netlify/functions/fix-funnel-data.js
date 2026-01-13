@@ -9,6 +9,28 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Helper: Fix bullet points that are on the same line
+// Replaces " • " with newline + bullet to put each on its own line
+function fixBulletNewlines(text) {
+  if (!text) return text;
+  return text.replace(/ • /g, '\n• ').replace(/ - /g, '\n- ');
+}
+
+// Helper: Convert text to Unicode bold (for Etsy/Gumroad compatibility)
+function toUnicodeBold(text) {
+  if (!text) return '';
+  const boldMap = {
+    'A': '𝗔', 'B': '𝗕', 'C': '𝗖', 'D': '𝗗', 'E': '𝗘', 'F': '𝗙', 'G': '𝗚', 'H': '𝗛', 'I': '𝗜',
+    'J': '𝗝', 'K': '𝗞', 'L': '𝗟', 'M': '𝗠', 'N': '𝗡', 'O': '𝗢', 'P': '𝗣', 'Q': '𝗤', 'R': '𝗥',
+    'S': '𝗦', 'T': '𝗧', 'U': '𝗨', 'V': '𝗩', 'W': '𝗪', 'X': '𝗫', 'Y': '𝗬', 'Z': '𝗭',
+    'a': '𝗮', 'b': '𝗯', 'c': '𝗰', 'd': '𝗱', 'e': '𝗲', 'f': '𝗳', 'g': '𝗴', 'h': '𝗵', 'i': '𝗶',
+    'j': '𝗷', 'k': '𝗸', 'l': '𝗹', 'm': '𝗺', 'n': '𝗻', 'o': '𝗼', 'p': '𝗽', 'q': '𝗾', 'r': '𝗿',
+    's': '𝘀', 't': '𝘁', 'u': '𝘂', 'v': '𝘃', 'w': '𝘄', 'x': '𝘅', 'y': '𝘆', 'z': '𝘇',
+    '0': '𝟬', '1': '𝟭', '2': '𝟮', '3': '𝟯', '4': '𝟰', '5': '𝟱', '6': '𝟲', '7': '𝟳', '8': '𝟴', '9': '𝟵'
+  };
+  return text.split('').map(c => boldMap[c] || c).join('');
+}
+
 export async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return {
@@ -116,6 +138,202 @@ export async function handler(event) {
           success: true,
           message: 'Bundle description updated',
           description_length: new_description.length
+        })
+      };
+    }
+
+    // ============================================================
+    // FIX ACTIONS FOR EXISTING DATA
+    // ============================================================
+
+    // Fix bullet newlines in all marketplace descriptions and bundle
+    if (action === 'fix_bullet_newlines' || action === 'fix_all_formatting') {
+      const levels = ['front_end', 'bump', 'upsell_1', 'upsell_2'];
+      const bulletResults = { marketplace: {}, bundle: false };
+
+      // Fix marketplace descriptions
+      for (const level of levels) {
+        const product = funnel[level];
+        if (product?.marketplace_listing?.marketplace_description) {
+          const fixed = fixBulletNewlines(product.marketplace_listing.marketplace_description);
+          if (fixed !== product.marketplace_listing.marketplace_description) {
+            const updateObj = {
+              [level]: {
+                ...product,
+                marketplace_listing: {
+                  ...product.marketplace_listing,
+                  marketplace_description: fixed
+                }
+              },
+              updated_at: new Date().toISOString()
+            };
+            await supabase.from('funnels').update(updateObj).eq('id', funnel_id);
+            bulletResults.marketplace[level] = 'fixed';
+          } else {
+            bulletResults.marketplace[level] = 'no_change_needed';
+          }
+        } else {
+          bulletResults.marketplace[level] = 'no_description';
+        }
+      }
+
+      // Fix bundle description
+      if (funnel.bundle_listing?.etsy_description) {
+        const fixedEtsy = fixBulletNewlines(funnel.bundle_listing.etsy_description);
+        const fixedNormal = fixBulletNewlines(funnel.bundle_listing.normal_description || funnel.bundle_listing.etsy_description);
+
+        if (fixedEtsy !== funnel.bundle_listing.etsy_description) {
+          await supabase.from('funnels').update({
+            bundle_listing: {
+              ...funnel.bundle_listing,
+              etsy_description: fixedEtsy,
+              normal_description: fixedNormal
+            },
+            updated_at: new Date().toISOString()
+          }).eq('id', funnel_id);
+          bulletResults.bundle = 'fixed';
+        } else {
+          bulletResults.bundle = 'no_change_needed';
+        }
+      }
+
+      if (action === 'fix_bullet_newlines') {
+        results.bullet_newlines = bulletResults;
+      } else {
+        results.bullet_newlines = bulletResults;
+      }
+    }
+
+    // Fix email [LINK] placeholders with actual URL
+    if (action === 'fix_email_links' || action === 'fix_all_formatting') {
+      const productUrl = funnel.front_end?.url || '';
+      const emailResults = { front_end: [], lead_magnet: [] };
+
+      if (!productUrl) {
+        emailResults.error = 'No product URL found in front_end.url';
+      } else {
+        // Fix front-end email sequence
+        if (funnel.front_end?.email_sequence && Array.isArray(funnel.front_end.email_sequence)) {
+          const fixedEmails = funnel.front_end.email_sequence.map((email, idx) => {
+            if (email.body) {
+              const fixedBody = email.body
+                .replace(/\[LINK\]/gi, productUrl)
+                .replace(/\[PRODUCT_URL\]/gi, productUrl)
+                .replace(/\[CLICK HERE\]/gi, productUrl)
+                .replace(/\[URL\]/gi, productUrl);
+
+              if (fixedBody !== email.body) {
+                emailResults.front_end.push(`email_${idx + 1}_fixed`);
+                return { ...email, body: fixedBody };
+              }
+            }
+            return email;
+          });
+
+          if (emailResults.front_end.length > 0) {
+            await supabase.from('funnels').update({
+              front_end: { ...funnel.front_end, email_sequence: fixedEmails },
+              updated_at: new Date().toISOString()
+            }).eq('id', funnel_id);
+          }
+        }
+
+        // Also check lead_magnets table for email sequences
+        // (Lead magnet emails are stored separately)
+        if (funnel.lead_magnet_id) {
+          const { data: lm } = await supabase
+            .from('lead_magnets')
+            .select('email_sequence')
+            .eq('id', funnel.lead_magnet_id)
+            .single();
+
+          if (lm?.email_sequence && Array.isArray(lm.email_sequence)) {
+            const fixedLmEmails = lm.email_sequence.map((email, idx) => {
+              if (email.body) {
+                const fixedBody = email.body
+                  .replace(/\[LINK\]/gi, productUrl)
+                  .replace(/\[PRODUCT_URL\]/gi, productUrl)
+                  .replace(/\[CLICK HERE\]/gi, productUrl)
+                  .replace(/\[URL\]/gi, productUrl);
+
+                if (fixedBody !== email.body) {
+                  emailResults.lead_magnet.push(`email_${idx + 1}_fixed`);
+                  return { ...email, body: fixedBody };
+                }
+              }
+              return email;
+            });
+
+            if (emailResults.lead_magnet.length > 0) {
+              await supabase.from('lead_magnets').update({
+                email_sequence: fixedLmEmails
+              }).eq('id', funnel.lead_magnet_id);
+            }
+          }
+        }
+      }
+
+      if (action === 'fix_email_links') {
+        results.email_links = emailResults;
+      } else {
+        results.email_links = emailResults;
+      }
+    }
+
+    // Fix bundle product names - make them Unicode bold
+    if (action === 'fix_bundle_bold' || action === 'fix_all_formatting') {
+      const bundleResults = { products_bolded: [] };
+
+      if (funnel.bundle_listing?.etsy_description) {
+        let description = funnel.bundle_listing.etsy_description;
+        const products = [
+          { name: funnel.front_end?.name, level: 'front_end' },
+          { name: funnel.bump?.name, level: 'bump' },
+          { name: funnel.upsell_1?.name, level: 'upsell_1' },
+          { name: funnel.upsell_2?.name, level: 'upsell_2' }
+        ];
+
+        for (const product of products) {
+          if (product.name) {
+            const boldName = toUnicodeBold(product.name);
+            // Only replace if the name exists in plain text (not already bolded)
+            // Check if the bold version already exists
+            if (description.includes(product.name) && !description.includes(boldName)) {
+              description = description.replace(new RegExp(product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), boldName);
+              bundleResults.products_bolded.push(product.level);
+            }
+          }
+        }
+
+        if (bundleResults.products_bolded.length > 0) {
+          await supabase.from('funnels').update({
+            bundle_listing: {
+              ...funnel.bundle_listing,
+              etsy_description: description,
+              normal_description: description
+            },
+            updated_at: new Date().toISOString()
+          }).eq('id', funnel_id);
+        }
+      }
+
+      if (action === 'fix_bundle_bold') {
+        results.bundle_bold = bundleResults;
+      } else {
+        results.bundle_bold = bundleResults;
+      }
+    }
+
+    // Return results for fix_all_formatting
+    if (action === 'fix_all_formatting') {
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          funnel_id,
+          results,
+          message: 'All formatting fixes applied'
         })
       };
     }
