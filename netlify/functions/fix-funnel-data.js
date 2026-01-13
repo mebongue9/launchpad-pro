@@ -366,6 +366,101 @@ export async function handler(event) {
       }
     }
 
+    // Fix remaining issues: front_end bullets + bundle transformation header
+    if (action === 'fix_remaining') {
+      const remainingResults = { front_end: null, bundle: null };
+
+      // 1. Force fix front_end marketplace description
+      const frontEnd = funnel.front_end;
+      if (frontEnd?.marketplace_listing?.marketplace_description) {
+        let desc = frontEnd.marketplace_listing.marketplace_description;
+
+        // Force add double newlines after ALL section headers followed by bullets
+        // Simple approach: any colon followed by newline then bullet -> add extra newline
+        // This handles both Unicode bold headers and regular headers
+        desc = desc.replace(/:\n•/g, ':\n\n•');
+
+        await supabase.from('funnels').update({
+          front_end: {
+            ...frontEnd,
+            marketplace_listing: {
+              ...frontEnd.marketplace_listing,
+              marketplace_description: desc
+            }
+          },
+          updated_at: new Date().toISOString()
+        }).eq('id', funnel_id);
+
+        remainingResults.front_end = 'fixed';
+      }
+
+      // 2. Fix bundle - add separator and header before transformation bullets
+      if (funnel.bundle_listing?.etsy_description) {
+        let bundleDesc = funnel.bundle_listing.etsy_description;
+
+        // The pattern: after last product's "so you can" bullets, there's a section of
+        // transformation bullets that starts directly without a header.
+        // We need to find where the last product section ends and add the separator + header.
+
+        // Look for the pattern: "so you can [text]\n\n• [transformation bullet]"
+        // where the transformation bullet is NOT followed by "so you can"
+        // Actually, the last product ends with bullets like "so you can scale beyond your time"
+        // Then there's \n\n and bullets that DON'T have "so you can" in them
+
+        // Find the last "so you can" line and what comes after
+        const lastSoYouCanMatch = bundleDesc.match(/so you can [^\n]+\n\n(• [^•]+(?:\n• [^•]+)*)\n\n[^•]/);
+
+        // Simpler approach: The transformation section starts after the last product's bullets
+        // and before the final CTA. It's the section with bullets that don't have "so you can"
+
+        // Pattern: Find "scale beyond your time\n\n• Create content" and insert header before the bullets
+        // Actually, let's find ANY occurrence of bullets after the last "so you can" line
+
+        // The transformation bullets pattern: bullets NOT containing "so you can"
+        // They come after the last product section
+
+        // Simplest fix: Find the pattern where we have product bullets ending, then plain bullets starting
+        // The last product section ends with "so you can [something]" and then there are bullets
+        // without "so you can" that need a header
+
+        // Let's look for: "so you can scale beyond your time\n\n• Create"
+        // and replace with: "so you can scale beyond your time\n\n---\n\n𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢:\n\n• Create"
+
+        // Generic pattern: after last "so you can [text]" line, before bullets that don't have "so you can"
+        const transformationPattern = /(so you can [^\n]+)\n\n(• (?!.*so you can)[^\n]+(?:\n• (?!.*so you can)[^\n]+)*)/;
+
+        if (transformationPattern.test(bundleDesc)) {
+          bundleDesc = bundleDesc.replace(
+            transformationPattern,
+            '$1\n\n---\n\n𝗪𝗛𝗔𝗧 𝗬𝗢𝗨\'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢:\n\n$2'
+          );
+          remainingResults.bundle = 'added_transformation_header';
+        } else {
+          remainingResults.bundle = 'pattern_not_found';
+        }
+
+        await supabase.from('funnels').update({
+          bundle_listing: {
+            ...funnel.bundle_listing,
+            etsy_description: bundleDesc,
+            normal_description: bundleDesc
+          },
+          updated_at: new Date().toISOString()
+        }).eq('id', funnel_id);
+      }
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          funnel_id,
+          results: remainingResults,
+          message: 'Remaining fixes applied'
+        })
+      };
+    }
+
     // Return results for fix_all_formatting
     if (action === 'fix_all_formatting') {
       return {
