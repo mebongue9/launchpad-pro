@@ -1,7 +1,6 @@
 // src/pages/VisualBuilder.jsx
-// Visual Builder - Phase 1: 4 professional cover templates
-// Generates styled PDFs with cover + interior pages
-// RELEVANT FILES: src/components/visual-builder/*.jsx, src/hooks/useCoverTemplates.js
+// Visual Builder - PDF Generator, Creative Lab, and Generated PDFs repository
+// RELEVANT FILES: src/components/visual-builder/*.jsx, src/hooks/useCoverTemplates.js, src/hooks/useGeneratedPdfs.js
 
 import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
@@ -15,6 +14,7 @@ import { useToast } from '../components/ui/Toast'
 import { TemplateSelector } from '../components/visual-builder/TemplateSelector'
 import { PreviewPanel } from '../components/visual-builder/PreviewPanel'
 import { StyleEditor } from '../components/visual-builder/StyleEditor'
+import { GeneratedPdfsList } from '../components/visual-builder/GeneratedPdfsList'
 import {
   Palette,
   FileText,
@@ -22,7 +22,10 @@ import {
   ArrowLeft,
   Loader2,
   Download,
-  Check
+  Check,
+  Wand2,
+  FolderOpen,
+  FlaskConical
 } from 'lucide-react'
 
 // Format ID to display label
@@ -38,6 +41,13 @@ function formatLabel(format) {
   return labels[format] || format
 }
 
+// Main tabs configuration
+const MAIN_TABS = [
+  { id: 'generator', label: 'PDF Generator', icon: Wand2 },
+  { id: 'lab', label: 'Creative Lab', icon: FlaskConical },
+  { id: 'generated', label: 'Generated PDFs', icon: FolderOpen }
+]
+
 export default function VisualBuilder() {
   const { user } = useAuth()
   const { profiles } = useProfiles()
@@ -46,7 +56,10 @@ export default function VisualBuilder() {
   const { templates, loading: templatesLoading } = useCoverTemplates()
   const { addToast } = useToast()
 
-  // Flow state
+  // Main tab state
+  const [activeTab, setActiveTab] = useState('generator')
+
+  // Flow state for PDF Generator
   const [step, setStep] = useState(1)
 
   // Step 1: Source selection
@@ -246,8 +259,35 @@ export default function VisualBuilder() {
         </p>
       </div>
 
-      {/* Step Indicator */}
-      <div className="flex items-center gap-2 text-sm">
+      {/* Main Tabs Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="flex gap-4" aria-label="Tabs">
+          {MAIN_TABS.map(tab => {
+            const Icon = tab.icon
+            const isActive = activeTab === tab.id
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                  isActive
+                    ? 'border-purple-600 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'generator' && (
+        <>
+          {/* Step Indicator */}
+          <div className="flex items-center gap-2 text-sm">
         <span className={`px-3 py-1 rounded-full ${step >= 1 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
           1. Select Content
         </span>
@@ -486,20 +526,45 @@ export default function VisualBuilder() {
         </div>
       )}
 
-      {/* Empty State */}
-      {step === 1 && funnels.length === 0 && leadMagnets.length === 0 && (
+          {/* Empty State */}
+          {step === 1 && funnels.length === 0 && leadMagnets.length === 0 && (
+            <Card className="text-center py-12">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Palette className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Content to Design
+              </h3>
+              <p className="text-gray-500 max-w-md mx-auto">
+                Create a funnel or lead magnet first, then come back to transform
+                it into a beautifully designed PDF.
+              </p>
+            </Card>
+          )}
+        </>
+      )}
+
+      {/* Creative Lab Tab */}
+      {activeTab === 'lab' && (
         <Card className="text-center py-12">
           <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Palette className="w-8 h-8 text-purple-600" />
+            <FlaskConical className="w-8 h-8 text-purple-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Content to Design
+            Creative Lab
           </h3>
-          <p className="text-gray-500 max-w-md mx-auto">
-            Create a funnel or lead magnet first, then come back to transform
-            it into a beautifully designed PDF.
+          <p className="text-gray-500 max-w-md mx-auto mb-4">
+            Experiment with custom designs, layouts, and styles. Coming soon!
           </p>
+          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+            Coming Soon
+          </span>
         </Card>
+      )}
+
+      {/* Generated PDFs Tab */}
+      {activeTab === 'generated' && (
+        <GeneratedPdfsList />
       )}
     </div>
   )
