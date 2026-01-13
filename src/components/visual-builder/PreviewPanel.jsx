@@ -432,8 +432,8 @@ function generateSwipeFileHtml(template, data) {
   const base = getBaseStyles(template)
 
   const templates = [
-    { title: 'Welcome Email', category: 'Email', content: 'Hey [Name],\\n\\nWelcome to [Brand]! I\\'m so excited you\\'re here...\\n\\nHere\\'s what to expect next...' },
-    { title: 'Follow-Up DM', category: 'Social', content: 'Hey! I noticed you checked out [resource]. Quick question - what\\'s your biggest challenge with [topic]?' },
+    { title: 'Welcome Email', category: 'Email', content: "Hey [Name],\n\nWelcome to [Brand]! I'm so excited you're here...\n\nHere's what to expect next..." },
+    { title: 'Follow-Up DM', category: 'Social', content: "Hey! I noticed you checked out [resource]. Quick question - what's your biggest challenge with [topic]?" },
     { title: 'Sales Close', category: 'Sales', content: 'Based on everything we discussed, [Product] sounds like a perfect fit. Ready to get started?' }
   ]
 
