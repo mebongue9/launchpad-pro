@@ -1685,7 +1685,7 @@ NICHE: ${funnel.niche}
 
 LEAD MAGNET: "${lead_magnet?.name || 'Lead Magnet'}"
 FRONT-END PRODUCT: "${frontend?.name || 'Front-End Product'}"
-FRONT-END PRODUCT URL: ${frontend?.url || '[PRODUCT_URL]'}
+FRONT-END PRODUCT URL: ${funnel.front_end_link || '[PRODUCT_URL]'}
 
 Generate 6 sections separated by: ${SECTION_SEPARATOR}
 
@@ -1702,7 +1702,7 @@ FRONT-END SEQUENCE (3 emails):
 IMPORTANT: Sign off all emails with the creator's name: "${creatorFirstName}"
 Do NOT use placeholder names like "Maria" or generic sign-offs. Use the CREATOR NAME provided above.
 
-IMPORTANT: When including links to the front-end product, use the ACTUAL URL provided above: ${frontend?.url || '[PRODUCT_URL]'}
+IMPORTANT: When including links to the front-end product, use the ACTUAL URL provided above: ${funnel.front_end_link || '[PRODUCT_URL]'}
 Do NOT use placeholder text like "[LINK]" or "[CLICK HERE]". Use the actual URL.
 
 Each email JSON:
@@ -1736,8 +1736,8 @@ Output 6 JSON objects separated by ===SECTION_BREAK=== (no markdown, no headers,
   // Use safe section parsing with validation
   const sections = safeParseSections(response.content[0].text, 6, 'AllEmails');
 
-  // Get the product URL for placeholder replacement
-  const productUrl = frontend?.url || '';
+  // Get the product URL for placeholder replacement (front_end_link is a top-level column)
+  const productUrl = funnel.front_end_link || '';
 
   const emails = sections.map(s => {
     const parsed = parseClaudeJSON(s);

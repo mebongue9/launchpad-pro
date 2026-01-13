@@ -9,11 +9,25 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// Helper: Fix bullet points that are on the same line
-// Replaces " • " with newline + bullet to put each on its own line
+// Helper: Fix bullet points formatting for proper UI rendering
+// 1. Replaces " • " with newline + bullet to put each on its own line
+// 2. Adds double newlines after section headers so bullets become their own section
+//    (The UI splits by \n\n and only renders bullets if section STARTS with •)
 function fixBulletNewlines(text) {
   if (!text) return text;
-  return text.replace(/ • /g, '\n• ').replace(/ - /g, '\n- ');
+
+  let fixed = text;
+
+  // Fix bullets on same line
+  fixed = fixed.replace(/ • /g, '\n• ').replace(/ - /g, '\n- ');
+
+  // Add double newline after section headers that are followed by bullets
+  // Pattern: "HEADER:\n• " -> "HEADER:\n\n• "
+  // This ensures the bullets become their own section for proper UI rendering
+  fixed = fixed.replace(/:\n•/g, ':\n\n•');
+  fixed = fixed.replace(/:\n-/g, ':\n\n-');
+
+  return fixed;
 }
 
 // Helper: Convert text to Unicode bold (for Etsy/Gumroad compatibility)
@@ -206,11 +220,12 @@ export async function handler(event) {
 
     // Fix email [LINK] placeholders with actual URL
     if (action === 'fix_email_links' || action === 'fix_all_formatting') {
-      const productUrl = funnel.front_end?.url || '';
+      // front_end_link is a top-level column in funnels table, not inside front_end JSONB
+      const productUrl = funnel.front_end_link || '';
       const emailResults = { front_end: [], lead_magnet: [] };
 
       if (!productUrl) {
-        emailResults.error = 'No product URL found in front_end.url';
+        emailResults.error = 'No product URL found in front_end_link column';
       } else {
         // Fix front-end email sequence
         if (funnel.front_end?.email_sequence && Array.isArray(funnel.front_end.email_sequence)) {
@@ -280,12 +295,14 @@ export async function handler(event) {
       }
     }
 
-    // Fix bundle product names - make them Unicode bold
+    // Fix bundle - bold product names AND deliverables (everything before "so you can")
     if (action === 'fix_bundle_bold' || action === 'fix_all_formatting') {
-      const bundleResults = { products_bolded: [] };
+      const bundleResults = { products_bolded: [], deliverables_bolded: 0 };
 
       if (funnel.bundle_listing?.etsy_description) {
         let description = funnel.bundle_listing.etsy_description;
+
+        // 1. Bold product names
         const products = [
           { name: funnel.front_end?.name, level: 'front_end' },
           { name: funnel.bump?.name, level: 'bump' },
@@ -297,7 +314,6 @@ export async function handler(event) {
           if (product.name) {
             const boldName = toUnicodeBold(product.name);
             // Only replace if the name exists in plain text (not already bolded)
-            // Check if the bold version already exists
             if (description.includes(product.name) && !description.includes(boldName)) {
               description = description.replace(new RegExp(product.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), boldName);
               bundleResults.products_bolded.push(product.level);
@@ -305,7 +321,30 @@ export async function handler(event) {
           }
         }
 
-        if (bundleResults.products_bolded.length > 0) {
+        // 2. Bold deliverables - everything from "• " up to " so you can"
+        // Pattern: "• [deliverable text] so you can [benefit]"
+        // Need to bold [deliverable text] part
+        const deliverablePattern = /• ([^•\n]+?) so you can/g;
+        let match;
+        let newDescription = description;
+
+        while ((match = deliverablePattern.exec(description)) !== null) {
+          const deliverable = match[1];
+          // Check if already bolded (contains Unicode bold chars)
+          const hasBoldChars = /[𝗔-𝘇𝟬-𝟵]/.test(deliverable);
+          if (!hasBoldChars && deliverable.trim()) {
+            const boldDeliverable = toUnicodeBold(deliverable);
+            newDescription = newDescription.replace(
+              `• ${deliverable} so you can`,
+              `• ${boldDeliverable} so you can`
+            );
+            bundleResults.deliverables_bolded++;
+          }
+        }
+        description = newDescription;
+
+        // Only update if we made changes
+        if (bundleResults.products_bolded.length > 0 || bundleResults.deliverables_bolded > 0) {
           await supabase.from('funnels').update({
             bundle_listing: {
               ...funnel.bundle_listing,
