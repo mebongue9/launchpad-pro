@@ -7,18 +7,33 @@ import { createClient } from '@supabase/supabase-js'
 import { renderCover } from './lib/cover-renderer.js'
 import { renderInterior } from './lib/interior-renderer.js'
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-)
-
-const PDFSHIFT_API_KEY = process.env.PDFSHIFT_API_KEY
-const PDFSHIFT_API_URL = 'https://api.pdfshift.io/v3/convert/pdf'
-
 const LOG_TAG = '[VISUAL-BUILDER-GENERATE]'
 
+// Create supabase client lazily to ensure env vars are available
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+  )
+}
+
+const PDFSHIFT_API_URL = 'https://api.pdfshift.io/v3/convert/pdf'
+
+// Timeout helper - Netlify free tier has 10s limit, we use 9s to return graceful error
+const FUNCTION_TIMEOUT = 9000
+
+function withTimeout(promise, ms, operation) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${operation} timed out after ${ms}ms`)), ms)
+    )
+  ])
+}
+
 export async function handler(event) {
-  console.log(`🎨 ${LOG_TAG} Function invoked`)
+  const startTime = Date.now()
+  console.log(`🎨 ${LOG_TAG} Function invoked at ${new Date().toISOString()}`)
 
   if (event.httpMethod !== 'POST') {
     return {
@@ -47,6 +62,7 @@ export async function handler(event) {
     } = body
 
     console.log(`📥 ${LOG_TAG} Request:`, { funnelId, leadMagnetId, productType, coverTemplateId })
+    console.log(`⏱️ ${LOG_TAG} Parse complete at +${Date.now() - startTime}ms`)
 
     // Validate required fields
     if (!coverTemplateId) {
@@ -59,13 +75,22 @@ export async function handler(event) {
       return errorResponse(400, 'Either funnelId or leadMagnetId is required')
     }
 
+    // Get supabase client (lazy initialization)
+    const supabase = getSupabase()
+    console.log(`⏱️ ${LOG_TAG} Supabase client created at +${Date.now() - startTime}ms`)
+
     // 1. Load cover template
     console.log(`📚 ${LOG_TAG} Loading cover template...`)
-    const { data: template, error: templateError } = await supabase
-      .from('cover_templates')
-      .select('*')
-      .eq('id', coverTemplateId)
-      .single()
+    const { data: template, error: templateError } = await withTimeout(
+      supabase
+        .from('cover_templates')
+        .select('*')
+        .eq('id', coverTemplateId)
+        .single(),
+      3000,
+      'Template query'
+    )
+    console.log(`⏱️ ${LOG_TAG} Template loaded at +${Date.now() - startTime}ms`)
 
     if (templateError || !template) {
       console.error(`❌ ${LOG_TAG} Template error:`, templateError)
@@ -76,32 +101,46 @@ export async function handler(event) {
     console.log(`📄 ${LOG_TAG} Loading content...`)
     let content = null
     if (funnelId) {
-      const { data: funnel } = await supabase
-        .from('funnels')
-        .select('generated_content')
-        .eq('id', funnelId)
-        .single()
+      const { data: funnel } = await withTimeout(
+        supabase
+          .from('funnels')
+          .select('generated_content')
+          .eq('id', funnelId)
+          .single(),
+        3000,
+        'Funnel query'
+      )
       content = funnel?.generated_content
     } else if (leadMagnetId) {
-      const { data: leadMagnet } = await supabase
-        .from('lead_magnets')
-        .select('generated_content')
-        .eq('id', leadMagnetId)
-        .single()
+      const { data: leadMagnet } = await withTimeout(
+        supabase
+          .from('lead_magnets')
+          .select('generated_content')
+          .eq('id', leadMagnetId)
+          .single(),
+        3000,
+        'Lead magnet query'
+      )
       content = leadMagnet?.generated_content
     }
+    console.log(`⏱️ ${LOG_TAG} Content loaded at +${Date.now() - startTime}ms`)
 
     // 3. Load user profile for interior pages
     console.log(`👤 ${LOG_TAG} Loading profile...`)
     let profile = null
     if (userId) {
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('name, social_handle, photo_url, tagline, bio')
-        .eq('id', userId)
-        .single()
+      const { data: profileData } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('name, social_handle, photo_url, tagline, bio')
+          .eq('id', userId)
+          .single(),
+        2000,
+        'Profile query'
+      )
       profile = profileData
     }
+    console.log(`⏱️ ${LOG_TAG} Profile loaded at +${Date.now() - startTime}ms`)
 
     // 4. Render HTML
     console.log(`🎨 ${LOG_TAG} Rendering HTML...`)
@@ -119,27 +158,39 @@ export async function handler(event) {
 
     // Combine cover and interior into single document
     const combinedHtml = combineDocuments(coverHtml, interiorHtml)
+    console.log(`⏱️ ${LOG_TAG} HTML rendered at +${Date.now() - startTime}ms (${combinedHtml.length} chars)`)
+
+    // Check remaining time before calling PDFShift
+    const elapsed = Date.now() - startTime
+    if (elapsed > 7000) {
+      console.error(`❌ ${LOG_TAG} Not enough time for PDFShift, elapsed: ${elapsed}ms`)
+      return errorResponse(504, `Function timeout - data loading took ${elapsed}ms. Try again.`)
+    }
 
     // 5. Call PDFShift API
     console.log(`📄 ${LOG_TAG} Calling PDFShift API...`)
-    const pdfBuffer = await generatePdfWithPdfShift(combinedHtml)
+    const pdfBuffer = await generatePdfWithPdfShift(combinedHtml, startTime)
 
     if (!pdfBuffer) {
       return errorResponse(500, 'Failed to generate PDF')
     }
 
-    console.log(`✅ ${LOG_TAG} PDF generated, size: ${pdfBuffer.length} bytes`)
+    console.log(`✅ ${LOG_TAG} PDF generated at +${Date.now() - startTime}ms, size: ${pdfBuffer.length} bytes`)
 
     // 6. Upload to Supabase Storage
     console.log(`📤 ${LOG_TAG} Uploading to storage...`)
     const fileName = `visual-builder/${funnelId || leadMagnetId}/${Date.now()}-styled.pdf`
 
-    const { error: uploadError } = await supabase.storage
-      .from('generated-pdfs')
-      .upload(fileName, pdfBuffer, {
-        contentType: 'application/pdf',
-        upsert: true
-      })
+    const { error: uploadError } = await withTimeout(
+      supabase.storage
+        .from('generated-pdfs')
+        .upload(fileName, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true
+        }),
+      5000,
+      'Storage upload'
+    )
 
     if (uploadError) {
       console.error(`❌ ${LOG_TAG} Upload error:`, uploadError)
@@ -152,9 +203,9 @@ export async function handler(event) {
       .getPublicUrl(fileName)
 
     const pdfUrl = urlData.publicUrl
-    console.log(`✅ ${LOG_TAG} PDF uploaded:`, pdfUrl)
+    console.log(`✅ ${LOG_TAG} PDF uploaded at +${Date.now() - startTime}ms:`, pdfUrl)
 
-    // 7. Create/update styled_products record
+    // 7. Create/update styled_products record (non-blocking, don't wait)
     const styledProductData = {
       funnel_id: funnelId || null,
       lead_magnet_id: leadMagnetId || null,
@@ -168,30 +219,30 @@ export async function handler(event) {
       cover_png_url: null // Can generate cover image later if needed
     }
 
-    const { data: styledProduct, error: insertError } = await supabase
+    // Fire and forget - don't wait for this
+    supabase
       .from('styled_products')
       .insert(styledProductData)
-      .select()
-      .single()
-
-    if (insertError) {
-      console.error(`⚠️ ${LOG_TAG} styled_products insert error (non-fatal):`, insertError)
-    }
+      .then(({ error: insertError }) => {
+        if (insertError) {
+          console.error(`⚠️ ${LOG_TAG} styled_products insert error (non-fatal):`, insertError)
+        }
+      })
 
     // 8. Return success with PDF URL
-    console.log(`✅ ${LOG_TAG} Complete!`)
+    console.log(`✅ ${LOG_TAG} Complete at +${Date.now() - startTime}ms!`)
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
         pdfUrl,
-        styledProductId: styledProduct?.id || null
+        styledProductId: null // Will be created async
       })
     }
 
   } catch (error) {
-    console.error(`❌ ${LOG_TAG} Error:`, error)
+    console.error(`❌ ${LOG_TAG} Error at +${Date.now() - startTime}ms:`, error)
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -259,13 +310,20 @@ function combineDocuments(coverHtml, interiorHtml) {
 /**
  * Generate PDF using PDFShift API
  */
-async function generatePdfWithPdfShift(html) {
-  if (!PDFSHIFT_API_KEY) {
+async function generatePdfWithPdfShift(html, startTime) {
+  const apiKey = process.env.PDFSHIFT_API_KEY
+
+  if (!apiKey) {
     console.error(`❌ ${LOG_TAG} PDFSHIFT_API_KEY not configured`)
+    console.error(`❌ ${LOG_TAG} Available env vars:`, Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')).join(', '))
     throw new Error('PDFSHIFT_API_KEY environment variable not set')
   }
 
-  const authHeader = 'Basic ' + Buffer.from(`api:${PDFSHIFT_API_KEY}`).toString('base64')
+  console.log(`📄 ${LOG_TAG} PDFShift API key found, length: ${apiKey.length}`)
+
+  const authHeader = 'Basic ' + Buffer.from(`api:${apiKey}`).toString('base64')
+
+  console.log(`📄 ${LOG_TAG} Sending ${html.length} chars to PDFShift at +${Date.now() - startTime}ms`)
 
   const response = await fetch(PDFSHIFT_API_URL, {
     method: 'POST',
@@ -282,6 +340,8 @@ async function generatePdfWithPdfShift(html) {
     })
   })
 
+  console.log(`📄 ${LOG_TAG} PDFShift response status: ${response.status} at +${Date.now() - startTime}ms`)
+
   if (!response.ok) {
     const errorText = await response.text()
     console.error(`❌ ${LOG_TAG} PDFShift error:`, response.status, errorText)
@@ -290,6 +350,7 @@ async function generatePdfWithPdfShift(html) {
 
   // PDFShift returns the PDF as binary
   const arrayBuffer = await response.arrayBuffer()
+  console.log(`📄 ${LOG_TAG} PDFShift returned ${arrayBuffer.byteLength} bytes at +${Date.now() - startTime}ms`)
   return Buffer.from(arrayBuffer)
 }
 

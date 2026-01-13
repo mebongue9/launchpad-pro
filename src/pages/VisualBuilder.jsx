@@ -133,10 +133,15 @@ export default function VisualBuilder() {
     setGenerationStatus('processing')
     setGeneratedPdf(null)
 
+    // AbortController for timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 second timeout
+
     try {
       const response = await fetch('/.netlify/functions/visual-builder-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           userId: user?.id,
           funnelId: sourceType === 'funnel' ? selectedSource : null,
@@ -153,6 +158,17 @@ export default function VisualBuilder() {
           handleSize
         })
       })
+
+      clearTimeout(timeoutId)
+
+      // Handle non-JSON responses (like HTML error pages from 504)
+      const contentType = response.headers.get('content-type')
+      if (!contentType || !contentType.includes('application/json')) {
+        if (response.status === 504) {
+          throw new Error('Server timeout - please try again')
+        }
+        throw new Error(`Server error: ${response.status}`)
+      }
 
       const data = await response.json()
 
@@ -174,9 +190,16 @@ export default function VisualBuilder() {
       }
 
     } catch (error) {
+      clearTimeout(timeoutId)
       console.error('Generation error:', error)
       setGenerationStatus('failed')
-      addToast(error.message || 'Failed to generate', 'error')
+
+      // Handle abort/timeout specifically
+      if (error.name === 'AbortError') {
+        addToast('Request timed out - please try again', 'error')
+      } else {
+        addToast(error.message || 'Failed to generate', 'error')
+      }
     } finally {
       setGenerating(false)
     }
