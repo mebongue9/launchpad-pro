@@ -103,13 +103,20 @@ function safeParseSections(responseText, expectedCount, taskName) {
   return sections;
 }
 
-// Helper: Ensure bullet points have proper newlines between them
-// Fixes cases where Claude outputs "• item1 • item2" instead of "• item1\n• item2"
+// Helper: Ensure proper formatting for marketplace descriptions
+// 1. Fixes bullets on same line: "• item1 • item2" -> "• item1\n• item2"
+// 2. Adds double newline after section headers so UI renders bullets correctly
+//    The UI splits by \n\n and only renders bullets if section STARTS with •
 function fixBulletNewlines(text) {
   if (!text) return text;
+  let fixed = text;
   // Replace " • " (space-bullet-space) with newline-bullet
-  // This handles cases where bullets are on the same line
-  return text.replace(/ • /g, '\n• ').replace(/ - /g, '\n- ');
+  fixed = fixed.replace(/ • /g, '\n• ').replace(/ - /g, '\n- ');
+  // Add double newline after section headers followed by bullets
+  // Pattern: "HEADER:\n•" -> "HEADER:\n\n•"
+  fixed = fixed.replace(/:\n•/g, ':\n\n•');
+  fixed = fixed.replace(/:\n-/g, ':\n\n-');
+  return fixed;
 }
 
 // Helper: Convert text to Unicode bold
@@ -1451,6 +1458,11 @@ For EACH product, create a description with these 7 sections:
    • Item 2
    • Item 3"
 
+6. CRITICAL - SECTION HEADER FORMATTING:
+   After each section header, use TWO newlines before bullets (for proper UI rendering).
+   WRONG: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n• Item 1" (single newline)
+   CORRECT: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n\n• Item 1" (double newline)
+
 == OUTPUT FORMAT ==
 
 marketplace_title: SEO title (MAX 140 chars)
@@ -1603,6 +1615,11 @@ For EACH product, create a description with these 7 sections:
    "• Item 1
    • Item 2
    • Item 3"
+
+6. CRITICAL - SECTION HEADER FORMATTING:
+   After each section header, use TWO newlines before bullets (for proper UI rendering).
+   WRONG: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n• Item 1" (single newline)
+   CORRECT: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n\n• Item 1" (double newline)
 
 5. Emphasize PREMIUM value - these are higher-ticket products
 
@@ -1859,10 +1876,13 @@ Then 3-4 deliverable bullets (each on its own line):
 • 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 so you can [benefit]
 • 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 so you can [benefit]
 
-Use a line divider (━━━━━━━━━━) between products.
+Use a line divider (--- or ━━━━━━━━━━) between products.
+
+IMPORTANT: After the LAST product section, add a line divider (---) before Section 6.
 
 𝗦𝗘𝗖𝗧𝗜𝗢𝗡 𝟲 - 𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢 𝗔𝗙𝗧𝗘𝗥 𝗚𝗘𝗧𝗧𝗜𝗡𝗚 𝗧𝗛𝗜𝗦: (5-7 bullet points)
 THIS SECTION IS REQUIRED - DO NOT SKIP IT.
+Add line divider (---) before this section header, then the header, then the bullets.
 Transformation statements showing life on the other side. Each on its own line:
 • 𝗔𝗰𝘁𝗶𝗼𝗻 𝘁𝗵𝗲𝘆 𝗰𝗮𝗻 𝘁𝗮𝗸𝗲 result they'll achieve
 • 𝗔𝗰𝘁𝗶𝗼𝗻 𝘁𝗵𝗲𝘆 𝗰𝗮𝗻 𝘁𝗮𝗸𝗲 result they'll achieve
