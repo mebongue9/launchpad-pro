@@ -330,9 +330,12 @@ export async function handler(event) {
 
         while ((match = deliverablePattern.exec(description)) !== null) {
           const deliverable = match[1];
-          // Check if already bolded (contains Unicode bold chars)
-          const hasBoldChars = /[𝗔-𝘇𝟬-𝟵]/.test(deliverable);
-          if (!hasBoldChars && deliverable.trim()) {
+          // Check if already bolded (contains any Unicode bold chars from our map)
+          // Can't use character range with Unicode, so check if string contains plain ASCII that needs bolding
+          const hasPlainChars = /[A-Za-z0-9]/.test(deliverable);
+          const hasBoldChars = /𝗔|𝗕|𝗖|𝗗|𝗘|𝗙|𝗚|𝗛|𝗜|𝗝|𝗞|𝗟|𝗠|𝗡|𝗢|𝗣|𝗤|𝗥|𝗦|𝗧|𝗨|𝗩|𝗪|𝗫|𝗬|𝗭|𝗮|𝗯|𝗰|𝗱|𝗲|𝗳|𝗴|𝗵|𝗶|𝗷|𝗸|𝗹|𝗺|𝗻|𝗼|𝗽|𝗾|𝗿|𝘀|𝘁|𝘂|𝘃|𝘄|𝘅|𝘆|𝘇|𝟬|𝟭|𝟮|𝟯|𝟰|𝟱|𝟲|𝟳|𝟴|𝟵/.test(deliverable);
+          // Only bold if it has plain ASCII chars AND doesn't already have bold chars
+          if (hasPlainChars && !hasBoldChars && deliverable.trim()) {
             const boldDeliverable = toUnicodeBold(deliverable);
             newDescription = newDescription.replace(
               `• ${deliverable} so you can`,
