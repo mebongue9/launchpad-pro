@@ -112,10 +112,10 @@ export default function VisualBuilder() {
     if (!funnel) return []
 
     const products = []
-    if (funnel.front_end) products.push({ type: 'front_end', label: 'Front-End', name: funnel.front_end.name })
-    if (funnel.bump) products.push({ type: 'bump', label: 'Bump', name: funnel.bump.name })
-    if (funnel.upsell_1) products.push({ type: 'upsell_1', label: 'Upsell 1', name: funnel.upsell_1.name })
-    if (funnel.upsell_2) products.push({ type: 'upsell_2', label: 'Upsell 2', name: funnel.upsell_2.name })
+    if (funnel.front_end) products.push({ type: 'front_end', label: 'Front-End', name: funnel.front_end.name, format: funnel.front_end.format })
+    if (funnel.bump) products.push({ type: 'bump', label: 'Bump', name: funnel.bump.name, format: funnel.bump.format })
+    if (funnel.upsell_1) products.push({ type: 'upsell_1', label: 'Upsell 1', name: funnel.upsell_1.name, format: funnel.upsell_1.format })
+    if (funnel.upsell_2) products.push({ type: 'upsell_2', label: 'Upsell 2', name: funnel.upsell_2.name, format: funnel.upsell_2.format })
     return products
   }
 
@@ -348,6 +348,9 @@ export default function VisualBuilder() {
                       >
                         <div className="text-sm font-medium">{product.label}</div>
                         <div className="text-xs text-gray-500 truncate">{product.name}</div>
+                        {product.format && (
+                          <div className="text-xs text-blue-600 mt-1">{formatLabel(product.format)}</div>
+                        )}
                       </button>
                     ))}
                   </div>
