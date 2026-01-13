@@ -1,166 +1,142 @@
-// /src/pages/VisualBuilder.jsx
-// Visual Builder for creating designed PDFs and presentations
-// Uses style templates to generate professional outputs
-// FORMAT COMES FROM FUNNEL/LEAD MAGNET - NO MANUAL FORMAT SELECTION (per Vision spec)
-// RELEVANT FILES: src/styles/templates/index.js, src/hooks/useCreations.jsx
+// src/pages/VisualBuilder.jsx
+// Visual Builder - Phase 1: 4 professional cover templates
+// Generates styled PDFs with cover + interior pages
+// RELEVANT FILES: src/components/visual-builder/*.jsx, src/hooks/useCoverTemplates.js
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { useProfiles } from '../hooks/useProfiles'
 import { useFunnels } from '../hooks/useFunnels'
 import { useLeadMagnets } from '../hooks/useLeadMagnets'
-import { useCreations } from '../hooks/useCreations'
+import { useCoverTemplates } from '../hooks/useCoverTemplates'
 import { useToast } from '../components/ui/Toast'
-import { templateList, generateVisualHTML } from '../styles/templates'
-// formatTemplateList removed - format comes from funnel/lead magnet, not manual selection
-import { getFormatTemplate } from '../templates/formats/index.jsx'
-import { getStyleList, getStyle } from '../templates/styles/index.js'
+import { TemplateSelector } from '../components/visual-builder/TemplateSelector'
+import { PreviewPanel } from '../components/visual-builder/PreviewPanel'
+import { StyleEditor } from '../components/visual-builder/StyleEditor'
 import {
   Palette,
-  Sparkles,
-  Download,
   FileText,
-  Check,
-  Loader2,
   ArrowRight,
-  Maximize2,
-  X
+  ArrowLeft,
+  Loader2,
+  Download,
+  Check
 } from 'lucide-react'
 
 export default function VisualBuilder() {
   const { profiles } = useProfiles()
   const { funnels } = useFunnels()
   const { leadMagnets } = useLeadMagnets()
-  const { saveCreation } = useCreations()
+  const { templates, loading: templatesLoading } = useCoverTemplates()
   const { addToast } = useToast()
 
+  // Flow state
   const [step, setStep] = useState(1)
-  const [sourceType, setSourceType] = useState(null)
+
+  // Step 1: Source selection
+  const [sourceType, setSourceType] = useState(null) // 'funnel' or 'leadmagnet'
   const [selectedSource, setSelectedSource] = useState(null)
+  const [selectedProduct, setSelectedProduct] = useState(null) // for funnels: 'front_end', 'bump', etc.
   const [selectedProfile, setSelectedProfile] = useState(null)
-  const [selectedTemplate, setSelectedTemplate] = useState('apple-minimal')
-  // REMOVED: selectedFormat state - format comes from funnel/lead magnet data automatically
-  const [generatedHTML, setGeneratedHTML] = useState(null)
+
+  // Step 2: Template selection
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+
+  // Step 3: Styling
+  const [title, setTitle] = useState('')
+  const [subtitle, setSubtitle] = useState('')
+  const [titleSize, setTitleSize] = useState(100)
+  const [subtitleSize, setSubtitleSize] = useState(100)
+
+  // Generation state
   const [generating, setGenerating] = useState(false)
-  const [saving, setSaving] = useState(false)
-  const [fullscreen, setFullscreen] = useState(false)
-  const previewRef = useRef(null)
+  const [generatedHtml, setGeneratedHtml] = useState(null)
 
-  // Get available styles (formats come from source data, not selection)
-  const styleList = getStyleList()
+  // Get profile data for preview
+  const profile = profiles.find(p => p.id === selectedProfile) || null
 
-  // Get content based on source type
-  function getContent() {
-    if (!selectedSource) return null
-
-    if (sourceType === 'funnel') {
-      const funnel = funnels.find(f => f.id === selectedSource)
-      if (!funnel) return null
-
-      const sections = []
-      const levels = ['front_end', 'bump', 'upsell_1', 'upsell_2', 'upsell_3']
-      const labels = { front_end: 'Front-End', bump: 'Bump', upsell_1: 'Upsell 1', upsell_2: 'Upsell 2', upsell_3: 'Upsell 3' }
-
-      levels.forEach(level => {
-        const product = funnel[level]
-        if (product) {
-          sections.push({
-            type: labels[level],
-            title: product.name,
-            content: `<p><strong>$${product.price}</strong> - ${product.format}</p><p>${product.description}</p>`
-          })
-        }
-      })
-
-      return {
-        title: funnel.name,
-        subtitle: `Complete Product Funnel`,
-        sections
-      }
-    }
-
-    if (sourceType === 'leadmagnet') {
+  // Pre-fill title when source changes
+  useEffect(() => {
+    if (sourceType === 'leadmagnet' && selectedSource) {
       const lm = leadMagnets.find(l => l.id === selectedSource)
-      if (!lm) return null
-
-      const content = lm.content || {}
-      return {
-        title: content.title || lm.name,
-        subtitle: content.subtitle || lm.topic,
-        sections: content.sections || [
-          { type: lm.format, title: lm.name, content: lm.topic || '' }
-        ]
+      if (lm) {
+        setTitle(lm.name || '')
+        setSubtitle(lm.topic || '')
+      }
+    } else if (sourceType === 'funnel' && selectedSource && selectedProduct) {
+      const funnel = funnels.find(f => f.id === selectedSource)
+      if (funnel && funnel[selectedProduct]) {
+        setTitle(funnel[selectedProduct].name || '')
+        setSubtitle(funnel[selectedProduct].description?.substring(0, 100) || '')
       }
     }
+  }, [sourceType, selectedSource, selectedProduct, leadMagnets, funnels])
 
-    return null
+  // Get available products for selected funnel
+  const getFunnelProducts = () => {
+    if (!selectedSource) return []
+    const funnel = funnels.find(f => f.id === selectedSource)
+    if (!funnel) return []
+
+    const products = []
+    if (funnel.front_end) products.push({ type: 'front_end', label: 'Front-End', name: funnel.front_end.name })
+    if (funnel.bump) products.push({ type: 'bump', label: 'Bump', name: funnel.bump.name })
+    if (funnel.upsell_1) products.push({ type: 'upsell_1', label: 'Upsell 1', name: funnel.upsell_1.name })
+    if (funnel.upsell_2) products.push({ type: 'upsell_2', label: 'Upsell 2', name: funnel.upsell_2.name })
+    return products
   }
 
-  // Get branding from profile
-  function getBranding() {
-    if (!selectedProfile) return {}
-    const profile = profiles.find(p => p.id === selectedProfile)
-    return profile || {}
-  }
-
+  // Handle PDF generation
   async function handleGenerate() {
-    const content = getContent()
-    if (!content) {
-      addToast('Please select content to design', 'error')
+    if (!selectedTemplate || !title) {
+      addToast('Please select a template and enter a title', 'error')
       return
     }
 
     setGenerating(true)
     try {
-      const branding = getBranding()
-      const html = generateVisualHTML(selectedTemplate, content, branding)
-      setGeneratedHTML(html)
-      setStep(3)
-      addToast('Design generated!', 'success')
+      const response = await fetch('/.netlify/functions/visual-builder-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          funnelId: sourceType === 'funnel' ? selectedSource : null,
+          leadMagnetId: sourceType === 'leadmagnet' ? selectedSource : null,
+          productType: selectedProduct,
+          coverTemplateId: selectedTemplate.id,
+          title,
+          subtitle,
+          titleSize,
+          subtitleSize
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Generation failed')
+      }
+
+      // For now, use client-side PDF generation
+      if (data.coverHtml && data.interiorHtml) {
+        setGeneratedHtml({
+          cover: data.coverHtml,
+          interior: data.interiorHtml
+        })
+        addToast('Design generated! Click Download to save.', 'success')
+      }
+
     } catch (error) {
-      addToast(error.message || 'Failed to generate design', 'error')
+      console.error('Generation error:', error)
+      addToast(error.message || 'Failed to generate', 'error')
     } finally {
       setGenerating(false)
     }
   }
 
-  async function handleSave() {
-    if (!generatedHTML) return
-
-    setSaving(true)
-    try {
-      const content = getContent()
-      await saveCreation({
-        profile_id: selectedProfile,
-        name: content?.title || 'Untitled Design',
-        type: sourceType === 'funnel' ? 'funnel_visual' : 'lead_magnet_visual',
-        template_id: selectedTemplate,
-        html_content: generatedHTML
-      })
-      addToast('Design saved!', 'success')
-    } catch (error) {
-      addToast(error.message || 'Failed to save', 'error')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  function handleDownloadHTML() {
-    if (!generatedHTML) return
-    const content = getContent()
-    const blob = new Blob([generatedHTML], { type: 'text/html' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${content?.title || 'design'}.html`
-    a.click()
-    URL.revokeObjectURL(url)
-    addToast('HTML downloaded!', 'success')
-  }
-
+  // Download as PDF (client-side)
   async function handleDownloadPDF() {
-    if (!generatedHTML) return
+    if (!generatedHtml) return
 
     addToast('Generating PDF...', 'info')
 
@@ -176,16 +152,33 @@ export default function VisualBuilder() {
         })
       }
 
-      const content = getContent()
+      // Combine cover + interior
+      const fullHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            @page { size: A4; margin: 0; }
+            body { margin: 0; padding: 0; }
+          </style>
+        </head>
+        <body>
+          ${generatedHtml.cover}
+          ${generatedHtml.interior}
+        </body>
+        </html>
+      `
+
       const container = document.createElement('div')
-      container.innerHTML = generatedHTML
+      container.innerHTML = fullHtml
       container.style.width = '210mm'
       document.body.appendChild(container)
 
       await window.html2pdf()
         .set({
           margin: 0,
-          filename: `${content?.title || 'design'}.pdf`,
+          filename: `${title || 'design'}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -196,20 +189,31 @@ export default function VisualBuilder() {
       document.body.removeChild(container)
       addToast('PDF downloaded!', 'success')
     } catch (error) {
-      addToast('PDF generation failed. Try downloading HTML instead.', 'error')
+      addToast('PDF generation failed', 'error')
     }
   }
 
+  // Reset everything
   function handleReset() {
     setStep(1)
     setSourceType(null)
     setSelectedSource(null)
-    // REMOVED: setSelectedFormat - format comes from source data automatically
-    setGeneratedHTML(null)
+    setSelectedProduct(null)
+    setSelectedTemplate(null)
+    setTitle('')
+    setSubtitle('')
+    setTitleSize(100)
+    setSubtitleSize(100)
+    setGeneratedHtml(null)
   }
+
+  // Can proceed to next step?
+  const canProceedStep1 = sourceType && selectedSource && (sourceType === 'leadmagnet' || selectedProduct)
+  const canProceedStep2 = selectedTemplate !== null
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Visual Builder</h1>
         <p className="text-gray-500 mt-1">
@@ -224,11 +228,11 @@ export default function VisualBuilder() {
         </span>
         <ArrowRight className="w-4 h-4 text-gray-400" />
         <span className={`px-3 py-1 rounded-full ${step >= 2 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
-          2. Format & Style
+          2. Choose Template
         </span>
         <ArrowRight className="w-4 h-4 text-gray-400" />
         <span className={`px-3 py-1 rounded-full ${step >= 3 ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-500'}`}>
-          3. Preview & Export
+          3. Style & Generate
         </span>
       </div>
 
@@ -237,9 +241,10 @@ export default function VisualBuilder() {
         <Card>
           <h2 className="text-lg font-semibold mb-4">Select Content to Design</h2>
 
+          {/* Source type selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <button
-              onClick={() => setSourceType('funnel')}
+              onClick={() => { setSourceType('funnel'); setSelectedSource(null); setSelectedProduct(null) }}
               className={`p-6 border-2 rounded-lg text-left transition-all ${
                 sourceType === 'funnel'
                   ? 'border-purple-500 bg-purple-50'
@@ -247,14 +252,14 @@ export default function VisualBuilder() {
               }`}
             >
               <FileText className={`w-8 h-8 mb-3 ${sourceType === 'funnel' ? 'text-purple-600' : 'text-gray-400'}`} />
-              <h3 className="font-semibold text-gray-900">Funnel Overview</h3>
+              <h3 className="font-semibold text-gray-900">Funnel Product</h3>
               <p className="text-sm text-gray-500 mt-1">
-                Create a visual overview of your funnel products
+                Style a specific product from your funnel
               </p>
             </button>
 
             <button
-              onClick={() => setSourceType('leadmagnet')}
+              onClick={() => { setSourceType('leadmagnet'); setSelectedSource(null); setSelectedProduct(null) }}
               className={`p-6 border-2 rounded-lg text-left transition-all ${
                 sourceType === 'leadmagnet'
                   ? 'border-purple-500 bg-purple-50'
@@ -269,179 +274,189 @@ export default function VisualBuilder() {
             </button>
           </div>
 
-          {sourceType && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Funnel selection */}
+          {sourceType === 'funnel' && (
+            <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Select {sourceType === 'funnel' ? 'Funnel' : 'Lead Magnet'}
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Funnel</label>
                 <select
                   value={selectedSource || ''}
-                  onChange={(e) => setSelectedSource(e.target.value || null)}
+                  onChange={(e) => { setSelectedSource(e.target.value || null); setSelectedProduct(null) }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="">Choose...</option>
-                  {sourceType === 'funnel'
-                    ? funnels.map(f => (
-                        <option key={f.id} value={f.id}>{f.name}</option>
-                      ))
-                    : leadMagnets.map(lm => (
-                        <option key={lm.id} value={lm.id}>{lm.name}</option>
-                      ))
-                  }
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Branding Profile
-                </label>
-                <select
-                  value={selectedProfile || ''}
-                  onChange={(e) => setSelectedProfile(e.target.value || null)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="">No branding</option>
-                  {profiles.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                  <option value="">Choose a funnel...</option>
+                  {funnels.map(f => (
+                    <option key={f.id} value={f.id}>{f.name}</option>
                   ))}
                 </select>
               </div>
+
+              {selectedSource && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Select Product</label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {getFunnelProducts().map(product => (
+                      <button
+                        key={product.type}
+                        onClick={() => setSelectedProduct(product.type)}
+                        className={`p-3 border-2 rounded-lg text-left transition-all ${
+                          selectedProduct === product.type
+                            ? 'border-purple-500 bg-purple-50'
+                            : 'border-gray-200 hover:border-purple-300'
+                        }`}
+                      >
+                        <div className="text-sm font-medium">{product.label}</div>
+                        <div className="text-xs text-gray-500 truncate">{product.name}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {selectedSource && (
+          {/* Lead magnet selection */}
+          {sourceType === 'leadmagnet' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Select Lead Magnet</label>
+              <select
+                value={selectedSource || ''}
+                onChange={(e) => setSelectedSource(e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">Choose a lead magnet...</option>
+                {leadMagnets.map(lm => (
+                  <option key={lm.id} value={lm.id}>{lm.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Profile selection */}
+          {sourceType && selectedSource && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Branding Profile</label>
+              <select
+                value={selectedProfile || ''}
+                onChange={(e) => setSelectedProfile(e.target.value || null)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">No branding</option>
+                {profiles.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Next button */}
+          {canProceedStep1 && (
             <Button onClick={() => setStep(2)}>
-              Continue to Style Selection
+              Continue to Template Selection
               <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           )}
         </Card>
       )}
 
-      {/* Step 2: Choose Visual Style (Format comes from funnel/lead magnet automatically) */}
+      {/* Step 2: Choose Template */}
       {step === 2 && (
         <Card>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Choose Visual Style</h2>
+            <h2 className="text-lg font-semibold">Choose Cover Template</h2>
             <Button variant="secondary" onClick={() => setStep(1)}>
-              ← Back
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back
             </Button>
           </div>
 
-          {/* FORMAT SELECTION REMOVED - Per Vision spec, format comes from funnel/lead magnet data */}
-          {/* User only selects visual style (Apple Minimal, Swiss Design, etc.) */}
-
-          {/* Visual Style Selection */}
-          <div className="mb-6">
-            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              Visual Style
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {templateList.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedTemplate(t.id)}
-                  className={`p-4 border-2 rounded-lg text-center transition-all ${
-                    selectedTemplate === t.id
-                      ? 'border-purple-500 ring-2 ring-purple-200'
-                      : 'border-gray-200 hover:border-purple-300'
-                  }`}
-                >
-                  <div
-                    className="w-full h-16 rounded-lg mb-2 flex items-center justify-center"
-                    style={{ background: t.preview.bg }}
-                  >
-                    <div
-                      className="w-6 h-6 rounded"
-                      style={{ background: t.preview.accent }}
-                    />
-                  </div>
-                  <p className="text-sm font-medium text-gray-900">{t.name}</p>
-                  <p className="text-xs text-gray-500 mt-1">{t.category}</p>
-                </button>
-              ))}
+          {templatesLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
             </div>
-          </div>
+          ) : (
+            <TemplateSelector
+              templates={templates}
+              selectedId={selectedTemplate?.id}
+              onSelect={(template) => setSelectedTemplate(template)}
+            />
+          )}
 
-          <Button onClick={handleGenerate} disabled={generating}>
-            {generating ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4 mr-2" />
-                Generate Design
-              </>
-            )}
-          </Button>
+          {canProceedStep2 && (
+            <div className="mt-6">
+              <Button onClick={() => setStep(3)}>
+                Continue to Styling
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </div>
+          )}
         </Card>
       )}
 
-      {/* Step 3: Preview & Export */}
-      {step === 3 && generatedHTML && (
-        <>
-          <Card>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Preview Your Design</h2>
-              <div className="flex gap-2">
+      {/* Step 3: Style & Generate */}
+      {step === 3 && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left: Preview */}
+          <div className="lg:col-span-2">
+            <Card>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Preview</h2>
                 <Button variant="secondary" onClick={() => setStep(2)}>
-                  ← Back
-                </Button>
-                <Button variant="secondary" onClick={() => setFullscreen(true)}>
-                  <Maximize2 className="w-4 h-4 mr-2" />
-                  Fullscreen
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
                 </Button>
               </div>
-            </div>
 
-            <div
-              ref={previewRef}
-              className="border border-gray-200 rounded-lg overflow-hidden bg-gray-100"
-              style={{ height: '600px' }}
-            >
-              <iframe
-                srcDoc={generatedHTML}
-                title="Preview"
-                className="w-full h-full"
-                style={{ transform: 'scale(0.5)', transformOrigin: 'top left', width: '200%', height: '200%' }}
+              <PreviewPanel
+                template={selectedTemplate}
+                title={title}
+                subtitle={subtitle}
+                titleSize={titleSize}
+                subtitleSize={subtitleSize}
+                profile={profile}
               />
-            </div>
-          </Card>
+            </Card>
+          </div>
 
-          <Card>
-            <h3 className="font-semibold mb-4">Export Options</h3>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={handleDownloadHTML}>
-                <Download className="w-4 h-4 mr-2" />
-                Download HTML
-              </Button>
-              <Button variant="secondary" onClick={handleDownloadPDF}>
-                <Download className="w-4 h-4 mr-2" />
-                Download PDF
-              </Button>
-              <Button variant="secondary" onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-4 h-4 mr-2" />
-                    Save to History
-                  </>
-                )}
-              </Button>
-              <Button variant="secondary" onClick={handleReset}>
-                Start Over
-              </Button>
-            </div>
-          </Card>
-        </>
+          {/* Right: Controls */}
+          <div>
+            <Card>
+              <h2 className="text-lg font-semibold mb-4">Style Settings</h2>
+
+              <StyleEditor
+                title={title}
+                setTitle={setTitle}
+                subtitle={subtitle}
+                setSubtitle={setSubtitle}
+                titleSize={titleSize}
+                setTitleSize={setTitleSize}
+                subtitleSize={subtitleSize}
+                setSubtitleSize={setSubtitleSize}
+                onGenerate={handleGenerate}
+                generating={generating}
+              />
+            </Card>
+
+            {/* Download section */}
+            {generatedHtml && (
+              <Card className="mt-4">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-600" />
+                  Ready to Download
+                </h3>
+                <div className="space-y-2">
+                  <Button onClick={handleDownloadPDF} className="w-full">
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                  <Button variant="secondary" onClick={handleReset} className="w-full">
+                    Start Over
+                  </Button>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Empty State */}
@@ -458,23 +473,6 @@ export default function VisualBuilder() {
             it into a beautifully designed PDF.
           </p>
         </Card>
-      )}
-
-      {/* Fullscreen Modal */}
-      {fullscreen && generatedHTML && (
-        <div className="fixed inset-0 z-50 bg-white">
-          <button
-            onClick={() => setFullscreen(false)}
-            className="absolute top-4 right-4 z-50 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-          >
-            <X className="w-6 h-6" />
-          </button>
-          <iframe
-            srcDoc={generatedHTML}
-            title="Fullscreen Preview"
-            className="w-full h-full"
-          />
-        </div>
       )}
     </div>
   )
