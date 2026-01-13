@@ -9,17 +9,6 @@
 [functions]
   # Use esbuild for faster bundling
   node_bundler = "esbuild"
-  # External packages that shouldn't be bundled (native binaries)
-  external_node_modules = ["@sparticuz/chromium", "puppeteer-core"]
-
-# Job starter - returns immediately with job ID
-[functions."visual-builder-generate"]
-  included_files = ["node_modules/@sparticuz/chromium/**", "node_modules/puppeteer-core/**"]
-
-# Background function - 15 minute timeout for PDF generation
-# Files ending in -background automatically get background function behavior
-[functions."visual-builder-generate-background"]
-  included_files = ["node_modules/@sparticuz/chromium/**", "node_modules/puppeteer-core/**"]
 
 # Cache headers - prevent browser caching of HTML, allow caching of hashed assets
 [[headers]]

@@ -122,35 +122,6 @@ export default function VisualBuilder() {
     return products
   }
 
-  // Poll for job status
-  async function pollJobStatus(jobId, maxAttempts = 60, intervalMs = 2000) {
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      try {
-        const response = await fetch(`/.netlify/functions/visual-builder-status?jobId=${jobId}`)
-        const data = await response.json()
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Status check failed')
-        }
-
-        if (data.status === 'completed') {
-          return { success: true, pdfUrl: data.pdfUrl, coverPngUrl: data.coverPngUrl }
-        } else if (data.status === 'failed') {
-          return { success: false, error: data.error || 'Generation failed' }
-        }
-
-        // Still processing, wait and retry
-        await new Promise(resolve => setTimeout(resolve, intervalMs))
-      } catch (error) {
-        console.error('Poll error:', error)
-        // Continue polling on network errors
-        await new Promise(resolve => setTimeout(resolve, intervalMs))
-      }
-    }
-
-    return { success: false, error: 'Generation timed out. Please try again.' }
-  }
-
   // Handle PDF generation
   async function handleGenerate() {
     if (!selectedTemplate || !title) {
@@ -159,11 +130,10 @@ export default function VisualBuilder() {
     }
 
     setGenerating(true)
-    setGenerationStatus('starting')
+    setGenerationStatus('processing')
     setGeneratedPdf(null)
 
     try {
-      // Step 1: Start the generation job
       const response = await fetch('/.netlify/functions/visual-builder-generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -187,32 +157,20 @@ export default function VisualBuilder() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to start generation')
+        throw new Error(data.error || 'Failed to generate PDF')
       }
 
-      // Check if we got a job ID (background processing)
-      if (data.jobId) {
-        setGenerationStatus('processing')
-        addToast('Generating your PDF... This may take a moment.', 'info')
-
-        // Step 2: Poll for completion
-        const result = await pollJobStatus(data.jobId)
-
-        if (result.success) {
-          setGeneratedPdf({
-            pdfUrl: result.pdfUrl,
-            coverPngUrl: result.coverPngUrl,
-            html: null
-          })
-          setGenerationStatus('completed')
-          addToast('PDF generated! Click Download to save.', 'success')
-        } else {
-          setGenerationStatus('failed')
-          throw new Error(result.error)
-        }
+      // PDFShift returns pdfUrl directly
+      if (data.pdfUrl) {
+        setGeneratedPdf({
+          pdfUrl: data.pdfUrl,
+          coverPngUrl: null,
+          html: null
+        })
+        setGenerationStatus('completed')
+        addToast('PDF generated! Click Download to save.', 'success')
       } else {
-        // Direct response (shouldn't happen with new architecture, but handle it)
-        throw new Error('Unexpected response format')
+        throw new Error('No PDF URL returned')
       }
 
     } catch (error) {
