@@ -156,15 +156,24 @@ export default function VisualBuilder() {
         throw new Error(data.error || 'Generation failed')
       }
 
-      // Server returns PDF URL directly
+      // Server returns PDF URL (preferred) or HTML fallback
       if (data.pdfUrl) {
         setGeneratedPdf({
           pdfUrl: data.pdfUrl,
-          coverPngUrl: data.coverPngUrl
+          coverPngUrl: data.coverPngUrl,
+          html: null
         })
         addToast('PDF generated! Click Download to save.', 'success')
+      } else if (data.coverHtml && data.interiorHtml) {
+        // Fallback to client-side generation
+        setGeneratedPdf({
+          pdfUrl: null,
+          coverPngUrl: null,
+          html: { cover: data.coverHtml, interior: data.interiorHtml }
+        })
+        addToast('Design ready! Click Download to generate PDF.', 'success')
       } else {
-        throw new Error('No PDF URL returned')
+        throw new Error('No PDF data returned')
       }
 
     } catch (error) {
@@ -175,13 +184,73 @@ export default function VisualBuilder() {
     }
   }
 
-  // Download PDF from server URL
-  function handleDownloadPDF() {
-    if (!generatedPdf?.pdfUrl) return
+  // Download PDF - from server URL or generate client-side
+  async function handleDownloadPDF() {
+    if (!generatedPdf) return
 
-    // Open PDF URL in new tab for download
-    window.open(generatedPdf.pdfUrl, '_blank')
-    addToast('PDF opened in new tab', 'success')
+    // If we have a server-generated PDF URL, open it
+    if (generatedPdf.pdfUrl) {
+      window.open(generatedPdf.pdfUrl, '_blank')
+      addToast('PDF opened in new tab', 'success')
+      return
+    }
+
+    // Otherwise, generate client-side from HTML
+    if (generatedPdf.html) {
+      addToast('Generating PDF...', 'info')
+      try {
+        // Load html2pdf.js from CDN if not already loaded
+        if (!window.html2pdf) {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement('script')
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
+            script.onload = resolve
+            script.onerror = reject
+            document.head.appendChild(script)
+          })
+        }
+
+        // Combine cover + interior
+        const fullHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              @page { size: A4; margin: 0; }
+              body { margin: 0; padding: 0; }
+            </style>
+          </head>
+          <body>
+            ${generatedPdf.html.cover}
+            ${generatedPdf.html.interior}
+          </body>
+          </html>
+        `
+
+        const container = document.createElement('div')
+        container.innerHTML = fullHtml
+        container.style.width = '210mm'
+        document.body.appendChild(container)
+
+        await window.html2pdf()
+          .set({
+            margin: 0,
+            filename: `${title || 'design'}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+          })
+          .from(container)
+          .save()
+
+        document.body.removeChild(container)
+        addToast('PDF downloaded!', 'success')
+      } catch (error) {
+        console.error('Client PDF generation error:', error)
+        addToast('PDF generation failed', 'error')
+      }
+    }
   }
 
   // Reset everything

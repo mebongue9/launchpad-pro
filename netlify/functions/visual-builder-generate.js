@@ -182,67 +182,95 @@ export async function handler(event) {
       social_handle: handle
     })
 
-    // 5. Combine HTML for full PDF
-    console.log(`🔗 ${LOG_TAG} Combining HTML for PDF...`)
-    const combinedHtml = combineHtmlForPdf(coverHtml, interiorHtml)
+    // 5. Try server-side PDF generation with Puppeteer
+    // Falls back to returning HTML for client-side generation if Puppeteer fails
+    let pdfUrl = null
+    let coverPngUrl = null
+    let puppeteerFailed = false
 
-    // 6. Generate PDF using Puppeteer
-    console.log(`📝 ${LOG_TAG} Generating PDF with Puppeteer...`)
-    const pdfBuffer = await renderPdf(combinedHtml)
+    try {
+      console.log(`🔗 ${LOG_TAG} Combining HTML for PDF...`)
+      const combinedHtml = combineHtmlForPdf(coverHtml, interiorHtml)
 
-    // 7. Generate cover PNG for preview
-    console.log(`📸 ${LOG_TAG} Generating cover PNG...`)
-    const pngBuffer = await renderPng(coverHtml)
+      // 6. Generate PDF using Puppeteer
+      console.log(`📝 ${LOG_TAG} Generating PDF with Puppeteer...`)
+      const pdfBuffer = await renderPdf(combinedHtml)
 
-    // 8. Upload to Supabase Storage
-    const timestamp = Date.now()
-    const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30)
-    const pdfPath = `${userId || 'anonymous'}/${timestamp}-${safeTitle}.pdf`
-    const pngPath = `${userId || 'anonymous'}/${timestamp}-${safeTitle}-cover.png`
+      // 7. Generate cover PNG for preview
+      console.log(`📸 ${LOG_TAG} Generating cover PNG...`)
+      const pngBuffer = await renderPng(coverHtml)
 
-    console.log(`☁️ ${LOG_TAG} Uploading to Supabase storage...`)
+      // 8. Upload to Supabase Storage
+      const timestamp = Date.now()
+      const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30)
+      const pdfPath = `${userId || 'anonymous'}/${timestamp}-${safeTitle}.pdf`
+      const pngPath = `${userId || 'anonymous'}/${timestamp}-${safeTitle}-cover.png`
 
-    // Upload PDF
-    const { error: pdfUploadError } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(pdfPath, pdfBuffer, {
-        contentType: 'application/pdf',
-        cacheControl: '31536000', // 1 year cache
-        upsert: true
-      })
+      console.log(`☁️ ${LOG_TAG} Uploading to Supabase storage...`)
 
-    if (pdfUploadError) {
-      console.error(`❌ ${LOG_TAG} PDF upload error:`, pdfUploadError)
-      return errorResponse(500, `Failed to upload PDF: ${pdfUploadError.message}`)
+      // Upload PDF
+      const { error: pdfUploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(pdfPath, pdfBuffer, {
+          contentType: 'application/pdf',
+          cacheControl: '31536000', // 1 year cache
+          upsert: true
+        })
+
+      if (pdfUploadError) {
+        console.error(`❌ ${LOG_TAG} PDF upload error:`, pdfUploadError)
+        throw new Error(`Failed to upload PDF: ${pdfUploadError.message}`)
+      }
+
+      // Upload PNG
+      const { error: pngUploadError } = await supabase.storage
+        .from(STORAGE_BUCKET)
+        .upload(pngPath, pngBuffer, {
+          contentType: 'image/png',
+          cacheControl: '31536000',
+          upsert: true
+        })
+
+      if (pngUploadError) {
+        console.error(`❌ ${LOG_TAG} PNG upload error:`, pngUploadError)
+        // Continue even if PNG fails - PDF is more important
+      }
+
+      // Get public URLs
+      const { data: pdfUrlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(pdfPath)
+
+      const { data: pngUrlData } = supabase.storage
+        .from(STORAGE_BUCKET)
+        .getPublicUrl(pngPath)
+
+      pdfUrl = pdfUrlData?.publicUrl || null
+      coverPngUrl = pngUrlData?.publicUrl || null
+
+      console.log(`✅ ${LOG_TAG} Upload complete:`, { pdfUrl, coverPngUrl })
+
+    } catch (puppeteerError) {
+      console.error(`⚠️ ${LOG_TAG} Puppeteer/upload failed, falling back to HTML:`, puppeteerError.message)
+      puppeteerFailed = true
     }
 
-    // Upload PNG
-    const { error: pngUploadError } = await supabase.storage
-      .from(STORAGE_BUCKET)
-      .upload(pngPath, pngBuffer, {
-        contentType: 'image/png',
-        cacheControl: '31536000',
-        upsert: true
-      })
-
-    if (pngUploadError) {
-      console.error(`❌ ${LOG_TAG} PNG upload error:`, pngUploadError)
-      // Continue even if PNG fails - PDF is more important
+    // If Puppeteer failed, return HTML for client-side generation
+    if (puppeteerFailed) {
+      console.log(`📄 ${LOG_TAG} Returning HTML for client-side PDF generation`)
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          success: true,
+          pdfUrl: null,
+          coverPngUrl: null,
+          coverHtml,
+          interiorHtml,
+          message: 'Server-side PDF generation unavailable. Use client-side generation.'
+        })
+      }
     }
-
-    // Get public URLs
-    const { data: pdfUrlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(pdfPath)
-
-    const { data: pngUrlData } = supabase.storage
-      .from(STORAGE_BUCKET)
-      .getPublicUrl(pngPath)
-
-    const pdfUrl = pdfUrlData?.publicUrl || null
-    const coverPngUrl = pngUrlData?.publicUrl || null
-
-    console.log(`✅ ${LOG_TAG} Upload complete:`, { pdfUrl, coverPngUrl })
 
     // 9. Save to styled_products table
     console.log(`💾 ${LOG_TAG} Saving to styled_products...`)

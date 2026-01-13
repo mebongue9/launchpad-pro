@@ -9,6 +9,13 @@
 [functions]
   # Use esbuild for faster bundling
   node_bundler = "esbuild"
+  # External packages that shouldn't be bundled (native binaries)
+  external_node_modules = ["@sparticuz/chromium"]
+
+# Extended timeout for PDF generation (requires Netlify Pro for full 26s)
+[functions."visual-builder-generate"]
+  # Include chromium binary files
+  included_files = ["node_modules/@sparticuz/chromium/**"]
 
 # Cache headers - prevent browser caching of HTML, allow caching of hashed assets
 [[headers]]
