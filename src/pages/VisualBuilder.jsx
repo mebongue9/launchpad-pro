@@ -46,8 +46,8 @@ export default function VisualBuilder() {
   // Step 3: Styling
   const [title, setTitle] = useState('')
   const [subtitle, setSubtitle] = useState('')
-  const [titleSize, setTitleSize] = useState(100)
-  const [subtitleSize, setSubtitleSize] = useState(100)
+  const [authorName, setAuthorName] = useState('')
+  const [handle, setHandle] = useState('')
 
   // Generation state
   const [generating, setGenerating] = useState(false)
@@ -56,7 +56,7 @@ export default function VisualBuilder() {
   // Get profile data for preview
   const profile = profiles.find(p => p.id === selectedProfile) || null
 
-  // Pre-fill title when source changes
+  // Pre-fill fields when source/profile changes
   useEffect(() => {
     if (sourceType === 'leadmagnet' && selectedSource) {
       const lm = leadMagnets.find(l => l.id === selectedSource)
@@ -72,6 +72,14 @@ export default function VisualBuilder() {
       }
     }
   }, [sourceType, selectedSource, selectedProduct, leadMagnets, funnels])
+
+  // Pre-fill author/handle from profile
+  useEffect(() => {
+    if (profile) {
+      setAuthorName(profile.name || '')
+      setHandle(profile.social_handle || profile.business_name || '')
+    }
+  }, [profile])
 
   // Get available products for selected funnel
   const getFunnelProducts = () => {
@@ -106,8 +114,8 @@ export default function VisualBuilder() {
           coverTemplateId: selectedTemplate.id,
           title,
           subtitle,
-          titleSize,
-          subtitleSize
+          authorName,
+          handle
         })
       })
 
@@ -202,8 +210,8 @@ export default function VisualBuilder() {
     setSelectedTemplate(null)
     setTitle('')
     setSubtitle('')
-    setTitleSize(100)
-    setSubtitleSize(100)
+    setAuthorName('')
+    setHandle('')
     setGeneratedHtml(null)
   }
 
@@ -395,67 +403,50 @@ export default function VisualBuilder() {
 
       {/* Step 3: Style & Generate */}
       {step === 3 && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left: Preview */}
-          <div className="lg:col-span-2">
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold">Preview</h2>
-                <Button variant="secondary" onClick={() => setStep(2)}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
+        <div className="space-y-4">
+          {/* Back button */}
+          <div className="flex justify-between items-center">
+            <Button variant="secondary" onClick={() => setStep(2)}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Templates
+            </Button>
+            {generatedHtml && (
+              <div className="flex gap-2">
+                <Button onClick={handleDownloadPDF}>
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF
+                </Button>
+                <Button variant="secondary" onClick={handleReset}>
+                  Start Over
                 </Button>
               </div>
-
-              <PreviewPanel
-                template={selectedTemplate}
-                title={title}
-                subtitle={subtitle}
-                titleSize={titleSize}
-                subtitleSize={subtitleSize}
-                profile={profile}
-              />
-            </Card>
-          </div>
-
-          {/* Right: Controls */}
-          <div>
-            <Card>
-              <h2 className="text-lg font-semibold mb-4">Style Settings</h2>
-
-              <StyleEditor
-                title={title}
-                setTitle={setTitle}
-                subtitle={subtitle}
-                setSubtitle={setSubtitle}
-                titleSize={titleSize}
-                setTitleSize={setTitleSize}
-                subtitleSize={subtitleSize}
-                setSubtitleSize={setSubtitleSize}
-                onGenerate={handleGenerate}
-                generating={generating}
-              />
-            </Card>
-
-            {/* Download section */}
-            {generatedHtml && (
-              <Card className="mt-4">
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
-                  <Check className="w-5 h-5 text-green-600" />
-                  Ready to Download
-                </h3>
-                <div className="space-y-2">
-                  <Button onClick={handleDownloadPDF} className="w-full">
-                    <Download className="w-4 h-4 mr-2" />
-                    Download PDF
-                  </Button>
-                  <Button variant="secondary" onClick={handleReset} className="w-full">
-                    Start Over
-                  </Button>
-                </div>
-              </Card>
             )}
           </div>
+
+          {/* Compact controls at top */}
+          <StyleEditor
+            title={title}
+            setTitle={setTitle}
+            subtitle={subtitle}
+            setSubtitle={setSubtitle}
+            authorName={authorName}
+            setAuthorName={setAuthorName}
+            handle={handle}
+            setHandle={setHandle}
+            onGenerate={handleGenerate}
+            generating={generating}
+          />
+
+          {/* Large preview area */}
+          <Card className="p-4" style={{ minHeight: '600px' }}>
+            <PreviewPanel
+              template={selectedTemplate}
+              title={title}
+              subtitle={subtitle}
+              authorName={authorName}
+              handle={handle}
+            />
+          </Card>
         </div>
       )}
 

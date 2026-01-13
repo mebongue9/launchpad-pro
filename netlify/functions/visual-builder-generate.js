@@ -34,8 +34,8 @@ export async function handler(event) {
       coverTemplateId,
       title,
       subtitle,
-      titleSize = 100,
-      subtitleSize = 100
+      authorName,
+      handle: handleInput
     } = body
 
     console.log(`📥 ${LOG_TAG} Request:`, { funnelId, leadMagnetId, productType, coverTemplateId })
@@ -115,8 +115,9 @@ export async function handler(event) {
     }
 
     const year = new Date().getFullYear()
-    const author = profileData?.name || 'Author'
-    const handle = profileData?.social_handle || profileData?.business_name || ''
+    // Use provided author/handle or fall back to profile data
+    const author = authorName || profileData?.name || 'Author'
+    const handle = handleInput || profileData?.social_handle || profileData?.business_name || ''
 
     // 3. Render cover HTML
     console.log(`🎨 ${LOG_TAG} Rendering cover...`)
@@ -126,9 +127,6 @@ export async function handler(event) {
       author,
       handle,
       year
-    }, {
-      titleSize,
-      subtitleSize
     })
 
     // 4. Render interior HTML
@@ -137,7 +135,11 @@ export async function handler(event) {
       title,
       content: contentData,
       format: productData?.format
-    }, profileData)
+    }, {
+      ...profileData,
+      name: author,
+      social_handle: handle
+    })
 
     // 5. For now, return HTML (PDF generation requires puppeteer setup)
     // TODO: Add puppeteer-core + @sparticuz/chromium for actual PDF generation

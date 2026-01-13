@@ -1,19 +1,20 @@
 // src/components/visual-builder/PreviewPanel.jsx
-// Live preview showing cover + interior pages with template colors
-// Updates in real-time as user edits title/subtitle
+// Large cover preview with smaller interior page thumbnails
+// Updates in real-time as user edits fields
 // RELEVANT FILES: src/pages/VisualBuilder.jsx, src/components/visual-builder/StyleEditor.jsx
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 
 export function PreviewPanel({
   template,
   title,
   subtitle,
-  titleSize = 100,
-  subtitleSize = 100,
-  profile,
+  authorName,
+  handle,
   content
 }) {
+  const [activeTab, setActiveTab] = useState('cover')
+
   if (!template) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -23,92 +24,109 @@ export function PreviewPanel({
   }
 
   const year = new Date().getFullYear()
-  const author = profile?.name || 'Your Name'
-  const handle = profile?.social_handle || profile?.business_name || 'Your Brand'
+  const displayAuthor = authorName || 'Your Name'
+  const displayHandle = handle || 'Your Brand'
 
   // Generate cover HTML with placeholders replaced
   const coverHtml = useMemo(() => {
     return generateCoverHtml(template, {
       title: title || 'Your Title',
       subtitle: subtitle || 'Your subtitle goes here',
-      author,
-      handle,
-      year,
-      titleSize,
-      subtitleSize
+      author: displayAuthor,
+      handle: displayHandle,
+      year
     })
-  }, [template, title, subtitle, author, handle, year, titleSize, subtitleSize])
+  }, [template, title, subtitle, displayAuthor, displayHandle, year])
 
   // Generate interior page HTML
   const interiorHtml = useMemo(() => {
     return generateInteriorHtml(template, {
       title: title || 'Your Title',
-      author,
-      handle,
-      photoUrl: profile?.photo_url
+      author: displayAuthor,
+      handle: displayHandle
     })
-  }, [template, title, author, handle, profile?.photo_url])
+  }, [template, title, displayAuthor, displayHandle])
+
+  const tabs = [
+    { id: 'cover', label: 'Cover', html: coverHtml },
+    { id: 'chapter', label: 'Chapter', html: interiorHtml.chapter },
+    { id: 'checklist', label: 'Checklist', html: interiorHtml.checklist },
+    { id: 'steps', label: 'Steps', html: interiorHtml.steps }
+  ]
+
+  const activeHtml = tabs.find(t => t.id === activeTab)?.html || coverHtml
 
   return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-medium text-gray-700">Preview</h3>
-
-      {/* Horizontal scroll container */}
-      <div className="flex gap-4 overflow-x-auto pb-4">
-        {/* Cover */}
-        <div className="flex-shrink-0">
-          <div className="text-xs text-gray-500 mb-2 text-center">Cover</div>
-          <div
-            className="w-48 h-64 rounded shadow-lg overflow-hidden bg-white"
-            style={{ transform: 'scale(1)', transformOrigin: 'top left' }}
+    <div className="flex flex-col h-full">
+      {/* Tab switcher */}
+      <div className="flex gap-2 mb-4">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+              activeTab === tab.id
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
           >
-            <iframe
-              srcDoc={coverHtml}
-              title="Cover Preview"
-              className="w-full h-full border-0 pointer-events-none"
-              style={{ transform: 'scale(0.23)', transformOrigin: 'top left', width: '210mm', height: '297mm' }}
-            />
-          </div>
-        </div>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        {/* Chapter Page */}
-        <div className="flex-shrink-0">
-          <div className="text-xs text-gray-500 mb-2 text-center">Chapter</div>
-          <div className="w-48 h-64 rounded shadow-lg overflow-hidden bg-white">
-            <iframe
-              srcDoc={interiorHtml.chapter}
-              title="Chapter Preview"
-              className="w-full h-full border-0 pointer-events-none"
-              style={{ transform: 'scale(0.23)', transformOrigin: 'top left', width: '210mm', height: '297mm' }}
-            />
-          </div>
+      {/* Large preview area */}
+      <div className="flex-1 flex justify-center items-start overflow-auto bg-gray-100 rounded-xl p-4">
+        <div
+          className="bg-white rounded-lg shadow-2xl overflow-hidden"
+          style={{
+            width: '420px',
+            height: '594px',
+            minWidth: '420px'
+          }}
+        >
+          <iframe
+            srcDoc={activeHtml}
+            title={`${activeTab} Preview`}
+            className="w-full h-full border-0 pointer-events-none"
+            style={{
+              transform: 'scale(0.5)',
+              transformOrigin: 'top left',
+              width: '210mm',
+              height: '297mm'
+            }}
+          />
         </div>
+      </div>
 
-        {/* Checklist Page */}
-        <div className="flex-shrink-0">
-          <div className="text-xs text-gray-500 mb-2 text-center">Checklist</div>
-          <div className="w-48 h-64 rounded shadow-lg overflow-hidden bg-white">
-            <iframe
-              srcDoc={interiorHtml.checklist}
-              title="Checklist Preview"
-              className="w-full h-full border-0 pointer-events-none"
-              style={{ transform: 'scale(0.23)', transformOrigin: 'top left', width: '210mm', height: '297mm' }}
-            />
-          </div>
-        </div>
-
-        {/* Steps Page */}
-        <div className="flex-shrink-0">
-          <div className="text-xs text-gray-500 mb-2 text-center">Steps</div>
-          <div className="w-48 h-64 rounded shadow-lg overflow-hidden bg-white">
-            <iframe
-              srcDoc={interiorHtml.steps}
-              title="Steps Preview"
-              className="w-full h-full border-0 pointer-events-none"
-              style={{ transform: 'scale(0.23)', transformOrigin: 'top left', width: '210mm', height: '297mm' }}
-            />
-          </div>
-        </div>
+      {/* Mini thumbnails at bottom */}
+      <div className="mt-4 flex gap-3 justify-center">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-shrink-0 transition-all ${
+              activeTab === tab.id
+                ? 'ring-2 ring-purple-500 ring-offset-2'
+                : 'opacity-60 hover:opacity-100'
+            }`}
+          >
+            <div className="w-16 h-22 bg-white rounded shadow overflow-hidden">
+              <iframe
+                srcDoc={tab.html}
+                title={`${tab.label} Thumbnail`}
+                className="w-full h-full border-0 pointer-events-none"
+                style={{
+                  transform: 'scale(0.076)',
+                  transformOrigin: 'top left',
+                  width: '210mm',
+                  height: '297mm'
+                }}
+              />
+            </div>
+            <div className="text-xs text-gray-500 mt-1 text-center">{tab.label}</div>
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -116,16 +134,14 @@ export function PreviewPanel({
 
 // Generate cover HTML from template
 function generateCoverHtml(template, data) {
-  const { title, subtitle, author, handle, year, titleSize, subtitleSize } = data
-  const titleScale = titleSize / 100
-  const subtitleScale = subtitleSize / 100
+  const { title, subtitle, author, handle, year } = data
 
   // Replace placeholders in template HTML
   let html = template.html_template
-    .replace(/\{\{title\}\}/g, title)
-    .replace(/\{\{subtitle\}\}/g, subtitle)
-    .replace(/\{\{author\}\}/g, author)
-    .replace(/\{\{handle\}\}/g, handle)
+    .replace(/\{\{title\}\}/g, escapeHtml(title))
+    .replace(/\{\{subtitle\}\}/g, escapeHtml(subtitle))
+    .replace(/\{\{author\}\}/g, escapeHtml(author))
+    .replace(/\{\{handle\}\}/g, escapeHtml(handle))
     .replace(/\{\{year\}\}/g, year)
 
   // Build full HTML document
@@ -137,10 +153,6 @@ function generateCoverHtml(template, data) {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Inter', sans-serif; }
-    :root {
-      --title-scale: ${titleScale};
-      --subtitle-scale: ${subtitleScale};
-    }
     ${template.css_styles}
   </style>
 </head>
@@ -152,7 +164,7 @@ function generateCoverHtml(template, data) {
 
 // Generate interior page HTML with template colors
 function generateInteriorHtml(template, data) {
-  const { title, author, handle, photoUrl } = data
+  const { title, author, handle } = data
   const { primary_color, secondary_color, tertiary_color, font_family, font_family_url, is_gradient } = template
 
   // Calculate header gradient
@@ -208,7 +220,7 @@ function generateInteriorHtml(template, data) {
   <div class="page-footer">
     <div class="footer-left">
       <div class="footer-photo"></div>
-      <div class="footer-handle">@${handle}</div>
+      <div class="footer-handle">@${escapeHtml(handle)}</div>
     </div>
     <div class="footer-page">3</div>
   </div>
@@ -231,7 +243,7 @@ function generateInteriorHtml(template, data) {
   <div class="page-footer">
     <div class="footer-left">
       <div class="footer-photo"></div>
-      <div class="footer-handle">@${handle}</div>
+      <div class="footer-handle">@${escapeHtml(handle)}</div>
     </div>
     <div class="footer-page">7</div>
   </div>
@@ -253,7 +265,7 @@ function generateInteriorHtml(template, data) {
   <div class="page-footer">
     <div class="footer-left">
       <div class="footer-photo"></div>
-      <div class="footer-handle">@${handle}</div>
+      <div class="footer-handle">@${escapeHtml(handle)}</div>
     </div>
     <div class="footer-page">12</div>
   </div>
@@ -262,18 +274,25 @@ function generateInteriorHtml(template, data) {
   return { chapter, checklist, steps }
 }
 
+// Escape HTML special characters
+function escapeHtml(str) {
+  if (!str) return ''
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 // Generate light background color from primary color
 function getLightBackground(hex) {
-  // Convert hex to RGB
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
-
-  // Create very light version (10% opacity equivalent)
   const lightR = Math.round(r + (255 - r) * 0.92)
   const lightG = Math.round(g + (255 - g) * 0.92)
   const lightB = Math.round(b + (255 - b) * 0.92)
-
   return `rgb(${lightR}, ${lightG}, ${lightB})`
 }
 

@@ -1,93 +1,103 @@
 // src/components/visual-builder/StyleEditor.jsx
-// Edit controls for title, subtitle, and size adjustments
-// Includes Generate PDF button
+// Compact horizontal bar for cover customization
 // RELEVANT FILES: src/pages/VisualBuilder.jsx, src/components/visual-builder/PreviewPanel.jsx
 
-import { useState } from 'react'
 import { Button } from '../ui/Button'
-import { Input } from '../ui/Input'
-import { Loader2, Download, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles } from 'lucide-react'
 
 export function StyleEditor({
   title,
   setTitle,
   subtitle,
   setSubtitle,
-  titleSize,
-  setTitleSize,
-  subtitleSize,
-  setSubtitleSize,
+  authorName,
+  setAuthorName,
+  handle,
+  setHandle,
   onGenerate,
   generating = false,
   disabled = false
 }) {
   return (
-    <div className="space-y-6">
-      {/* Title Section */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
-          Cover Title
-        </label>
-        <Input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Enter your title"
-          disabled={disabled}
-        />
-        <div className="flex items-center gap-4">
-          <label className="text-xs text-gray-500 w-20">Size: {titleSize}%</label>
+    <div className="bg-gray-900 rounded-xl p-4">
+      <p className="text-gray-400 text-xs mb-3">
+        Edit the fields below and watch the cover update in real-time
+      </p>
+
+      {/* Compact horizontal form */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Title */}
+        <div>
+          <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">
+            Title
+          </label>
           <input
-            type="range"
-            min="80"
-            max="120"
-            step="5"
-            value={titleSize}
-            onChange={(e) => setTitleSize(parseInt(e.target.value))}
-            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Your Title"
             disabled={disabled}
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Subtitle */}
+        <div>
+          <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">
+            Subtitle
+          </label>
+          <input
+            type="text"
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+            placeholder="Your subtitle"
+            disabled={disabled}
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Author Name */}
+        <div>
+          <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">
+            Author Name
+          </label>
+          <input
+            type="text"
+            value={authorName}
+            onChange={(e) => setAuthorName(e.target.value)}
+            placeholder="Your Name"
+            disabled={disabled}
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          />
+        </div>
+
+        {/* Handle / Brand */}
+        <div>
+          <label className="block text-xs text-gray-400 uppercase tracking-wide mb-1">
+            Handle / Brand
+          </label>
+          <input
+            type="text"
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="Your Brand"
+            disabled={disabled}
+            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
           />
         </div>
       </div>
 
-      {/* Subtitle Section */}
-      <div className="space-y-3">
-        <label className="block text-sm font-medium text-gray-700">
-          Cover Subtitle
-        </label>
-        <Input
-          type="text"
-          value={subtitle}
-          onChange={(e) => setSubtitle(e.target.value)}
-          placeholder="Enter your subtitle (optional)"
-          disabled={disabled}
-        />
-        <div className="flex items-center gap-4">
-          <label className="text-xs text-gray-500 w-20">Size: {subtitleSize}%</label>
-          <input
-            type="range"
-            min="80"
-            max="120"
-            step="5"
-            value={subtitleSize}
-            onChange={(e) => setSubtitleSize(parseInt(e.target.value))}
-            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-            disabled={disabled}
-          />
-        </div>
-      </div>
-
-      {/* Generate Button */}
-      <div className="pt-4 border-t border-gray-200">
+      {/* Generate button - inline */}
+      <div className="mt-4 flex justify-end">
         <Button
           onClick={onGenerate}
           disabled={disabled || generating || !title}
-          className="w-full"
+          className="px-6"
         >
           {generating ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Generating PDF...
+              Generating...
             </>
           ) : (
             <>
@@ -96,11 +106,6 @@ export function StyleEditor({
             </>
           )}
         </Button>
-        {!title && (
-          <p className="text-xs text-gray-500 mt-2 text-center">
-            Enter a title to generate
-          </p>
-        )}
       </div>
     </div>
   )
