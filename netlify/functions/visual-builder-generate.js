@@ -1,11 +1,12 @@
 // netlify/functions/visual-builder-generate.js
-// Generates PDF from cover template + interior pages
+// Generates high-quality PDF from cover template + interior pages using Puppeteer
 // POST /api/visual-builder-generate
 // RELEVANT FILES: src/pages/VisualBuilder.jsx, netlify/functions/lib/cover-renderer.js
 
 import { createClient } from '@supabase/supabase-js'
 import { renderCover } from './lib/cover-renderer.js'
 import { renderInterior } from './lib/interior-renderer.js'
+import { renderPdf, renderPng, combineHtmlForPdf } from './lib/pdf-renderer.js'
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -13,6 +14,7 @@ const supabase = createClient(
 )
 
 const LOG_TAG = '[VISUAL-BUILDER-GENERATE]'
+const STORAGE_BUCKET = 'visual-designs'
 
 export async function handler(event) {
   console.log(`🎨 ${LOG_TAG} Function invoked`)
@@ -28,6 +30,7 @@ export async function handler(event) {
   try {
     const body = JSON.parse(event.body || '{}')
     const {
+      userId,
       funnelId,
       leadMagnetId,
       productType,
@@ -150,23 +153,106 @@ export async function handler(event) {
       social_handle: handle
     })
 
-    // 5. For now, return HTML (PDF generation requires puppeteer setup)
-    // TODO: Add puppeteer-core + @sparticuz/chromium for actual PDF generation
-    console.log(`✅ ${LOG_TAG} HTML generated successfully`)
+    // 5. Combine HTML for full PDF
+    console.log(`🔗 ${LOG_TAG} Combining HTML for PDF...`)
+    const combinedHtml = combineHtmlForPdf(coverHtml, interiorHtml)
 
-    // Return the HTML for client-side PDF generation
-    // Once puppeteer is configured, this will return actual PDF URLs
+    // 6. Generate PDF using Puppeteer
+    console.log(`📝 ${LOG_TAG} Generating PDF with Puppeteer...`)
+    const pdfBuffer = await renderPdf(combinedHtml)
+
+    // 7. Generate cover PNG for preview
+    console.log(`📸 ${LOG_TAG} Generating cover PNG...`)
+    const pngBuffer = await renderPng(coverHtml)
+
+    // 8. Upload to Supabase Storage
+    const timestamp = Date.now()
+    const safeTitle = title.replace(/[^a-zA-Z0-9]/g, '-').substring(0, 30)
+    const pdfPath = `${userId || 'anonymous'}/${timestamp}-${safeTitle}.pdf`
+    const pngPath = `${userId || 'anonymous'}/${timestamp}-${safeTitle}-cover.png`
+
+    console.log(`☁️ ${LOG_TAG} Uploading to Supabase storage...`)
+
+    // Upload PDF
+    const { error: pdfUploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(pdfPath, pdfBuffer, {
+        contentType: 'application/pdf',
+        cacheControl: '31536000', // 1 year cache
+        upsert: true
+      })
+
+    if (pdfUploadError) {
+      console.error(`❌ ${LOG_TAG} PDF upload error:`, pdfUploadError)
+      return errorResponse(500, `Failed to upload PDF: ${pdfUploadError.message}`)
+    }
+
+    // Upload PNG
+    const { error: pngUploadError } = await supabase.storage
+      .from(STORAGE_BUCKET)
+      .upload(pngPath, pngBuffer, {
+        contentType: 'image/png',
+        cacheControl: '31536000',
+        upsert: true
+      })
+
+    if (pngUploadError) {
+      console.error(`❌ ${LOG_TAG} PNG upload error:`, pngUploadError)
+      // Continue even if PNG fails - PDF is more important
+    }
+
+    // Get public URLs
+    const { data: pdfUrlData } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(pdfPath)
+
+    const { data: pngUrlData } = supabase.storage
+      .from(STORAGE_BUCKET)
+      .getPublicUrl(pngPath)
+
+    const pdfUrl = pdfUrlData?.publicUrl || null
+    const coverPngUrl = pngUrlData?.publicUrl || null
+
+    console.log(`✅ ${LOG_TAG} Upload complete:`, { pdfUrl, coverPngUrl })
+
+    // 9. Save to styled_products table
+    console.log(`💾 ${LOG_TAG} Saving to styled_products...`)
+    const styledProductData = {
+      funnel_id: funnelId || null,
+      lead_magnet_id: leadMagnetId || null,
+      product_type: productData?.type || 'lead_magnet',
+      cover_template_id: coverTemplateId,
+      cover_title: title,
+      cover_subtitle: subtitle || null,
+      title_size_percent: titleSize,
+      subtitle_size_percent: subtitleSize,
+      pdf_url: pdfUrl,
+      cover_png_url: coverPngUrl
+    }
+
+    const { data: styledProduct, error: insertError } = await supabase
+      .from('styled_products')
+      .insert(styledProductData)
+      .select()
+      .single()
+
+    if (insertError) {
+      console.error(`⚠️ ${LOG_TAG} styled_products insert error:`, insertError)
+      // Don't fail the whole request - PDF was generated successfully
+    } else {
+      console.log(`✅ ${LOG_TAG} Saved styled_product:`, styledProduct?.id)
+    }
+
+    // 10. Return success with URLs
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         success: true,
-        coverHtml,
-        interiorHtml,
-        message: 'HTML generated. Use client-side PDF generation for now.',
-        // These will be populated once we add Supabase storage upload
-        pdfUrl: null,
-        coverPngUrl: null
+        pdfUrl,
+        coverPngUrl,
+        styledProductId: styledProduct?.id || null,
+        message: 'PDF generated successfully'
       })
     }
 

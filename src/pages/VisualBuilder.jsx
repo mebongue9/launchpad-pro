@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
+import { useAuth } from '../hooks/useAuth'
 import { useProfiles } from '../hooks/useProfiles'
 import { useFunnels } from '../hooks/useFunnels'
 import { useLeadMagnets } from '../hooks/useLeadMagnets'
@@ -38,6 +39,7 @@ function formatLabel(format) {
 }
 
 export default function VisualBuilder() {
+  const { user } = useAuth()
   const { profiles } = useProfiles()
   const { funnels } = useFunnels()
   const { leadMagnets } = useLeadMagnets()
@@ -71,7 +73,7 @@ export default function VisualBuilder() {
 
   // Generation state
   const [generating, setGenerating] = useState(false)
-  const [generatedHtml, setGeneratedHtml] = useState(null)
+  const [generatedPdf, setGeneratedPdf] = useState(null) // { pdfUrl, coverPngUrl }
 
   // Get profile data for preview
   const profile = profiles.find(p => p.id === selectedProfile) || null
@@ -132,6 +134,7 @@ export default function VisualBuilder() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          userId: user?.id,
           funnelId: sourceType === 'funnel' ? selectedSource : null,
           leadMagnetId: sourceType === 'leadmagnet' ? selectedSource : null,
           productType: selectedProduct,
@@ -153,13 +156,15 @@ export default function VisualBuilder() {
         throw new Error(data.error || 'Generation failed')
       }
 
-      // For now, use client-side PDF generation
-      if (data.coverHtml && data.interiorHtml) {
-        setGeneratedHtml({
-          cover: data.coverHtml,
-          interior: data.interiorHtml
+      // Server returns PDF URL directly
+      if (data.pdfUrl) {
+        setGeneratedPdf({
+          pdfUrl: data.pdfUrl,
+          coverPngUrl: data.coverPngUrl
         })
-        addToast('Design generated! Click Download to save.', 'success')
+        addToast('PDF generated! Click Download to save.', 'success')
+      } else {
+        throw new Error('No PDF URL returned')
       }
 
     } catch (error) {
@@ -170,63 +175,13 @@ export default function VisualBuilder() {
     }
   }
 
-  // Download as PDF (client-side)
-  async function handleDownloadPDF() {
-    if (!generatedHtml) return
+  // Download PDF from server URL
+  function handleDownloadPDF() {
+    if (!generatedPdf?.pdfUrl) return
 
-    addToast('Generating PDF...', 'info')
-
-    try {
-      // Load html2pdf.js from CDN
-      if (!window.html2pdf) {
-        await new Promise((resolve, reject) => {
-          const script = document.createElement('script')
-          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'
-          script.onload = resolve
-          script.onerror = reject
-          document.head.appendChild(script)
-        })
-      }
-
-      // Combine cover + interior
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="UTF-8">
-          <style>
-            @page { size: A4; margin: 0; }
-            body { margin: 0; padding: 0; }
-          </style>
-        </head>
-        <body>
-          ${generatedHtml.cover}
-          ${generatedHtml.interior}
-        </body>
-        </html>
-      `
-
-      const container = document.createElement('div')
-      container.innerHTML = fullHtml
-      container.style.width = '210mm'
-      document.body.appendChild(container)
-
-      await window.html2pdf()
-        .set({
-          margin: 0,
-          filename: `${title || 'design'}.pdf`,
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        })
-        .from(container)
-        .save()
-
-      document.body.removeChild(container)
-      addToast('PDF downloaded!', 'success')
-    } catch (error) {
-      addToast('PDF generation failed', 'error')
-    }
+    // Open PDF URL in new tab for download
+    window.open(generatedPdf.pdfUrl, '_blank')
+    addToast('PDF opened in new tab', 'success')
   }
 
   // Reset everything
@@ -245,7 +200,7 @@ export default function VisualBuilder() {
     setHandle('')
     setHandleSize(100)
     setProductFormat(null)
-    setGeneratedHtml(null)
+    setGeneratedPdf(null)
   }
 
   // Can proceed to next step?
@@ -448,7 +403,7 @@ export default function VisualBuilder() {
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Templates
             </Button>
-            {generatedHtml && (
+            {generatedPdf && (
               <div className="flex gap-2">
                 <Button onClick={handleDownloadPDF}>
                   <Download className="w-4 h-4 mr-2" />
