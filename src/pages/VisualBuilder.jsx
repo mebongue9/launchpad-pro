@@ -157,6 +157,7 @@ export default function VisualBuilder() {
         signal: controller.signal,
         body: JSON.stringify({
           userId: user?.id,
+          profileId: selectedProfile,
           funnelId: sourceType === 'funnel' ? selectedSource : null,
           leadMagnetId: sourceType === 'leadmagnet' ? selectedSource : null,
           productType: selectedProduct,

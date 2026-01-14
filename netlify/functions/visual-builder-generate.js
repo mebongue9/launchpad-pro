@@ -47,6 +47,7 @@ export async function handler(event) {
     const body = JSON.parse(event.body || '{}')
     const {
       userId,
+      profileId,
       funnelId,
       leadMagnetId,
       productType,
@@ -145,14 +146,16 @@ export async function handler(event) {
     console.log(`⏱️ ${LOG_TAG} Content loaded at +${Date.now() - startTime}ms`)
 
     // 3. Load user profile for interior pages
-    console.log(`👤 ${LOG_TAG} Loading profile for userId: ${userId}...`)
+    // Use profileId (selected branding profile) if provided, otherwise fall back to userId
+    const profileQueryId = profileId || userId
+    console.log(`👤 ${LOG_TAG} Loading profile for profileId: ${profileId}, userId: ${userId}, using: ${profileQueryId}...`)
     let profile = null
-    if (userId) {
+    if (profileQueryId) {
       const { data: profileData, error: profileError } = await withTimeout(
         supabase
           .from('profiles')
           .select('name, social_handle, photo_url, logo_url, tagline, niche')
-          .eq('id', userId)
+          .eq('id', profileQueryId)
           .single(),
         2000,
         'Profile query'
@@ -169,7 +172,7 @@ export async function handler(event) {
         niche: profile?.niche || '(not set)'
       }))
     } else {
-      console.warn(`⚠️ ${LOG_TAG} No userId provided - profile data will use defaults`)
+      console.warn(`⚠️ ${LOG_TAG} No profileId or userId provided - profile data will use defaults`)
     }
     console.log(`⏱️ ${LOG_TAG} Profile loaded at +${Date.now() - startTime}ms`)
 

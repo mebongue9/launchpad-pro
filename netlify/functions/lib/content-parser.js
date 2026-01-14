@@ -37,15 +37,26 @@ export function parseMarkdown(text) {
 
 /**
  * Detect content structure patterns
+ * Patterns handle optional markdown bold markers (**) around text
  */
 const PATTERNS = {
-  PHASE_HEADER: /^(PHASE\s+\d+):\s*(.+)$/im,
-  STEP_HEADER: /^(STEP\s+\d+\.\d+):\s*(.+)$/im,
+  // Match **PHASE 1:** or PHASE 1: with optional bold markers
+  PHASE_HEADER: /^\*{0,2}(PHASE\s+\d+):\*{0,2}\s*(.+)$/im,
+  // Match **STEP 1.1:** or STEP 1.1: with optional bold markers
+  STEP_HEADER: /^\*{0,2}(STEP\s+\d+\.\d+):\*{0,2}\s*(.+)$/im,
   WHAT_YOU_NEED: /^What you need:\s*(.+)$/im,
   EXPECTED_OUTCOME: /^Expected outcome:\s*(.+)$/im,
   BULLET_ARROW: /^→\s*(.+)$/m,
   BULLET_DOT: /^[•·]\s*(.+)$/m,
   CHAPTER_HEADER: /^(Chapter\s+\d+):\s*(.+)$/im,
+}
+
+/**
+ * Strip markdown bold markers from text
+ */
+function stripMarkdown(text) {
+  if (!text) return ''
+  return text.replace(/^\*{1,2}|\*{1,2}$/g, '').trim()
 }
 
 /**
@@ -56,12 +67,12 @@ function detectBlockType(line) {
 
   if (PATTERNS.PHASE_HEADER.test(trimmed)) {
     const match = trimmed.match(PATTERNS.PHASE_HEADER)
-    return { type: 'phase', label: match[1], text: match[2] }
+    return { type: 'phase', label: match[1], text: stripMarkdown(match[2]) }
   }
 
   if (PATTERNS.STEP_HEADER.test(trimmed)) {
     const match = trimmed.match(PATTERNS.STEP_HEADER)
-    return { type: 'step', label: match[1], text: match[2] }
+    return { type: 'step', label: match[1], text: stripMarkdown(match[2]) }
   }
 
   if (PATTERNS.WHAT_YOU_NEED.test(trimmed)) {
