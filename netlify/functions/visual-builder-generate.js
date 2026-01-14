@@ -146,33 +146,57 @@ export async function handler(event) {
     console.log(`⏱️ ${LOG_TAG} Content loaded at +${Date.now() - startTime}ms`)
 
     // 3. Load user profile for interior pages
-    // Use profileId (selected branding profile) if provided, otherwise fall back to userId
-    const profileQueryId = profileId || userId
-    console.log(`👤 ${LOG_TAG} Loading profile for profileId: ${profileId}, userId: ${userId}, using: ${profileQueryId}...`)
+    // Schema: profiles.id = profile UUID, profiles.user_id = auth user UUID
+    // If profileId provided: query by profiles.id
+    // If only userId provided: query by profiles.user_id
+    console.log(`👤 ${LOG_TAG} Loading profile for profileId: ${profileId}, userId: ${userId}`)
     let profile = null
-    if (profileQueryId) {
+    if (profileId) {
+      // Query by profile's primary key
       const { data: profileData, error: profileError } = await withTimeout(
         supabase
           .from('profiles')
           .select('name, social_handle, photo_url, logo_url, tagline, niche')
-          .eq('id', profileQueryId)
+          .eq('id', profileId)
           .single(),
         2000,
-        'Profile query'
+        'Profile query by id'
       )
       if (profileError) {
-        console.error(`⚠️ ${LOG_TAG} Profile query error:`, profileError)
+        console.error(`⚠️ ${LOG_TAG} Profile query by id error:`, profileError)
       }
       profile = profileData
-      console.log(`👤 ${LOG_TAG} Profile loaded:`, JSON.stringify({
-        name: profile?.name || '(not set)',
-        social_handle: profile?.social_handle || '(not set)',
-        photo_url: profile?.photo_url ? '(set)' : '(not set)',
-        tagline: profile?.tagline || '(not set)',
-        niche: profile?.niche || '(not set)'
-      }))
+    } else if (userId) {
+      // Query by auth user's ID (stored in user_id column)
+      const { data: profileData, error: profileError } = await withTimeout(
+        supabase
+          .from('profiles')
+          .select('name, social_handle, photo_url, logo_url, tagline, niche')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single(),
+        2000,
+        'Profile query by user_id'
+      )
+      if (profileError) {
+        console.error(`⚠️ ${LOG_TAG} Profile query by user_id error:`, profileError)
+      }
+      profile = profileData
     } else {
       console.warn(`⚠️ ${LOG_TAG} No profileId or userId provided - profile data will use defaults`)
+    }
+
+    if (profile) {
+      console.log(`👤 ${LOG_TAG} Profile loaded:`, JSON.stringify({
+        name: profile.name || '(not set)',
+        social_handle: profile.social_handle || '(not set)',
+        photo_url: profile.photo_url ? '(set)' : '(not set)',
+        tagline: profile.tagline || '(not set)',
+        niche: profile.niche || '(not set)'
+      }))
+    } else {
+      console.warn(`⚠️ ${LOG_TAG} No profile found`)
     }
     console.log(`⏱️ ${LOG_TAG} Profile loaded at +${Date.now() - startTime}ms`)
 
