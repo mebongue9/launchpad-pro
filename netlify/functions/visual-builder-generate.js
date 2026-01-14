@@ -101,49 +101,85 @@ export async function handler(event) {
     console.log(`📄 ${LOG_TAG} Loading content...`)
     let content = null
     if (funnelId) {
+      // Funnel products are stored in JSONB columns: front_end, bump, upsell_1, upsell_2
       const { data: funnel } = await withTimeout(
         supabase
           .from('funnels')
-          .select('generated_content')
+          .select('front_end, bump, upsell_1, upsell_2')
           .eq('id', funnelId)
           .single(),
         3000,
         'Funnel query'
       )
-      content = funnel?.generated_content
+      // Get content from the specific product JSONB column
+      if (funnel && productType) {
+        const productData = funnel[productType]
+        if (productData) {
+          content = productData // Already an object with chapters array
+          console.log(`📄 ${LOG_TAG} Found ${productType} content with ${productData.chapters?.length || 0} chapters`)
+        }
+      }
     } else if (leadMagnetId) {
+      // Lead magnet content is stored in 'content' column as JSON string
       const { data: leadMagnet } = await withTimeout(
         supabase
           .from('lead_magnets')
-          .select('generated_content')
+          .select('content')
           .eq('id', leadMagnetId)
           .single(),
         3000,
         'Lead magnet query'
       )
-      content = leadMagnet?.generated_content
+      if (leadMagnet?.content) {
+        // Parse JSON string to object
+        try {
+          content = typeof leadMagnet.content === 'string'
+            ? JSON.parse(leadMagnet.content)
+            : leadMagnet.content
+          console.log(`📄 ${LOG_TAG} Found lead magnet content with ${content.chapters?.length || 0} chapters`)
+        } catch (parseError) {
+          console.error(`❌ ${LOG_TAG} Failed to parse lead magnet content:`, parseError)
+        }
+      }
     }
     console.log(`⏱️ ${LOG_TAG} Content loaded at +${Date.now() - startTime}ms`)
 
     // 3. Load user profile for interior pages
-    console.log(`👤 ${LOG_TAG} Loading profile...`)
+    console.log(`👤 ${LOG_TAG} Loading profile for userId: ${userId}...`)
     let profile = null
     if (userId) {
-      const { data: profileData } = await withTimeout(
+      const { data: profileData, error: profileError } = await withTimeout(
         supabase
           .from('profiles')
-          .select('name, social_handle, photo_url, tagline, bio')
+          .select('name, social_handle, photo_url, logo_url, tagline, niche')
           .eq('id', userId)
           .single(),
         2000,
         'Profile query'
       )
+      if (profileError) {
+        console.error(`⚠️ ${LOG_TAG} Profile query error:`, profileError)
+      }
       profile = profileData
+      console.log(`👤 ${LOG_TAG} Profile loaded:`, JSON.stringify({
+        name: profile?.name || '(not set)',
+        social_handle: profile?.social_handle || '(not set)',
+        photo_url: profile?.photo_url ? '(set)' : '(not set)',
+        tagline: profile?.tagline || '(not set)',
+        niche: profile?.niche || '(not set)'
+      }))
+    } else {
+      console.warn(`⚠️ ${LOG_TAG} No userId provided - profile data will use defaults`)
     }
     console.log(`⏱️ ${LOG_TAG} Profile loaded at +${Date.now() - startTime}ms`)
 
     // 4. Render HTML
     console.log(`🎨 ${LOG_TAG} Rendering HTML...`)
+    console.log(`📋 ${LOG_TAG} Content structure: ${content?.chapters?.length || 0} chapters`)
+    if (content?.chapters?.[0]) {
+      console.log(`📋 ${LOG_TAG} First chapter title: ${content.chapters[0].title || '(no title)'}`)
+      console.log(`📋 ${LOG_TAG} First chapter content length: ${content.chapters[0].content?.length || 0} chars`)
+    }
     const coverData = {
       title,
       subtitle,

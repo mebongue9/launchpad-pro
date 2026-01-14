@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
+    "marked": "^12.0.0",
     "@sparticuz/chromium": "^131.0.0",
     "puppeteer-core": "^23.0.0",
     "@supabase/supabase-js": "^2.89.0",
