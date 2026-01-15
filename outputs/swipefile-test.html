@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+
+@page {
+  size: 210mm 297mm;
+  margin: 0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #e0e0e0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+:root {
+  --primary-color: #8B2500;
+  --primary-light: #CD4F00;
+  --primary-dark: #5a1800;
+  --light-bg: rgb(251, 241, 235);
+  --text-color: #1a1a1a;
+  --text-muted: #666;
+  --background: #ffffff;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  background: var(--background);
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+@media print {
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+}
+
+.page-content {
+  padding: 20mm 20mm 30mm 20mm;
+  min-height: calc(297mm - 50mm);
+}
+
+.header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--primary-color);
+}
+
+.chapter-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.chapter-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.3;
+  margin-bottom: 20px;
+}
+
+.body-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.body-text p {
+  margin-bottom: 12px;
+}
+
+.body-text strong {
+  color: #000;
+}
+
+.bullet-list {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.bullet-list li {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.bullet-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Footer - matching REFERENCE-16px-approved.html */
+.footer-line {
+  position: absolute;
+  bottom: 22mm;
+  left: 20mm;
+  right: 20mm;
+  height: 1px;
+  background: var(--primary-color);
+  opacity: 0.3;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 20mm;
+  right: 20mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.footer-handle {
+  font-size: 10px;
+  color: #666;
+}
+
+.footer-page-number {
+  font-size: 10px;
+  color: #666;
+  font-weight: 600;
+}
+
+/* Page break rules */
+.phase-header,
+.blueprint-step,
+.meta-box,
+.bullet-list,
+.cheat-card,
+.day-block,
+.task-item,
+.swipe-card {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+
+.swipe-intro {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 24px;
+}
+
+.swipe-card {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-left: 3px solid var(--primary-color);
+  padding: 18px 20px;
+  margin-bottom: 24px;
+}
+
+.template-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.swipe-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.template-section {
+  margin-bottom: 16px;
+}
+
+.template-section:last-child {
+  margin-bottom: 0;
+}
+
+.template-section-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 6px;
+}
+
+.template-section-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.template-section-content p {
+  margin-bottom: 8px;
+}
+
+.fill-blank {
+  display: inline-block;
+  min-width: 100px;
+  border-bottom: 1px solid var(--primary-color);
+  margin: 0 2px;
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
+.example-card {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 14px 16px;
+  margin-top: 16px;
+}
+
+.example-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.example-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #444;
+}
+
+.example-content p {
+  margin-bottom: 8px;
+}
+
+.swipe-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.swipe-content p {
+  margin-bottom: 12px;
+}
+
+
+.about-section {
+  text-align: center;
+  padding-top: 80px;
+}
+
+.about-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-color);
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.about-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.about-tagline {
+  font-size: 13px;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.about-handle {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.about-divider {
+  width: 60px;
+  height: 4px;
+  background: var(--primary-color);
+  margin: 20px auto;
+}
+
+.about-bio {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #444;
+  text-align: left;
+  max-width: 5.5in;
+  margin: 0 auto;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 1</div>
+      <h1 class="chapter-title">Chapter 1: The Problem-Solution Pitch Reel</h1>
+      <p class="swipe-intro">This reel attracts buyers not viewers by directly addressing the pain point your digital product solves. When people see their exact problem called out, they stop scrolling and pay attention. Here&#039;s the template that converts:</p>
+      <div class="swipe-card">
+        <div class="template-label">TEMPLATE #1</div>
+        <div class="swipe-card-title">PROBLEM-SOLUTION PITCH</div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s why you&#039;re still [struggling with specific problem] even though you&#039;ve tried everything...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Body:</div>
+          <div class="template-section-content">
+            <p>&quot;The real issue isn&#039;t that you&#039;re [common assumption]. It&#039;s that you don&#039;t have [specific solution your product provides]. Most people think they need [wrong solution], but what actually works is [your method]. I figured this out after [brief credibility statement].&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;If you want [desired outcome], I created [your product name] that shows you exactly how to [specific benefit]. It&#039;s [price] and the link&#039;s in my bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Comment [keyword] if you want the link sent directly to your DMs.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s why you&#039;re still [PROBLEM] even though you&#039;ve tried everything...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Body:</div>
+          <div class="template-section-content">
+            <p>&quot;The real issue isn&#039;t that you&#039;re [COMMON MISCONCEPTION]. It&#039;s that you don&#039;t have [YOUR SOLUTION]. Most people think they need [WRONG APPROACH], but what actually works is [YOUR METHOD]. I figured this out after [CREDIBILITY STATEMENT].&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;If you want [OUTCOME], I created [PRODUCT NAME] that shows you exactly how to [BENEFIT]. It&#039;s [PRICE] and the link&#039;s in my bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Comment [KEYWORD] if you want the link sent directly to your DMs.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s why you&#039;re still broke on Instagram even though you&#039;ve tried everything...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Body:</div>
+          <div class="template-section-content">
+            <p>&quot;The real issue isn&#039;t that you&#039;re not posting enough. It&#039;s that you don&#039;t have a system that turns views into sales. Most people think they need to go viral, but what actually works is strategic content that attracts buyers. I figured this out after making $2,500 per reel.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;If you want to make $50 daily, I created the Daily Sales Blueprint that shows you exactly how to convert small audiences. It&#039;s $27 and the link&#039;s in my bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Comment BLUEPRINT if you want the link sent directly to your DMs.&quot;</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">2</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 2</div>
+      <h1 class="chapter-title">Chapter 2: The Authority List Reel</h1>
+      <p class="swipe-intro">This reel builds instant credibility while subtly pitching your solution. Lists perform incredibly well because they promise quick, actionable value. The key is making the list so good that people want more.</p>
+      <div class="swipe-card">
+        <div class="template-label">TEMPLATE #2</div>
+        <div class="swipe-card-title">AUTHORITY LIST</div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;[Number] things I wish I knew before [achieving specific result]...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Body:</div>
+          <div class="template-section-content">
+            <p>&quot;1. [Counterintuitive tip]</p>
+            <p>2. [Specific strategy]</p>
+            <p>3. [Common mistake to avoid]</p>
+            <p>4. [Advanced technique]</p>
+            <p>5. [Mindset shift]&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;These [number] tips helped me [specific result]. If you want the full system I use to [bigger outcome], it&#039;s in [product name] for [price]. Link in bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Save this post and comment [keyword] for the direct link.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;[NUMBER] things I wish I knew before [ACHIEVING RESULT]...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Body:</div>
+          <div class="template-section-content">
+            <p>&quot;1. [COUNTERINTUITIVE TIP]</p>
+            <p>2. [SPECIFIC STRATEGY] </p>
+            <p>3. [COMMON MISTAKE]</p>
+            <p>4. [ADVANCED TECHNIQUE]</p>
+            <p>5. [MINDSET SHIFT]&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;These [NUMBER] tips helped me [YOUR RESULT]. If you want the full system I use to [BIGGER OUTCOME], it&#039;s in [PRODUCT NAME] for [PRICE]. Link in bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Save this post and comment [KEYWORD] for the direct link.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;5 things I wish I knew before making $10K monthly selling digital products...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Body:</div>
+          <div class="template-section-content">
+            <p>&quot;1. You don&#039;t need thousands of followers</p>
+            <p>2. One product is better than ten products</p>
+            <p>3. Simple checkout pages convert better</p>
+            <p>4. Reels equal free traffic forever</p>
+            <p>5. Consistency beats perfection every time&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;These 5 tips helped me go from $0 to $10K monthly. If you want the full system I use to sell digital products daily, it&#039;s in the Passive Income Starter Kit for $37. Link in bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Save this post and comment STARTER for the direct link.&quot;</p>
+            <p><strong>PRO TIP:</strong> Make your tips specific enough that people get real value, but leave them wanting the complete system. This creates natural curiosity for your paid product.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">3</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 3</div>
+      <h1 class="chapter-title">Chapter 3: The Results Story Reel</h1>
+      <p class="swipe-intro">Stories sell better than strategies. This template uses social proof and storytelling to create desire for your solution. When people see real results, they believe it&#039;s possible for them too.</p>
+      <div class="swipe-card">
+        <div class="template-label">TEMPLATE #3</div>
+        <div class="swipe-card-title">RESULTS STORY</div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;[Timeframe] ago I was [starting situation], today I [current result]...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Story:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s exactly what changed: I stopped [old method] and started [new approach]. The first [timeframe] I made [early result]. By month [number] I was at [bigger result]. Now I consistently [current success].&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;The system I use is called [product name]. It&#039;s [price] and shows you step-by-step how to [outcome]. Link in my bio if you want it.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Comment [keyword] if you&#039;re ready to [desired outcome] too.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;[TIMEFRAME] ago I was [STARTING SITUATION], today I [CURRENT RESULT]...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Story:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s exactly what changed: I stopped [OLD METHOD] and started [NEW APPROACH]. The first [TIMEFRAME] I made [EARLY RESULT]. By month [NUMBER] I was at [BIGGER RESULT]. Now I consistently [CURRENT SUCCESS].&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;The system I use is called [PRODUCT NAME]. It&#039;s [PRICE] and shows you step-by-step how to [OUTCOME]. Link in my bio if you want it.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Comment [KEYWORD] if you&#039;re ready to [DESIRED OUTCOME] too.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;6 months ago I was making $0 online, today I made $2,500 from one reel...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Story:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s exactly what changed: I stopped trying to go viral and started making reels that attract buyers. The first week I made $127. By month 3 I was at $3,000 monthly. Now I consistently make $50-100 daily from reels with just a few hundred views.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;The system I use is called Buyer Magnet Reels. It&#039;s $17 and shows you step-by-step how to turn views into sales. Link in my bio if you want it.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">CTA:</div>
+          <div class="template-section-content">
+            <p>&quot;Comment MAGNET if you&#039;re ready to turn your reels into daily sales too.&quot;</p>
+            <p><strong>CAPTION STRATEGY:</strong> Use your caption to expand on the story with specific numbers, timeframes, and details. The more specific you get, the more believable and compelling your story becomes. Always end with a clear call-to-action that matches your reel&#039;s CTA.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">4</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 4</div>
+      <h1 class="chapter-title">Chapter 4: The Subtle Pitch Behind Value Reel</h1>
+      <p class="swipe-intro">This is my sneaky favorite. You give massive value upfront, then slip in your product mention so naturally that people don&#039;t even realize you&#039;re selling. It&#039;s like how I subtly pitch in my teaching reels - people think they&#039;re just getting free tips, but I&#039;m actually warming them up to buy.</p>
+      <div class="swipe-card">
+        <div class="template-label">TEMPLATE #4</div>
+        <div class="swipe-card-title">THE SUBTLE PITCH BEHIND VALUE REEL</div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s the [number] [topic] mistakes I see everywhere (and how to fix them)&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Value Points:</div>
+          <div class="template-section-content">
+            <p>• Mistake #1: [Common mistake in your industry]</p>
+            <p>  → Fix: [Quick solution]</p>
+            <p>• Mistake #2: [Another mistake]</p>
+            <p>  → Fix: [Another solution]  </p>
+            <p>• Mistake #3: [Third mistake]</p>
+            <p>  → Fix: [Third solution]</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Subtle Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;By the way, if you want my complete [topic] system that fixes all of these mistakes (plus [number] more), I created [your product name] for exactly this. Link&#039;s in my bio if you want it.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Caption Template:</div>
+          <div class="template-section-content">
+            <p>&quot;I see these [topic] mistakes EVERYWHERE 😅</p>
+            <p>Mistake #1: [Expand on first mistake and why it&#039;s costing them]</p>
+            <p>Mistake #2: [Expand on second mistake]</p>
+            <p>Mistake #3: [Expand on third mistake]</p>
+            <p>Here&#039;s the thing - most people make these mistakes because [reason why]. But when you fix these three things, [positive outcome they&#039;ll get].</p>
+            <p>I actually put together my entire [topic] system that covers these mistakes (and [number] others) in [your product name]. It&#039;s [brief description of what it includes]. </p>
+            <p>If you&#039;re tired of [problem your product solves], grab it through the link in my bio. It&#039;s only $[price] and honestly, it&#039;ll save you [time/money/frustration they&#039;ll save].</p>
+            <p>What other [topic] mistakes do you see people making? 👇&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Why This Works:</div>
+          <div class="template-section-content">
+            <p>• You lead with pure value - they&#039;re learning before you ever mention your product</p>
+            <p>• The pitch feels like a natural extension of the help you just gave</p>
+            <p>• You&#039;re positioning your product as the complete solution to problems you just identified</p>
+            <p>• The casual &quot;by the way&quot; makes it feel conversational, not salesy</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Timing Note:</div>
+          <div class="template-section-content">
+            <p>Post this at 7am PST (10am EST) - it&#039;s when people are most engaged and ready to learn.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">5</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 5</div>
+      <h1 class="chapter-title">Chapter 5: The Behind-The-Scenes Money Reveal Reel</h1>
+      <p class="swipe-intro">People are obsessed with behind-the-scenes content, especially when it involves money. This template combines curiosity about your process with social proof of your results. I use this format regularly and it always generates comments and sales.</p>
+      <div class="swipe-card">
+        <div class="template-label">TEMPLATE #5</div>
+        <div class="swipe-card-title">THE BEHIND-THE-SCENES MONEY REVEAL REEL</div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;Here&#039;s how much I made from [specific action/product/strategy] this [time period]&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Reveal Structure:</div>
+          <div class="template-section-content">
+            <p>• Show your screen/results: &quot;This is my [dashboard/bank account/sales page] from [time period]&quot;</p>
+            <p>• State the numbers: &quot;Total: $[amount] from [specific thing]&quot;</p>
+            <p>• Break it down: &quot;That breaks down to $[daily amount] per day&quot;</p>
+            <p>• Connect to viewer: &quot;And honestly, if you have [small requirement like &#039;100 followers&#039;], you should be making at least $[smaller amount] daily&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Transition to Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;The reason this works so well is because of [your method/system]. I literally just [simple action] and [result]. If you want me to show you exactly how I do this, I put everything in [your product name]. Link&#039;s in my bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Caption Template:</div>
+          <div class="template-section-content">
+            <p>&quot;I wasn&#039;t going to share this because it feels weird posting about money... but you guys keep asking 🤷‍♀️</p>
+            <p>This is what I made last [time period] from just [your method]: $[amount]</p>
+            <p>That&#039;s $[daily breakdown] per day.</p>
+            <p>And honestly? If you have [basic requirement], you should be making at least $[smaller goal] every single day. That&#039;s $[monthly amount] per month - not a massive amount, but enough to [benefit they&#039;d get].</p>
+            <p>The main reason you&#039;re not hitting this yet is probably because you&#039;re overthinking it.</p>
+            <p>Here&#039;s literally all I do:</p>
+            <p>• [Step 1 of your process]</p>
+            <p>• [Step 2 of your process]  </p>
+            <p>• [Step 3 of your process]</p>
+            <p>That&#039;s it. Rinse and repeat until I hit my income goal.</p>
+            <p>I recorded everything step-by-step in [your product name] because this system works for my students too. [Student result/testimonial if you have one].</p>
+            <p>If you want the complete system, it&#039;s [price] through the link in my bio.</p>
+            <p>What questions do you have about this? 👇&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">B-Roll Ideas:</div>
+          <div class="template-section-content">
+            <p>• Screen recording of your results dashboard</p>
+            <p>• You pointing at numbers on your phone</p>
+            <p>• Simple text overlay with the money breakdown</p>
+            <p>• Your workspace while you explain the process</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Why This Template Converts:</div>
+          <div class="template-section-content">
+            <p>• Numbers create instant credibility and curiosity</p>
+            <p>• You&#039;re showing proof while teaching your method</p>
+            <p>• The casual approach makes it feel authentic, not braggy</p>
+            <p>• You give them a clear path to replicate your results</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">6</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 6</div>
+      <h1 class="chapter-title">Chapter 6: The Direct Challenge Reel</h1>
+      <p class="swipe-intro">Sometimes the most converting reels are the most direct ones. This template challenges your audience to take action while positioning your product as the solution. It works because people respond to clear direction and urgency.</p>
+      <div class="swipe-card">
+        <div class="template-label">TEMPLATE #6</div>
+        <div class="swipe-card-title">THE DIRECT CHALLENGE REEL</div>
+        <div class="template-section">
+          <div class="template-section-label">Hook:</div>
+          <div class="template-section-content">
+            <p>&quot;If you&#039;re not making at least $[specific amount] per [time period] with [your solution], you&#039;re doing it wrong&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Challenge Structure:</div>
+          <div class="template-section-content">
+            <p>• Call out the problem: &quot;Here&#039;s the thing - making $[amount] with [method] is not hard&quot;</p>
+            <p>• Set the standard: &quot;If you have [basic requirement], you should be hitting this&quot;</p>
+            <p>• Identify what&#039;s wrong: &quot;The reason you&#039;re not is because [common problem]&quot;</p>
+            <p>• Issue the challenge: &quot;So here&#039;s what you&#039;re going to do this week...&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Action Steps:</div>
+          <div class="template-section-content">
+            <p>1. [Specific action they can take today]</p>
+            <p>2. [Second action]</p>
+            <p>3. [Third action that leads to your product]</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Direct Pitch:</div>
+          <div class="template-section-content">
+            <p>&quot;And if you want me to walk you through this entire system step-by-step, I put everything in [your product name]. It&#039;s [price], takes [time to complete], and honestly, if you follow it, you&#039;ll make that back in [timeframe]. Link&#039;s in my bio.&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Caption Template:</div>
+          <div class="template-section-content">
+            <p>&quot;Okay, real talk time 💯</p>
+            <p>If you&#039;re not making at least $[amount] per [time period] right now, something needs to change.</p>
+            <p>This isn&#039;t about being mean - it&#039;s about being real. Making $[amount] with [your method] is absolutely doable. My students with [basic requirement] do it. I do it. You can too.</p>
+            <p>The reason you&#039;re stuck at $0 (or whatever you&#039;re making now) is probably because:</p>
+            <p>• [Common mistake #1]</p>
+            <p>• [Common mistake #2]</p>
+            <p>• [Common mistake #3]</p>
+            <p>So here&#039;s your assignment for this week:</p>
+            <p>Day 1-2: [Specific action]</p>
+            <p>Day 3-4: [Second action]  </p>
+            <p>Day 5-7: [Third action]</p>
+            <p>Do this and you&#039;ll start seeing results within [timeframe].</p>
+            <p>Now, if you want the complete system I use to consistently make $[your results], I put everything in [your product name]. It shows you exactly what to do, when to do it, and how to do it.</p>
+            <p>It&#039;s [price] and takes about [time to complete]. Honestly, if you follow it, you&#039;ll make that back in [realistic timeframe].</p>
+            <p>Stop overthinking this. You want [result they want]? Go get [your product name] through the link in my bio and actually follow it.</p>
+            <p>Who&#039;s ready to finally hit $[goal amount]? 👇&quot;</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Why This Works:</div>
+          <div class="template-section-content">
+            <p>• Creates urgency and calls out their current situation</p>
+            <p>• Gives them immediate actions they can take</p>
+            <p>• Positions your product as the complete solution</p>
+            <p>• The direct approach attracts serious buyers, not just viewers</p>
+          </div>
+        </div>
+        <div class="template-section">
+          <div class="template-section-label">Posting Strategy:</div>
+          <div class="template-section-content">
+            <p>• Post at 10am or 1pm in your timezone for maximum engagement</p>
+            <p>• Pin this type of reel if it performs well</p>
+            <p>• Respond to comments quickly to keep engagement high</p>
+            <p>There you have it - five reel templates that turn small audiences into daily sales. Each one is designed to work with just 100 views because they attract buyers, not just viewers.</p>
+            <p>Remember: consistency beats perfection. Pick one template, use it this week, then try another. The key is getting comfortable with pitching clearly and directly.</p>
+            <p>Once you start seeing daily sales from these reels, you&#039;ll want to scale up your income. That&#039;s where having a complete system becomes crucial. If you&#039;re ready to build this into a real $3,000+ per month income stream, even if you&#039;re starting from zero, you&#039;ll need the right framework to make it predictable and repeatable. The foundations you&#039;re building with these reels are just the beginning of what&#039;s possible when you have the complete system in place.</p>
+            <p>---</p>
+            <p><strong>Want to take this further?</strong></p>
+            <p>If you found this valuable, you&#039;ll love &quot;How to Make $3k/Month (When You’re Just Getting Started &amp; Have A Tiny Audience)&quot;. this product will help you get your first $3,000 a month, even if you&#039;re a nobody who has no audience and have never been able to make a dollar online before, simply because you didn&#039;t have the right systems. So first, what we&#039;re going to do is we&#039;re going to show you the exact repeatable process to add $3,000 a month to your income using the framework that we built.</p>
+            <p>We&#039;re going to basically show you also why people struggle to hit this and how we can fix it for you. Then we&#039;re going to teach you the essentials, what you actually need to get to $3,000 a month. And give you tips on how to use social media to get people from being just an eyeball into a client that is paying you money.</p>
+            <p>And then we&#039;re going to teach you how to pretty much automate the process and create repeatable, predictable income. </p>
+            <p><a href="https://martinebongue.com/3ktiny-audience" style="color: var(--primary-color); text-decoration: none;"><strong>Learn more about How to Make $3k/Month (When You’re Just Getting Started &amp; Have A Tiny Audience)</strong></a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">7</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="about-section">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="about-photo" alt="Martin Ebongue">
+        <div class="about-name">Martin Ebongue</div>
+        <div class="about-tagline">Helping creators monetize small audiences</div>
+        <div class="about-handle">@realmartinebongue</div>
+        <div class="about-divider"></div>
+        <p class="about-bio">Martin Ebongue is an expert in digital product creation and social media monetization, helping clients achieve exceptional results. With years of experience building successful digital product businesses, he has helped thousands of creators turn their knowledge into profitable income streams. His practical, no-fluff approach focuses on strategies that work for people with small audiences who want to generate consistent revenue without needing millions of followers.</p>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">About</span>
+    </div>
+  </div>
+</body>
+</html>

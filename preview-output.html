@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML Preview - Check Variables and Formatting</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    @page { size: A4; margin: 0; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .cover-page {
+      width: 210mm;
+      height: 297mm;
+      page-break-after: always;
+    }
+    
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    html, body {
+      width: 210mm;
+      height: 297mm;
+      font-family: 'Inter', -apple-system, sans-serif;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    :root {
+      --title-scale: 1;
+      --subtitle-scale: 1;
+      --author-scale: 1;
+      --handle-scale: 1;
+    }
+    
+  
+    
+
+/* ============================================
+   LAUNCHPAD PRO PDF INTERIOR STYLES
+   Adapted for A4 (210mm x 297mm)
+   ============================================ */
+
+/* CSS Variables */
+:root {
+  --primary-color: #FF6B35;
+  --primary-light: #FF8C42;
+  --header-gradient: linear-gradient(90deg, #FF8C42 0%, #FF6B35 50%, #FFB347 100%);
+  --light-bg: rgb(255, 243, 239);
+  --text-color: #000;
+  --text-muted: #666;
+  --background: #ffffff;
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--background);
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Page Dimensions - A4 */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+.page {
+  width: 210mm;
+  height: 297mm;
+  position: relative;
+  overflow: hidden;
+  page-break-after: always;
+  background: var(--background);
+  /* Safe zones for A4 */
+  padding: 15mm 20mm 25mm 20mm;
+}
+
+.page:last-child {
+  page-break-after: avoid;
+}
+
+/* ============================================
+   HEADER BAR - Top accent strip
+   ============================================ */
+.header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: var(--header-gradient);
+}
+
+/* ============================================
+   PAGE CONTENT AREA
+   ============================================ */
+.page-content {
+  /* Content area: 210mm - 40mm = 170mm wide
+     Height: 297mm - 15mm - 25mm - footer = ~240mm */
+  max-height: 240mm;
+  overflow: hidden;
+}
+
+/* ============================================
+   CHAPTER LABEL
+   ============================================ */
+.chapter-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+/* ============================================
+   CHAPTER TITLE
+   ============================================ */
+.chapter-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+/* ============================================
+   DIVIDER
+   ============================================ */
+.divider {
+  width: 60px;
+  height: 4px;
+  background: var(--header-gradient);
+  margin-bottom: 20px;
+}
+
+/* ============================================
+   PHASE HEADER
+   ============================================ */
+.phase-header {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-top: 16px;
+  margin-bottom: 10px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--light-bg);
+}
+
+/* ============================================
+   STEP ITEM
+   ============================================ */
+.step-item {
+  margin-bottom: 14px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.step-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 6px;
+}
+
+/* ============================================
+   BULLET POINTS (arrows)
+   ============================================ */
+.step-bullet {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #333;
+  padding-left: 16px;
+  position: relative;
+  margin-bottom: 4px;
+}
+
+.bullet-arrow {
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* ============================================
+   STEP META (What you need / Expected outcome)
+   ============================================ */
+.step-meta {
+  font-size: 9px;
+  color: #666;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--light-bg);
+  border-radius: 4px;
+}
+
+.step-meta strong {
+  color: #333;
+}
+
+/* ============================================
+   BODY TEXT
+   ============================================ */
+.body-text {
+  font-size: 10px;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 12px;
+}
+
+/* ============================================
+   CALLOUT BOX
+   ============================================ */
+.callout {
+  background: var(--light-bg);
+  border-left: 3px solid var(--primary-color);
+  padding: 12px 14px;
+  margin: 14px 0;
+}
+
+.callout-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.callout-text {
+  font-size: 10px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* ============================================
+   FOOTER - Every page
+   ============================================ */
+.footer-line {
+  position: absolute;
+  bottom: 18mm;
+  left: 20mm;
+  right: 20mm;
+  height: 1px;
+  background: var(--primary-color);
+  opacity: 0.3;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 8mm;
+  left: 20mm;
+  right: 20mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-photo {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid var(--primary-color);
+}
+
+.footer-handle {
+  font-size: 9px;
+  color: #888;
+}
+
+.footer-page {
+  font-size: 9px;
+  color: #888;
+}
+
+/* ============================================
+   ABOUT THE AUTHOR PAGE
+   ============================================ */
+.about-section {
+  text-align: center;
+  padding-top: 30mm;
+}
+
+.about-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-color);
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.about-name {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.about-tagline {
+  font-size: 13px;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.about-handle {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.about-bio {
+  font-size: 11px;
+  line-height: 1.7;
+  color: #444;
+  text-align: left;
+  max-width: 140mm;
+  margin: 0 auto;
+}
+
+/* ============================================
+   PAGE BREAK RULES
+   ============================================ */
+.phase-header,
+.step-item,
+.step-meta,
+.callout {
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.phase-header,
+.step-title,
+.chapter-title {
+  page-break-after: avoid;
+  break-after: avoid;
+}
+
+p, .step-bullet {
+  orphans: 2;
+  widows: 2;
+}
+
+  
+  </style>
+</head>
+<body>
+  <div class="cover-page">
+    
+  
+    <div style="width: 100%; height: 100%; background: linear-gradient(135deg, #FF6B35 0%, #FF8C42 50%, #FFB347 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 40px; color: white; text-align: center;">
+      <h1 style="font-family: Montserrat, sans-serif; font-size: 36px; font-weight: 800; margin-bottom: 20px; text-transform: uppercase;">The 3-Post Daily System: Turn 100 Views Into $50</h1>
+      <div style="display: flex; align-items: center; gap: 20px; margin-top: 40px;">
+        <span style="font-size: 24px; font-weight: 700;">2026</span>
+        <p style="font-size: 14px; max-width: 300px;">Daily posting system that converts small audiences into buyers using 3 specific post types at optimal times</p>
+      </div>
+      <div style="position: absolute; bottom: 40px; text-align: center;">
+        <p style="font-size: 16px; font-weight: 600;">Martin Ebongue</p>
+        <p style="font-size: 12px; opacity: 0.8;">@realmartinebongue</p>
+      </div>
+    </div>
+  
+
+  </div>
+  
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 1</div>
+      <h1 class="chapter-title">The Reality Check - Why Your Current Posting Strategy Isn&#039;t Making Sales</h1>
+      <div class="divider"></div>
+      <div class="phase-header">PHASE 1: UNDERSTANDING THE PROBLEM</div>
+<div class="step-item">
+<div class="step-title">STEP 1.1: Face the truth about posting frequency</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> You think one or two posts is enough. It's not.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> When you're selling digital products, you need way more visibility than that.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> I post 3-4 times every single day and keep growing. The more you post, the more you grow.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> It's not an answer people like. They don't like that answer. They like some shiny little hack that's not reality.</div>
+<div class="step-meta"><strong>What you need:</strong> Willingness to post more than once daily<br><strong>Expected outcome:</strong> Understanding why your single daily posts aren't converting</div>
+</div>
+<div class="step-item">
+<div class="step-title">STEP 1.2: Recognize the value problem</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> You're not pushing yourself hard enough to create content that's actually valuable.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> People follow value. Your brain should feel a little broken when you're done creating content because it hurt your mental capacity that much.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Most content fails because creators underestimate what "valuable" actually means.</div>
+<div class="step-meta"><strong>What you need:</strong> Commitment to creating genuinely helpful content<br><strong>Expected outcome:</strong> Clarity on why your content isn't attracting buyers</div>
+</div>
+<div class="phase-header">PHASE 2: THE TRAFFIC-SALES CONNECTION</div>
+<div class="step-item">
+<div class="step-title">STEP 2.1: Understand the simple formula</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Traffic × Conversion = Sales</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Most people have a traffic problem, not a product problem</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> You need eyeballs before you can make sales</div>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/profile-photos/test-photo.jpg" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">2</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 2</div>
+      <h1 class="chapter-title">The 3-Post System Breakdown</h1>
+      <div class="divider"></div>
+      <div class="phase-header">PHASE 1: MORNING POST - THE AUTHORITY BUILDER</div>
+<div class="step-item">
+<div class="step-title">STEP 1.1: Create educational content</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Teach something valuable from your expertise</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Use carousel format for maximum engagement</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Include actionable tips they can implement today</div>
+<div class="step-meta"><strong>What you need:</strong> 30 minutes of focused writing time<br><strong>Expected outcome:</strong> A post that positions you as the expert</div>
+</div>
+<div class="step-item">
+<div class="step-title">STEP 1.2: Optimize for the algorithm</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post between 7-9 AM in your audience's timezone</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Engage with comments in the first hour</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Use 3-5 relevant hashtags</div>
+<div class="step-meta"><strong>What you need:</strong> Understanding of your audience's schedule<br><strong>Expected outcome:</strong> Maximum reach on your educational content</div>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/profile-photos/test-photo.jpg" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">3</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="about-section">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/profile-photos/test-photo.jpg" class="about-photo" alt="Martin Ebongue">
+        <div class="about-name">Martin Ebongue</div>
+        <div class="about-tagline">Helping entrepreneurs build profitable online businesses</div>
+        <div class="about-handle">@realmartinebongue</div>
+      </div>
+      <div class="divider" style="margin: 20px auto;"></div>
+      <p class="about-bio">Martin Ebongue is an expert in digital marketing and online business, helping clients achieve exceptional results.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/profile-photos/test-photo.jpg" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">About</span>
+    </div>
+  </div>
+
+</body>
+</html>

@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+
+@page {
+  size: 210mm 297mm;
+  margin: 0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #e0e0e0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+:root {
+  --primary-color: #8B2500;
+  --primary-light: #CD4F00;
+  --primary-dark: #5a1800;
+  --light-bg: rgb(251, 241, 235);
+  --text-color: #1a1a1a;
+  --text-muted: #666;
+  --background: #ffffff;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  background: var(--background);
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+@media print {
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+}
+
+.page-content {
+  padding: 20mm 20mm 30mm 20mm;
+  min-height: calc(297mm - 50mm);
+}
+
+.header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--primary-color);
+}
+
+.chapter-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.chapter-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.3;
+  margin-bottom: 20px;
+}
+
+.body-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.body-text p {
+  margin-bottom: 12px;
+}
+
+.body-text strong {
+  color: #000;
+}
+
+.bullet-list {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.bullet-list li {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.bullet-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Footer - matching REFERENCE-16px-approved.html */
+.footer-line {
+  position: absolute;
+  bottom: 22mm;
+  left: 20mm;
+  right: 20mm;
+  height: 1px;
+  background: var(--primary-color);
+  opacity: 0.3;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 20mm;
+  right: 20mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.footer-handle {
+  font-size: 10px;
+  color: #666;
+}
+
+.footer-page-number {
+  font-size: 10px;
+  color: #666;
+  font-weight: 600;
+}
+
+/* Page break rules */
+.phase-header,
+.blueprint-step,
+.meta-box,
+.bullet-list,
+.cheat-card,
+.day-block,
+.task-item,
+.swipe-card {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+
+.week-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.week-goal {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 20px;
+  font-style: italic;
+}
+
+.day-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.day-header:first-of-type {
+  margin-top: 0;
+}
+
+.day-block {
+  margin-bottom: 8px;
+}
+
+.day-goal {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 12px;
+  font-style: italic;
+}
+
+.task-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.task-checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primary-color);
+  border-radius: 3px;
+  margin-top: 3px;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+
+.task-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 6px;
+}
+
+.task-details {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.task-details p {
+  margin-bottom: 4px;
+}
+
+.tracking-section {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 14px 16px;
+  margin-top: 20px;
+}
+
+.tracking-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tracking-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tracking-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #444;
+}
+
+.tracking-line {
+  flex: 1;
+  height: 1px;
+  border-bottom: 1px solid #ccc;
+  max-width: 80px;
+}
+
+
+.about-section {
+  text-align: center;
+  padding-top: 80px;
+}
+
+.about-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-color);
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.about-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.about-tagline {
+  font-size: 13px;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.about-handle {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.about-divider {
+  width: 60px;
+  height: 4px;
+  background: var(--primary-color);
+  margin: 20px auto;
+}
+
+.about-bio {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #444;
+  text-align: left;
+  max-width: 5.5in;
+  margin: 0 auto;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK 1</div>
+      <h1 class="chapter-title">WEEK 1: Foundation &amp; Trust Building</h1>
+      <p class="week-goal">Goal for Week 1: Build trust and establish yourself as the go-to expert in your space while subtly introducing your expertise.</p>
+      <div class="day-block">
+        <div class="day-header">DAY 1</div>
+        <p class="day-goal">Make a strong first impression with your expertise</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Educational Reel</div>
+            <div class="task-details"><p>Share one major mistake your ideal client makes</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Value Carousel</div>
+            <div class="task-details"><p>Share 5 specific tips related to your expertise</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 2</div>
+        <p class="day-goal">Show your personality while teaching something valuable</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Behind-the-scenes Reel</div>
+            <div class="task-details"><p>Show your daily routine or workspace while teaching</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Tutorial Carousel</div>
+            <div class="task-details"><p>Break down a simple process your audience needs</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 3</div>
+        <p class="day-goal">Address common objections while building authority</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Educational Reel</div>
+            <div class="task-details"><p>Debunk a common myth in your industry</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">FAQ Carousel</div>
+            <div class="task-details"><p>Answer real questions from your audience</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="tracking-section">
+        <div class="tracking-title">WEEKLY TRACKING</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">Posts Created: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Engagement Rate: <span class="tracking-line"></span></div>
+          <div class="tracking-item">New Followers: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Revenue: $<span class="tracking-line"></span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">2</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK 2</div>
+      <h1 class="chapter-title">WEEK 2: Deep Value &amp; Solution Awareness</h1>
+      <p class="week-goal">Goal for Week 2: Provide deep value while subtly positioning yourself as someone who has the solutions they need.</p>
+      <div class="day-block">
+        <div class="day-header">DAY 10</div>
+        <p class="day-goal">Teach something advanced while showing your depth of knowledge</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Advanced Tutorial Reel</div>
+            <div class="task-details"><p>Share insider knowledge or advanced technique</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Mistakes Carousel</div>
+            <div class="task-details"><p>Share specific mistakes and how to avoid them</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 11</div>
+        <p class="day-goal">Show results are possible while subtly hinting at your methods</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Results Showcase Reel</div>
+            <div class="task-details"><p>Share client success story with specific details</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Method Hint Carousel</div>
+            <div class="task-details"><p>Outline your methodology without giving everything away</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 12</div>
+        <p class="day-goal">Address objections while building desire for change</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Objection-Handling Reel</div>
+            <div class="task-details"><p>Address their biggest objection to taking action</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Reality Check Carousel</div>
+            <div class="task-details"><p>Give them loving but direct reality check</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="tracking-section">
+        <div class="tracking-title">WEEKLY TRACKING</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">Posts Created: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Engagement Rate: <span class="tracking-line"></span></div>
+          <div class="tracking-item">New Followers: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Revenue: $<span class="tracking-line"></span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">3</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK 3</div>
+      <h1 class="chapter-title">WEEK 3: Strategic Selling &amp; Pipeline Filling</h1>
+      <p class="week-goal">Goal for Week 3: Turn all the value and trust you&#039;ve built into actual sales and filled pipelines.</p>
+      <div class="day-block">
+        <div class="day-header">DAY 15</div>
+        <p class="day-goal">Open the week with social proof and case study</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Case Study Reel</div>
+            <div class="task-details"><p>Detailed client transformation story</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Social Proof Carousel</div>
+            <div class="task-details"><p>Screenshots of testimonials and results</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 16</div>
+        <p class="day-goal">Present your offer as the logical next step</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Solution Introduction Reel</div>
+            <div class="task-details"><p>Smoothly introduce how you help people</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Offer Overview Carousel</div>
+            <div class="task-details"><p>Clear breakdown of your offer and benefits</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 17</div>
+        <p class="day-goal">Handle objections and create urgency</p>
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Objection-Handling Reel</div>
+            <div class="task-details"><p>Address their biggest objections directly</p></div>
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Urgency Carousel</div>
+            <div class="task-details"><p>Show cost of delay without being pushy</p></div>
+          </div>
+        </div>
+      </div>
+      <div class="tracking-section">
+        <div class="tracking-title">WEEKLY TRACKING</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">Posts Created: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Engagement Rate: <span class="tracking-line"></span></div>
+          <div class="tracking-item">New Followers: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Revenue: $<span class="tracking-line"></span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">4</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK 4</div>
+      <h1 class="chapter-title">Chapter 4: Days 15-17 - The Pitch Window (Converting Eyeballs Into Dollars)</h1>
+      
+      <div class="day-block">
+        <div class="day-header">DAY 15</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Morning Post: Share a &quot;This used to be me&quot; story a</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Story Series (3-5 slides): Walk through the specif</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Afternoon Post: Create a &quot;Signs you need [your sol</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 16</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Morning Post: &quot;Here&#039;s exactly how I solved [proble</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Story Highlights: Show behind-the-scenes of you us</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Afternoon Post: Share client results or your own t</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 17</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Morning Post: &quot;I&#039;m opening up [X] spots for [your </div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Story Series: Break down exactly what&#039;s included i</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Afternoon Post: Share testimonials or your own suc</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="tracking-section">
+        <div class="tracking-title">WEEKLY TRACKING</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">Posts Created: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Engagement Rate: <span class="tracking-line"></span></div>
+          <div class="tracking-item">New Followers: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Revenue: $<span class="tracking-line"></span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">5</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK 5</div>
+      <h1 class="chapter-title">Chapter 5: Days 18-21 - The Follow-Up &amp; Scale Formula</h1>
+      
+      <div class="day-block">
+        <div class="day-header">DAY 18</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Morning Post: &quot;The #1 reason people don&#039;t [achieve</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Stories: Create &quot;Myth vs Reality&quot; slides about com</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Afternoon Post: Price objection crusher - &quot;Here&#039;s </div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 19</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Morning Post: Client spotlight or detailed case st</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Stories: Reshare old testimonials with &quot;Throwback </div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Afternoon Post: Your own before/after or transform</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 20</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Morning Post: &quot;Only [X] spots left&quot; or &quot;Bonus expi</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Stories: Countdown timer for your offer deadline</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Afternoon Post: &quot;Here&#039;s what you miss if you wait </div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="tracking-section">
+        <div class="tracking-title">WEEKLY TRACKING</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">Posts Created: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Engagement Rate: <span class="tracking-line"></span></div>
+          <div class="tracking-item">New Followers: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Revenue: $<span class="tracking-line"></span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">6</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK 6</div>
+      <h1 class="chapter-title">Chapter 6: Your Monthly Reset &amp; Scale Strategy</h1>
+      
+      <div class="day-block">
+        <div class="day-header">DAY 22</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Review analytics for all 21 days of content</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Identify your top 3 performing posts</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Screenshot all testimonials and positive DMs recei</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 23</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Review new followers gained during the cycle</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Identify patterns in who&#039;s engaging with your cont</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Check DMs for common questions or objections</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="day-block">
+        <div class="day-header">DAY 24</div>
+        
+        
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Create a &#039;swipe file&#039; of your best-performing post</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Turn successful posts into templates for future us</div>
+            
+          </div>
+        </div>
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">3:00 PM</div>
+            <div class="task-title">Identify content gaps that need to be filled</div>
+            
+          </div>
+        </div>
+      </div>
+      <div class="tracking-section">
+        <div class="tracking-title">WEEKLY TRACKING</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">Posts Created: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Engagement Rate: <span class="tracking-line"></span></div>
+          <div class="tracking-item">New Followers: <span class="tracking-line"></span></div>
+          <div class="tracking-item">Revenue: $<span class="tracking-line"></span></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">7</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="about-section">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="about-photo" alt="Martin Ebongue">
+        <div class="about-name">Martin Ebongue</div>
+        <div class="about-tagline">Helping creators monetize small audiences</div>
+        <div class="about-handle">@realmartinebongue</div>
+        <div class="about-divider"></div>
+        <p class="about-bio">Martin Ebongue is an expert in digital product creation and social media monetization, helping clients achieve exceptional results. With years of experience building successful digital product businesses, he has helped thousands of creators turn their knowledge into profitable income streams. His practical, no-fluff approach focuses on strategies that work for people with small audiences who want to generate consistent revenue without needing millions of followers.</p>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">About</span>
+    </div>
+  </div>
+</body>
+</html>

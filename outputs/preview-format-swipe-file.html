@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview - 16px-final - 5 Money-Making Reel Templates for Under 1K Followers</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+
+/* CSS Variables */
+:root {
+  --primary-color: #CD4F00;
+  --primary-light: #8B2500;
+  --header-gradient: linear-gradient(90deg, #8B2500 0%, #CD4F00 50%, #FF6B00 100%);
+  --light-bg: rgb(251, 241, 235);
+  --text-color: #1a1a1a;
+  --text-muted: #666;
+  --background: #ffffff;
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #e0e0e0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Page Container */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  background: var(--background);
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+@media print {
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+}
+
+/* Header Bar */
+.header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: var(--header-gradient);
+}
+
+/* Page Content */
+.page-content {
+  padding: 20mm 20mm 30mm 20mm;
+  min-height: calc(297mm - 50mm);
+}
+
+/* Chapter Label */
+.chapter-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+/* Chapter Title */
+.chapter-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 36px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+/* Divider */
+.divider {
+  width: 60px;
+  height: 4px;
+  background: var(--header-gradient);
+  margin-bottom: 24px;
+}
+
+/* Phase Header */
+.phase-header {
+  font-family: 'Oswald', sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--light-bg);
+}
+
+/* Step Item */
+.step-item {
+  margin-bottom: 20px;
+}
+
+.step-title {
+  font-size: 17px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.step-title strong {
+  font-weight: 700;
+}
+
+/* Bullet Points */
+.step-bullet {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.bullet-arrow {
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Step Meta */
+.step-meta {
+  font-size: 15px;
+  color: #555;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--light-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.step-meta strong {
+  color: #333;
+}
+
+/* Body Text */
+.body-text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 14px;
+}
+
+/* Footer */
+.footer-line {
+  position: absolute;
+  bottom: 22mm;
+  left: 20mm;
+  right: 20mm;
+  height: 1px;
+  background: var(--primary-color);
+  opacity: 0.3;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 20mm;
+  right: 20mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.footer-handle {
+  font-size: 10px;
+  color: #666;
+}
+
+.footer-page {
+  font-size: 10px;
+  color: #888;
+}
+
+/* Cover Page */
+.cover-page {
+  width: 210mm;
+  height: 297mm;
+  margin: 20px auto;
+  background: var(--header-gradient);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40px;
+  color: white;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.cover-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-bottom: 30px;
+  max-width: 80%;
+}
+
+.cover-subtitle {
+  font-size: 16px;
+  max-width: 70%;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.cover-author {
+  position: absolute;
+  bottom: 60px;
+  text-align: center;
+}
+
+.cover-author-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cover-author-handle {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.cover-year {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* About Page */
+.about-section {
+  text-align: center;
+  padding-top: 40mm;
+}
+
+.about-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--primary-color);
+  margin: 0 auto 24px;
+  display: block;
+}
+
+.about-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.about-tagline {
+  font-size: 15px;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.about-handle {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.about-bio {
+  font-size: 16px;
+  line-height: 1.8;
+  color: #444;
+  text-align: left;
+  max-width: 150mm;
+  margin: 0 auto;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="cover-page">
+    <div class="cover-year">2026</div>
+    <h1 class="cover-title">5 Money-Making Reel Templates for Under 1K Followers</h1>
+    <p class="cover-subtitle"></p>
+    <div class="cover-author">
+      <div class="cover-author-name">Martin Ebongue</div>
+      <div class="cover-author-handle">@realmartinebongue</div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 1</div>
+      <h1 class="chapter-title">Chapter 1: The Direct Pitch Reels That Make $2,500+ Per Post</h1>
+      <div class="divider"></div>
+      <p class="body-text">Here&#039;s the truth: you don&#039;t need millions of followers to make serious money from reels. I make around $2,500 per reel that I publish because I know what to say to hook BUYERS, not just viewers. These templates are designed for direct monetization - no long funnels, no waiting weeks for sales. Just immediate conversions.</p>
+<p class="body-text">TEMPLATE #1: THE PROBLEM-SOLUTION DIRECT PITCH</p>
+<p class="body-text">&quot;Here&#039;s how to [achieve specific result] without [common struggle]...</p>
+<p class="body-text">❌ Most people try [wrong approach]</p>
+<p class="body-text">✅ But here&#039;s what actually works:</p>
+<p class="body-text">Step 1: [specific action]</p>
+<p class="body-text">Step 2: [specific action]</p>
+<p class="body-text">Step 3: [specific action]</p>
+<p class="body-text">I created [your digital product name] to show you exactly how to do this.</p>
+<p class="body-text">It&#039;s [price point] and I walk you through [specific benefit].</p>
+<p class="body-text">Link in bio if you want it.</p>
+<p class="body-text">Comment &#039;[keyword]&#039; if you found this helpful.&quot;</p>
+<p class="body-text">TEMPLATE #2: THE INCOME REVEAL PITCH</p>
+<p class="body-text">&quot;I made $[specific amount] last month doing [your method]...</p>
+<p class="body-text">Here&#039;s exactly what I did:</p>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Strategy 1]</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Strategy 2]</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Strategy 3]</div>
+<p class="body-text">Most people overcomplicate this, but it&#039;s actually simple when you know the right steps.</p>
+<p class="body-text">I put everything into [your product name] - it&#039;s [price] and shows you my exact process.</p>
+<p class="body-text">Grab it through the link in my bio.</p>
+<p class="body-text">Drop a 💰 if you&#039;re ready to try this.&quot;</p>
+<p class="body-text">These templates work because they lead with value, prove credibility with specifics, and make a clear, non-pushy offer. The key is being hyper-specific about results and keeping the pitch natural within helpful content.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">2</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 2</div>
+      <h1 class="chapter-title">Chapter 2: The Behind-The-Scenes Money Templates</h1>
+      <div class="divider"></div>
+      <p class="body-text">Behind-the-scenes content converts like crazy because people feel like they&#039;re getting exclusive access to your process. These templates position your digital products as the natural next step in their journey.</p>
+<p class="body-text">TEMPLATE #3: THE BATCH CREATION REVEAL</p>
+<p class="body-text">&quot;I just filmed 30 reels in 2 hours...</p>
+<p class="body-text">Here&#039;s my exact process:</p>
+<p class="body-text">🎯 30 minutes: Planning content using [your method]</p>
+<p class="body-text">🎯 60 minutes: Filming everything in batches</p>
+<p class="body-text">🎯 30 minutes: Quick edits and scheduling</p>
+<p class="body-text">This system lets me create a month of content in one session.</p>
+<p class="body-text">The planning method I use is what makes this possible - it&#039;s all inside [your product name].</p>
+<p class="body-text">[Price point] gets you the exact templates and planning system.</p>
+<p class="body-text">Link in bio if you want to batch create like this.</p>
+<p class="body-text">Comment &#039;BATCH&#039; if this looks helpful.&quot;</p>
+<p class="body-text">TEMPLATE #4: THE STUDENT SUCCESS STORY</p>
+<p class="body-text">&quot;My student just made $[amount] with [number] followers...</p>
+<p class="body-text">Here&#039;s what she did differently:</p>
+<p class="body-text">✓ [Specific strategy 1]</p>
+<p class="body-text">✓ [Specific strategy 2]</p>
+<p class="body-text">✓ [Specific strategy 3]</p>
+<p class="body-text">She followed the exact system I teach in [your product name].</p>
+<p class="body-text">The same system that helped [number] students make their first $[amount] online.</p>
+<p class="body-text">It&#039;s [price] and includes [specific deliverables].</p>
+<p class="body-text">Grab it through my bio link.</p>
+<p class="body-text">Tag someone who needs to see this 👇&quot;</p>
+<p class="body-text">TEMPLATE #5: THE ANALYTICS BREAKDOWN</p>
+<p class="body-text">&quot;This reel made me $[amount] - let me break down why...</p>
+<p class="body-text">📊 [Number] views = [number] profile visits</p>
+<p class="body-text">📊 [Number] profile visits = [number] link clicks</p>
+<p class="body-text">📊 [Number] link clicks = [number] sales</p>
+<p class="body-text">The conversion happened because of [specific element in the reel].</p>
+<p class="body-text">I teach this exact conversion strategy in [your product name].</p>
+<p class="body-text">[Price point] gets you all my conversion templates.</p>
+<p class="body-text">Link in bio to grab it.</p>
+<p class="body-text">Drop 📈 if you want more breakdowns like this.&quot;</p>
+<p class="body-text">These templates work because they pull back the curtain on your success, making your expertise tangible and your product the obvious solution.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">3</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 3</div>
+      <h1 class="chapter-title">Chapter 3: The Viral Hook Templates That Convert</h1>
+      <div class="divider"></div>
+      <p class="body-text">These are my highest-converting reel hooks that attract buyers, not just viewers. Each template is designed to stop scrolling AND drive immediate action toward your digital products.</p>
+<p class="body-text">TEMPLATE #6: THE CONTROVERSIAL TRUTH HOOK</p>
+<p class="body-text">&quot;Unpopular opinion: [controversial but true statement about your niche]...</p>
+<p class="body-text">Everyone&#039;s telling you to [common advice], but that&#039;s exactly why you&#039;re not seeing results.</p>
+<p class="body-text">Here&#039;s what actually works:</p>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Contrarian point 1]</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Contrarian point 2]</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Contrarian point 3]</div>
+<p class="body-text">I&#039;ve helped [number] people get results using this approach.</p>
+<p class="body-text">The full method is inside [your product name] - [price point].</p>
+<p class="body-text">Link in bio if you&#039;re tired of the same old advice.</p>
+<p class="body-text">Comment &#039;TRUTH&#039; if this resonates.&quot;</p>
+<p class="body-text">TEMPLATE #7: THE MISTAKE REVEAL HOOK</p>
+<p class="body-text">&quot;I wasted $[amount] on [common solution] before I learned this...</p>
+<p class="body-text">Turns out, [common solution] doesn&#039;t work because [reason].</p>
+<p class="body-text">What actually works:</p>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Better approach 1]</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Better approach 2]</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> [Better approach 3]</div>
+<p class="body-text">Once I switched to this method, I [specific result].</p>
+<p class="body-text">I put the exact process into [your product name].</p>
+<p class="body-text">[Price point] saves you from making the same expensive mistakes.</p>
+<p class="body-text">Grab it through my bio link.</p>
+<p class="body-text">Reply with your biggest mistake in [niche] 👇&quot;</p>
+<p class="body-text">TEMPLATE #8: THE URGENCY HOOK</p>
+<p class="body-text">&quot;You have 3 months to [achieve specific goal] or [consequence]...</p>
+<p class="body-text">Here&#039;s your game plan:</p>
+<p class="body-text">Month 1: [specific actions]</p>
+<p class="body-text">Month 2: [specific actions]</p>
+<p class="body-text">Month 3: [specific actions]</p>
+<p class="body-text">Most people try to figure this out alone and waste precious time.</p>
+<p class="body-text">[Your product name] gives you the exact 90-day roadmap for [price point].</p>
+<p class="body-text">Don&#039;t wait until it&#039;s too late.</p>
+<p class="body-text">Link in bio to start today.</p>
+<p class="body-text">Comment &#039;90 DAYS&#039; if you&#039;re ready to commit.&quot;</p>
+<p class="body-text">These hooks work because they create immediate engagement while positioning your product as the logical next step. The key is making your offer feel essential, not optional.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">4</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 4</div>
+      <h1 class="chapter-title">Chapter 4: The Problem-Solution Templates That Sell</h1>
+      <div class="divider"></div>
+      <p class="body-text">These templates work because they identify a specific pain point your audience has, then position your digital product as the solution. Even with under 1K followers, these convert like crazy because you&#039;re speaking directly to what keeps people up at night.</p>
+<p class="body-text">TEMPLATE #1: THE STRUGGLE-TO-SUCCESS TEMPLATE</p>
+<p class="body-text">Hook: &quot;If you&#039;re struggling with [specific problem], here&#039;s what&#039;s actually happening...&quot;</p>
+<p class="body-text">Body text for reel: Show 3-5 quick tips or steps</p>
+<p class="body-text">Caption: &quot;I used to [struggle with specific problem] until I figured out [your solution]. Now I [specific result]. If you want the step-by-step system I use to [achieve result], I created a course called [your product name] that shows you exactly how to [main benefit]. Link in bio to get started. 💰&quot;</p>
+<p class="body-text">TEMPLATE #2: THE &quot;BIGGEST MISTAKE&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;The biggest mistake people make with [your topic] is...&quot;</p>
+<p class="body-text">Body text for reel: Reveal the mistake and show the right way</p>
+<p class="body-text">Caption: &quot;I see this mistake ALL the time. People think [common misconception] but the truth is [correct approach]. This is exactly why I created [your digital product] - to show you the RIGHT way to [achieve desired outcome]. If you&#039;re tired of [frustration], grab my [product type] in my bio. It&#039;s only [$X] and will save you months of frustration.&quot;</p>
+<p class="body-text">TEMPLATE #3: THE &quot;HERE&#039;S WHAT NOBODY TELLS YOU&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;Here&#039;s what nobody tells you about [your topic]...&quot;</p>
+<p class="body-text">Body text for reel: Share insider knowledge or secret</p>
+<p class="body-text">Caption: &quot;This is the stuff they don&#039;t teach you in [school/other courses/etc]. I learned this the hard way after [your experience]. Now I help people skip all the mistakes I made. My [product name] gives you everything I wish I knew when I started. Link in bio if you want to learn the REAL way to [achieve result].&quot;</p>
+<p class="body-text">TEMPLATE #4: THE &quot;BEFORE VS AFTER&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;Before I knew [solution], I was [struggling]. Now I [success]...&quot;</p>
+<p class="body-text">Body text for reel: Show your transformation or client results</p>
+<p class="body-text">Caption: &quot;This transformation happened in just [timeframe]. The difference? I stopped [old way] and started [new approach]. If you want to see similar results, I put everything into my [product type] called [product name]. It&#039;s helped [X number] people go from [before state] to [after state]. Check it out in my link in bio.&quot;</p>
+<p class="body-text">TEMPLATE #5: THE &quot;UNPOPULAR OPINION&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;Unpopular opinion: [controversial but true statement about your niche]&quot;</p>
+<p class="body-text">Body text for reel: Explain why your opinion is actually right</p>
+<p class="body-text">Caption: &quot;I know this goes against what everyone else is saying, but here&#039;s the truth: [elaborate on your opinion]. This is exactly the approach I teach in [your product name]. While everyone else is doing [common approach], my students are getting [better results] because they&#039;re doing [your method]. Link in bio if you want to try something that actually works.&quot;</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">5</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 5</div>
+      <h1 class="chapter-title">Chapter 5: The Authority-Building Templates That Convert</h1>
+      <div class="divider"></div>
+      <p class="body-text">These final templates position you as the go-to expert in your field, even with a small following. Remember, people buy from people they trust - and trust comes from demonstrating expertise consistently.</p>
+<p class="body-text">TEMPLATE #1: THE &quot;CLIENT RESULTS&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;My student just messaged me this...&quot;</p>
+<p class="body-text">Body text for reel: Show screenshot or share specific results</p>
+<p class="body-text">Caption: &quot;[Student name] went from [starting point] to [end result] in just [timeframe] using the exact system I teach in [your product]. This isn&#039;t luck - it&#039;s strategy. The same strategy I&#039;ve used to help [X number] people get [specific outcome]. If you want the same system, grab [product name] in my bio for just [$X].&quot;</p>
+<p class="body-text">TEMPLATE #2: THE &quot;BEHIND MY SUCCESS&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;Here&#039;s exactly how I [achieved specific result]...&quot;</p>
+<p class="body-text">Body text for reel: Break down your process in 3-5 steps</p>
+<p class="body-text">Caption: &quot;This is the exact process that helped me [your big result]. Step-by-step. No fluff. I&#039;ve packaged this entire system into [your product] because too many people are struggling with [common problem]. For [$X], you get everything that took me [time period] to figure out. Link in bio.&quot;</p>
+<p class="body-text">TEMPLATE #3: THE &quot;INDUSTRY SECRET&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;After [X years] in [your industry], here&#039;s what I&#039;ve learned...&quot;</p>
+<p class="body-text">Body text for reel: Share valuable insider knowledge</p>
+<p class="body-text">Caption: &quot;Most people in [your industry] won&#039;t tell you this because [reason]. But I believe in being transparent. This insight alone has made me [specific result] and saved me [time/money/effort]. I go deeper into strategies like this in [your product name]. It&#039;s everything I wish someone had told me when I started. Check it out in my bio.&quot;</p>
+<p class="body-text">TEMPLATE #4: THE &quot;NUMBERS DON&#039;T LIE&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;I tracked my [results/income/growth] for [timeframe]. Here&#039;s what I found...&quot;</p>
+<p class="body-text">Body text for reel: Show actual data or numbers</p>
+<p class="body-text">Caption: &quot;These numbers prove that [your method/approach] works. While most people are getting [average results], this approach gets [better results]. The full breakdown of how I did this is inside [your product]. For [$X], you get the complete system that generated these results. Link in bio.&quot;</p>
+<p class="body-text">TEMPLATE #5: THE &quot;MISTAKE-PROOF METHOD&quot; TEMPLATE</p>
+<p class="body-text">Hook: &quot;I&#039;ve made every mistake possible with [your topic] so you don&#039;t have to...&quot;</p>
+<p class="body-text">Body text for reel: List common mistakes to avoid</p>
+<p class="body-text">Caption: &quot;These mistakes cost me [time/money/results] but taught me exactly what works. Now I help people skip all the trial and error. [Your product] is literally every shortcut I wish I had when I started. It&#039;s like having a mentor who&#039;s already made all the mistakes for you. Grab it in my bio for [$X].&quot;</p>
+<p class="body-text">If you enjoyed these templates and want to take your Instagram monetization to the next level, check out &quot;The 3 Simple Reels That Convert 100 Views Into $50 Daily.&quot; This training dives deeper into the psychology behind why these templates work and gives you my complete system for turning even small amounts of traffic into consistent daily income. It&#039;s the perfect next step for implementing everything you&#039;ve learned here.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">6</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="about-section">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="about-photo" alt="Martin Ebongue" onerror="this.style.background='#ddd'">
+        <div class="about-name">Martin Ebongue</div>
+        <div class="about-tagline">Make $3k Per Month With A Tiny Audience</div>
+        <div class="about-handle">@realmartinebongue</div>
+      </div>
+      <div class="divider" style="margin: 24px auto;"></div>
+      <p class="about-bio">Martin Ebongue helps creators make $50-$100 a day from a small audience on social media, delivering exceptional results for clients.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">About</span>
+    </div>
+  </div>
+</body>
+</html>

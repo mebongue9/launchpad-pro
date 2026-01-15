@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       LAUNCHPAD PRO PDF FORMATTING RULES
+       FIXED: Proper page breaks, footer spacing
+       ============================================ */
+
+    @page {
+      size: 8.5in 11in;
+      margin: 0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f0f0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    :root {
+      --primary-color: #8B2500;
+      --primary-light: #CD4F00;
+      --primary-dark: #5a1800;
+      --text-color: #000;
+      --text-muted: #666;
+      --background: #ffffff;
+    }
+
+    /* FIXED PAGE DIMENSIONS FOR PDF */
+    .page {
+      width: 8.5in;
+      height: 11in;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      background: #ffffff;
+      margin: 20px auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+      /* SAFE ZONES - INCREASED BOTTOM FOR FOOTER */
+      padding-top: 0.6in;
+      padding-bottom: 1.1in;  /* INCREASED from 0.8in */
+      padding-left: 0.75in;
+      padding-right: 0.75in;
+    }
+
+    .page-content {
+      max-width: 7in;
+      max-height: 9.1in;  /* REDUCED to account for larger footer zone */
+      overflow: hidden;
+    }
+
+    /* HEADER BAR */
+    .header-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: var(--primary-color);
+    }
+
+    /* CHAPTER LABEL */
+    .chapter-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+    }
+
+    /* CHAPTER TITLE */
+    .chapter-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #000;
+      line-height: 1.3;
+      margin-bottom: 16px;
+    }
+
+    /* INTRO TEXT */
+    .body-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    /* DAY HEADER */
+    .day-header {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-top: 24px;
+      margin-bottom: 14px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--primary-light);
+    }
+
+    .day-header:first-of-type {
+      margin-top: 0;
+    }
+
+    /* TASK ITEM */
+    .task-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 18px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .task-checkbox {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--primary-color);
+      border-radius: 3px;
+      margin-top: 3px;
+    }
+
+    .task-content {
+      flex: 1;
+    }
+
+    .task-time {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 4px;
+    }
+
+    .task-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 6px;
+    }
+
+    .task-details {
+      font-size: 14px;
+      line-height: 1.5;
+      color: #444;
+    }
+
+    .task-details p {
+      margin-bottom: 4px;
+    }
+
+    .task-details strong {
+      color: #000;
+    }
+
+    /* DAY BLOCK - Groups day header with its tasks */
+    .day-block {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      margin-bottom: 8px;
+    }
+
+    /* INFO BOX */
+    .info-box {
+      background: #f8f8f8;
+      border: 1px solid #e0e0e0;
+      padding: 14px 16px;
+      margin: 20px 0;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .info-box-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 10px;
+    }
+
+    .info-box-content {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #444;
+    }
+
+    .info-box-content p {
+      margin-bottom: 4px;
+    }
+
+    /* TRACKING SECTION */
+    .tracking-section {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      padding: 14px 16px;
+      margin-top: 20px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .tracking-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .tracking-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .tracking-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: #444;
+    }
+
+    .tracking-line {
+      flex: 1;
+      height: 1px;
+      border-bottom: 1px solid #ccc;
+      max-width: 80px;
+    }
+
+    /* ============================================
+       FOOTER - FIXED WITH PROPER SPACING
+       ============================================ */
+    
+    /* Footer line - clear separator */
+    .footer-line {
+      position: absolute;
+      bottom: 0.85in;  /* INCREASED from 0.6in */
+      left: 0.75in;
+      right: 0.75in;
+      height: 1px;
+      background: var(--primary-color);
+      opacity: 0.3;
+    }
+
+    /* Footer content - well below the line */
+    .page-footer {
+      position: absolute;
+      bottom: 0.5in;  /* INCREASED from 0.4in */
+      left: 0.75in;
+      right: 0.75in;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-photo {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary-color);
+    }
+
+    .footer-handle {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .footer-page-number {
+      font-size: 10px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    /* ============================================
+       PAGE BREAK RULES - CRITICAL
+       Nothing should EVER be cut off
+       ============================================ */
+    
+    /* Never break inside these */
+    .task-item,
+    .day-block,
+    .info-box,
+    .tracking-section {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+
+    /* Keep headers with following content */
+    .day-header,
+    .chapter-title {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1 -->
+  <div class="page">
+    <div class="header-bar"></div>
+    
+    <div class="page-content">
+      <div class="chapter-label">WEEK 1</div>
+      <h1 class="chapter-title">21-Day Content Calendar</h1>
+
+      <p class="body-text">
+        This is where everything begins. Week 1 is about building the foundation that turns strangers into customers. You're going to post content that solves real problems while subtly introducing your digital product.
+      </p>
+
+      <div class="day-block">
+        <div class="day-header">DAY 1: MONDAY</div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Problem/Solution Reel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "The #1 mistake people make with [your niche]"</p>
+              <p><strong>Caption:</strong> Share the mistake + hint at your solution</p>
+              <p><strong>CTA:</strong> "Comment HELP if you've made this mistake too"</p>
+              <p><strong>Goal:</strong> 50+ comments, 2-3 sales</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Value Carousel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "3 things I wish I knew when I started"</p>
+              <p><strong>Slides:</strong> Problem + 3 solutions + final slide with soft pitch</p>
+              <p><strong>CTA:</strong> "Save this if it helped!"</p>
+              <p><strong>Goal:</strong> 100+ saves, build trust</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-header">DAY 2: TUESDAY</div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Behind-the-Scenes Reel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "Why I created my digital product"</p>
+              <p><strong>Caption:</strong> Your story + transformation you help others achieve</p>
+              <p><strong>CTA:</strong> "DM me READY if you want the same results"</p>
+              <p><strong>Goal:</strong> 20+ DMs, personal connection</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Tutorial Carousel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "How to [solve specific problem] in 5 steps"</p>
+              <p><strong>Slides:</strong> Step-by-step process</p>
+              <p><strong>Final slide:</strong> "Want the complete system? Link in bio"</p>
+              <p><strong>Goal:</strong> Position yourself as the expert</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">2</span>
+    </div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div class="page">
+    <div class="header-bar"></div>
+    
+    <div class="page-content">
+      <div class="chapter-label">WEEK 1 (CONTINUED)</div>
+      <h1 class="chapter-title">21-Day Content Calendar</h1>
+
+      <div class="day-block">
+        <div class="day-header">DAY 3: WEDNESDAY</div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Social Proof Reel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "My student just got these results"</p>
+              <p><strong>Caption:</strong> Share student win + what they did</p>
+              <p><strong>CTA:</strong> "Comment YES if you want results like this"</p>
+              <p><strong>Goal:</strong> Build credibility, 30+ comments</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Q&A Carousel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "5 questions I get asked daily"</p>
+              <p><strong>Slides:</strong> Common questions + your answers</p>
+              <p><strong>Final slide:</strong> Soft pitch your solution</p>
+              <p><strong>Goal:</strong> Address objections before they buy</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="day-block">
+        <div class="day-header">DAY 4: THURSDAY</div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Transformation Reel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "6 months ago vs today"</p>
+              <p><strong>Caption:</strong> Your before/after story</p>
+              <p><strong>CTA:</strong> "What transformation do you want to see?"</p>
+              <p><strong>Goal:</strong> Inspire action, show what's possible</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Tip Carousel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "3 free ways to [achieve desired outcome]"</p>
+              <p><strong>Slides:</strong> 3 actionable tips</p>
+              <p><strong>Final slide:</strong> "Want 20 more strategies? Grab my course"</p>
+              <p><strong>Goal:</strong> Give value then make the ask</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">3</span>
+    </div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div class="page">
+    <div class="header-bar"></div>
+    
+    <div class="page-content">
+      <div class="chapter-label">WEEK 1 (CONTINUED)</div>
+      <h1 class="chapter-title">21-Day Content Calendar</h1>
+
+      <div class="day-block">
+        <div class="day-header">DAY 5: FRIDAY</div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">7:00 AM</div>
+            <div class="task-title">Success Story Reel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "This changed everything for me"</p>
+              <p><strong>Caption:</strong> Share your breakthrough moment</p>
+              <p><strong>CTA:</strong> "DM me START if you're ready for your breakthrough"</p>
+              <p><strong>Goal:</strong> 15+ DMs, convert to sales</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">12:00 PM</div>
+            <div class="task-title">Week Recap Carousel</div>
+            <div class="task-details">
+              <p><strong>Topic:</strong> "5 things we learned this week"</p>
+              <p><strong>Slides:</strong> Recap your content + key takeaways</p>
+              <p><strong>Final slide:</strong> "Ready to go deeper? Link in bio"</p>
+              <p><strong>Goal:</strong> Reinforce value, drive traffic to checkout</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">Weekend Strategy</div>
+        <div class="info-box-content">
+          <p>☐ <strong>Saturday:</strong> Repost your best performing reel from the week</p>
+          <p>☐ <strong>Sunday:</strong> Post a personal story reel that builds connection</p>
+        </div>
+      </div>
+
+      <div class="tracking-section">
+        <div class="tracking-title">Daily Tracking</div>
+        <div class="tracking-grid">
+          <div class="tracking-item">
+            <span>Comments received:</span>
+            <div class="tracking-line"></div>
+          </div>
+          <div class="tracking-item">
+            <span>DMs received:</span>
+            <div class="tracking-line"></div>
+          </div>
+          <div class="tracking-item">
+            <span>Link clicks:</span>
+            <div class="tracking-line"></div>
+          </div>
+          <div class="tracking-item">
+            <span>Sales made:</span>
+            <div class="tracking-line"></div>
+          </div>
+          <div class="tracking-item">
+            <span>Revenue generated:</span>
+            <div class="tracking-line"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <div class="info-box-title">Week 1 Success Metrics</div>
+        <div class="info-box-content">
+          <p>☐ Total reach: 10,000+</p>
+          <p>☐ New followers: 200+</p>
+          <p>☐ Email signups: 50+</p>
+          <p>☐ Sales: 5-10</p>
+          <p>☐ Revenue: $100-200</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">4</span>
+    </div>
+  </div>
+
+</body>
+</html>

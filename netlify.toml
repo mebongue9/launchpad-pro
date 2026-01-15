@@ -10,6 +10,16 @@
   # Use esbuild for faster bundling
   node_bundler = "esbuild"
 
+# Cover Lab function timeouts
+[functions."analyze-cover-image"]
+  timeout = 30
+
+# Background function for cover generation (can run up to 15 minutes)
+# Named with -background suffix for Netlify Background Functions
+[functions."process-cover-generation-background"]
+  # Background functions run asynchronously and don't need timeout config
+  # They automatically get up to 15 minutes
+
 # Cache headers - prevent browser caching of HTML, allow caching of hashed assets
 [[headers]]
   for = "/index.html"

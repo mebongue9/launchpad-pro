@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ============================================
+       LAUNCHPAD PRO PDF FORMATTING RULES
+       FIXED: Proper page breaks, footer spacing
+       ============================================ */
+
+    @page {
+      size: 8.5in 11in;
+      margin: 0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f0f0f0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    :root {
+      --primary-color: #8B2500;
+      --primary-light: #CD4F00;
+      --primary-dark: #5a1800;
+      --text-color: #000;
+      --text-muted: #666;
+      --background: #ffffff;
+    }
+
+    /* FIXED PAGE DIMENSIONS FOR PDF */
+    .page {
+      width: 8.5in;
+      height: 11in;
+      box-sizing: border-box;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      background: #ffffff;
+      margin: 20px auto;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+
+      /* SAFE ZONES - INCREASED BOTTOM FOR FOOTER */
+      padding-top: 0.6in;
+      padding-bottom: 1.1in;
+      padding-left: 0.75in;
+      padding-right: 0.75in;
+    }
+
+    .page-content {
+      max-width: 7in;
+      max-height: 9.1in;
+      overflow: hidden;
+    }
+
+    /* HEADER BAR */
+    .header-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: var(--primary-color);
+    }
+
+    /* CHAPTER LABEL */
+    .chapter-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+    }
+
+    /* CHAPTER TITLE */
+    .chapter-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #000;
+      line-height: 1.3;
+      margin-bottom: 20px;
+    }
+
+    /* CHEAT SHEET CARD */
+    .cheat-card {
+      background: #fafafa;
+      border: 1px solid #e0e0e0;
+      border-left: 3px solid var(--primary-color);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    .cheat-card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #000;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    /* SECTION WITHIN CARD */
+    .cheat-section {
+      margin-bottom: 14px;
+    }
+
+    .cheat-section:last-child {
+      margin-bottom: 0;
+    }
+
+    .cheat-section-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--primary-color);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cheat-section-content {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #333;
+    }
+
+    .cheat-section-content ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+
+    .cheat-section-content li {
+      padding-left: 16px;
+      position: relative;
+      margin-bottom: 6px;
+    }
+
+    .cheat-section-content li::before {
+      content: "•";
+      color: var(--primary-color);
+      font-weight: bold;
+      position: absolute;
+      left: 0;
+    }
+
+    .cheat-section-content ol {
+      padding-left: 20px;
+      margin: 0;
+    }
+
+    .cheat-section-content ol li {
+      padding-left: 4px;
+      margin-bottom: 6px;
+    }
+
+    .cheat-section-content ol li::before {
+      content: none;
+    }
+
+    /* EXAMPLE BOX */
+    .example-box {
+      background: white;
+      border: 1px solid #ddd;
+      padding: 12px 14px;
+      margin-top: 8px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #444;
+      font-style: italic;
+    }
+
+    /* ============================================
+       FOOTER - FIXED WITH PROPER SPACING
+       ============================================ */
+    
+    .footer-line {
+      position: absolute;
+      bottom: 0.85in;
+      left: 0.75in;
+      right: 0.75in;
+      height: 1px;
+      background: var(--primary-color);
+      opacity: 0.3;
+    }
+
+    .page-footer {
+      position: absolute;
+      bottom: 0.5in;
+      left: 0.75in;
+      right: 0.75in;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .footer-photo {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--primary-color);
+    }
+
+    .footer-handle {
+      font-size: 10px;
+      color: #666;
+    }
+
+    .footer-page-number {
+      font-size: 10px;
+      color: #666;
+      font-weight: 600;
+    }
+
+    /* PAGE BREAK RULES - NOTHING EVER CUT OFF */
+    .cheat-card,
+    .cheat-section {
+      page-break-inside: avoid !important;
+      break-inside: avoid !important;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1 -->
+  <div class="page">
+    <div class="header-bar"></div>
+    
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 1</div>
+      <h1 class="chapter-title">The 3 Money-Making Reel Scripts</h1>
+
+      <div class="cheat-card">
+        <div class="cheat-card-title">REEL #1: The Problem-Solution Reel</div>
+        
+        <div class="cheat-section">
+          <div class="cheat-section-title">Hook Templates</div>
+          <div class="cheat-section-content">
+            <ul>
+              <li>"If you have [X followers], you should be making $[X] every day"</li>
+              <li>"Here's why you're not making money with [X] followers"</li>
+              <li>"I make $2,500 per reel — here's what I say"</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Script Structure</div>
+          <div class="cheat-section-content">
+            <ol>
+              <li><strong>Hook (0-3 seconds):</strong> State the problem directly</li>
+              <li><strong>Agitate (3-6 seconds):</strong> Why it's costing them money</li>
+              <li><strong>Solution (6-12 seconds):</strong> Your digital product solves this</li>
+              <li><strong>Clear CTA:</strong> "Link in bio" or "Comment [WORD] below"</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Example Script</div>
+          <div class="example-box">
+            "If you have 100 followers, you should be making $50-100 daily. Most people aren't because they don't know what to sell. I created a $27 course that shows you exactly how to turn followers into buyers. Link in bio."
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Caption Formula</div>
+          <div class="cheat-section-content">
+            <ul>
+              <li>Line 1: Restate the hook</li>
+              <li>Lines 2-4: Share your experience/results</li>
+              <li>Line 5: Clear call-to-action</li>
+              <li>Use 2,200 characters max</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">2</span>
+    </div>
+  </div>
+
+  <!-- PAGE 2 -->
+  <div class="page">
+    <div class="header-bar"></div>
+    
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 1 (CONTINUED)</div>
+      <h1 class="chapter-title">The 3 Money-Making Reel Scripts</h1>
+
+      <div class="cheat-card">
+        <div class="cheat-card-title">REEL #2: The Transformation Reel</div>
+        
+        <div class="cheat-section">
+          <div class="cheat-section-title">Before/After Templates</div>
+          <div class="cheat-section-content">
+            <ul>
+              <li>"6 months ago vs today"</li>
+              <li>"When I started vs now"</li>
+              <li>"My first month vs this month"</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Script Structure</div>
+          <div class="cheat-section-content">
+            <ol>
+              <li><strong>Before State:</strong> Where you/client started</li>
+              <li><strong>After State:</strong> Current results</li>
+              <li><strong>The Bridge:</strong> Your product/method</li>
+              <li><strong>Proof:</strong> Specific numbers</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Example Script</div>
+          <div class="example-box">
+            "6 months ago: $0 from Instagram. Today: $20,000/month. The difference? I started selling one $97 digital product. Same strategy I teach inside my course. Comment TRANSFORM to get it."
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Visual Elements</div>
+          <div class="cheat-section-content">
+            <ul>
+              <li>Use text overlays for numbers</li>
+              <li>Show screenshots of earnings</li>
+              <li>Keep clips 0.6 seconds each</li>
+              <li>Total reel: 2-3 seconds</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">3</span>
+    </div>
+  </div>
+
+  <!-- PAGE 3 -->
+  <div class="page">
+    <div class="header-bar"></div>
+    
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 1 (CONTINUED)</div>
+      <h1 class="chapter-title">The 3 Money-Making Reel Scripts</h1>
+
+      <div class="cheat-card">
+        <div class="cheat-card-title">REEL #3: The Authority Reel</div>
+        
+        <div class="cheat-section">
+          <div class="cheat-section-title">Authority Hooks</div>
+          <div class="cheat-section-content">
+            <ul>
+              <li>"I made $300K last month doing this"</li>
+              <li>"Here's how to build a million-dollar business with 1 hour/day"</li>
+              <li>"I get 70,000 new followers monthly — here's how"</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Script Structure</div>
+          <div class="cheat-section-content">
+            <ol>
+              <li><strong>Credibility Statement:</strong> Your biggest result</li>
+              <li><strong>Method Preview:</strong> Quick overview</li>
+              <li><strong>Benefit Stack:</strong> What they get</li>
+              <li><strong>Urgency/Scarcity:</strong> Why now</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Example Script</div>
+          <div class="example-box">
+            "I make $20,000/day selling digital products. 80% of your time should drive traffic to checkout pages. I created 40 viral reels in 2 hours. This system is inside my $47 blueprint. Comment BLUEPRINT below."
+          </div>
+        </div>
+
+        <div class="cheat-section">
+          <div class="cheat-section-title">Posting Strategy</div>
+          <div class="cheat-section-content">
+            <ul>
+              <li>Post at 7am, 10am, 1pm in your timezone</li>
+              <li>Repost your best performers exactly</li>
+              <li>Use talking head style for authority</li>
+              <li>Include clear pricing in the pitch</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">4</span>
+    </div>
+  </div>
+
+</body>
+</html>

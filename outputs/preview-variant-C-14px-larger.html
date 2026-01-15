@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Preview - 14px-larger - The 3-Post Daily System: Turn 100 Views Into $50</title>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+
+/* CSS Variables */
+:root {
+  --primary-color: #CD4F00;
+  --primary-light: #8B2500;
+  --header-gradient: linear-gradient(90deg, #8B2500 0%, #CD4F00 50%, #FF6B00 100%);
+  --light-bg: rgb(251, 241, 235);
+  --text-color: #1a1a1a;
+  --text-muted: #666;
+  --background: #ffffff;
+}
+
+/* Reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #e0e0e0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* Page Container */
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  background: var(--background);
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+@media print {
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+}
+
+/* Header Bar */
+.header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: var(--header-gradient);
+}
+
+/* Page Content */
+.page-content {
+  padding: 20mm 20mm 30mm 20mm;
+  min-height: calc(297mm - 50mm);
+}
+
+/* Chapter Label */
+.chapter-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+/* Chapter Title */
+.chapter-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 32px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+/* Divider */
+.divider {
+  width: 60px;
+  height: 4px;
+  background: var(--header-gradient);
+  margin-bottom: 24px;
+}
+
+/* Phase Header */
+.phase-header {
+  font-family: 'Oswald', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--light-bg);
+}
+
+/* Step Item */
+.step-item {
+  margin-bottom: 20px;
+}
+
+.step-title {
+  font-size: 15px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.step-title strong {
+  font-weight: 700;
+}
+
+/* Bullet Points */
+.step-bullet {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.bullet-arrow {
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Step Meta */
+.step-meta {
+  font-size: 13px;
+  color: #555;
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--light-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.step-meta strong {
+  color: #333;
+}
+
+/* Body Text */
+.body-text {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 14px;
+}
+
+/* Footer */
+.footer-line {
+  position: absolute;
+  bottom: 22mm;
+  left: 20mm;
+  right: 20mm;
+  height: 1px;
+  background: var(--primary-color);
+  opacity: 0.3;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 20mm;
+  right: 20mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.footer-handle {
+  font-size: 10px;
+  color: #666;
+}
+
+.footer-page {
+  font-size: 10px;
+  color: #888;
+}
+
+/* Cover Page */
+.cover-page {
+  width: 210mm;
+  height: 297mm;
+  margin: 20px auto;
+  background: var(--header-gradient);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 40px;
+  color: white;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.cover-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 42px;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-bottom: 30px;
+  max-width: 80%;
+}
+
+.cover-subtitle {
+  font-size: 16px;
+  max-width: 70%;
+  opacity: 0.9;
+  line-height: 1.5;
+}
+
+.cover-author {
+  position: absolute;
+  bottom: 60px;
+  text-align: center;
+}
+
+.cover-author-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cover-author-handle {
+  font-size: 14px;
+  opacity: 0.8;
+}
+
+.cover-year {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* About Page */
+.about-section {
+  text-align: center;
+  padding-top: 40mm;
+}
+
+.about-photo {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--primary-color);
+  margin: 0 auto 24px;
+  display: block;
+}
+
+.about-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 10px;
+}
+
+.about-tagline {
+  font-size: 15px;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.about-handle {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 30px;
+}
+
+.about-bio {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #444;
+  text-align: left;
+  max-width: 150mm;
+  margin: 0 auto;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="cover-page">
+    <div class="cover-year">2026</div>
+    <h1 class="cover-title">The 3-Post Daily System: Turn 100 Views Into $50</h1>
+    <p class="cover-subtitle">Daily posting system that converts small audiences into buyers using 3 specific post types at optimal times</p>
+    <div class="cover-author">
+      <div class="cover-author-name">Martin Ebongue</div>
+      <div class="cover-author-handle">@realmartinebongue</div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 1</div>
+      <h1 class="chapter-title">Chapter 1: The Reality Check - Why Your Current Posting Strategy Isn&#039;t Making Sales</h1>
+      <div class="divider"></div>
+      <div class="phase-header">PHASE 1: UNDERSTANDING THE PROBLEM</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.1:</strong> Face the truth about posting frequency</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> You think one or two posts is enough. It&#039;s not.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> When you&#039;re selling digital products, you need way more visibility than that.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> I post 3-4 times every single day and keep growing. The more you post, the more you grow.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> It&#039;s not an answer people like. They don&#039;t like that answer. They like some shiny little hack that&#039;s not reality.</div>
+<div class="step-meta"><strong>What you need:</strong> Willingness to post more than once daily<br><strong>Expected outcome:</strong> Understanding why your single daily posts aren&#039;t converting</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.2:</strong> Recognize the value problem</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> You&#039;re not pushing yourself hard enough to create content that&#039;s actually valuable.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> People follow value. Your brain should feel a little broken when you&#039;re done creating content because it hurt your mental capacity that much.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Most content fails because creators underestimate what &quot;valuable&quot; actually means.</div>
+<div class="step-meta"><strong>What you need:</strong> Commitment to creating genuinely helpful content<br><strong>Expected outcome:</strong> Clarity on why your content isn&#039;t attracting buyers</div>
+</div>
+<div class="phase-header">PHASE 2: THE TRAFFIC-SALES CONNECTION</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.1:</strong> Understand the simple formula</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Reels and carousels = traffic</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Traffic = sales</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> If we go back to our goal, which is to get sales quickly, we need traffic.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> We need potential customers to see your offer, that one specific product you made.</div>
+<div class="step-meta"><strong>What you need:</strong> One clear digital product to promote<br><strong>Expected outcome:</strong> Understanding how content directly drives sales</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.2:</strong> Calculate your conversion potential</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> With the right system, you can get 3 to 6 sales for every 100 views</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> So 1,000 views equals 30-60 sales with proper positioning</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Even with 100 views daily, you can consistently hit $50+ per day</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> The key is having the right posting system and timing</div>
+<div class="step-meta"><strong>What you need:</strong> Tracking system for views and conversions<br><strong>Expected outcome:</strong> Realistic expectations for your revenue potential</div>
+</div>
+<div class="phase-header">PHASE 3: WHY TIMING MATTERS</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.1:</strong> The tested posting schedule</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> We have done extensive testing on when you should post content</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> We&#039;ve posted at pretty much any time you could think of, all frequencies</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> We always see best results: 7am reel, 12pm carousel</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> These times consistently perform well across different audiences</div>
+<p class="body-text">The truth is: selling digital products rewards consistency. Selling digital products rewards effort. Selling digital products rewards showing up even when you don&#039;t feel like it. Once you understand these fundamentals, everything else becomes a system you can follow.</p>
+<div class="step-meta"><strong>What you need:</strong> Commitment to consistent posting times<br><strong>Expected outcome:</strong> Optimal engagement from your small audience</div>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">2</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 2</div>
+      <h1 class="chapter-title">Chapter 2: The 3-Post Blueprint - Your Daily Content System That Converts</h1>
+      <div class="divider"></div>
+      <div class="phase-header">PHASE 1: MORNING NURTURING POST (7AM)</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.1:</strong> Create your nurturing B-roll reel</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post a nurturing B-roll reel first thing in the morning</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This builds connection and keeps your audience engaged</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Focus on behind-the-scenes content that builds trust</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Keep it authentic and relatable to your journey</div>
+<div class="step-meta"><strong>What you need:</strong> Simple B-roll footage of your daily routine or workspace<br><strong>Expected outcome:</strong> Stronger connection with existing followers</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.2:</strong> Structure for engagement</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Start with a hook that relates to your audience&#039;s struggles</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Show your process or environment authentically</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> End with encouragement or motivation</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> No direct pitch - this is pure nurturing content</div>
+<div class="step-meta"><strong>What you need:</strong> Authentic behind-the-scenes moments<br><strong>Expected outcome:</strong> Increased trust and follower retention</div>
+</div>
+<div class="phase-header">PHASE 2: MIDDAY VALUE CAROUSEL (12PM)</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.1:</strong> Design your high-comment carousel</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Drop a carousel that gets at least 1k comments and offers a free resource</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This is your lead magnet delivery system</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Focus on solving one specific problem your audience faces</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Always include a clear call-to-action for your freebie</div>
+<div class="step-meta"><strong>What you need:</strong> One valuable free resource ready to deliver<br><strong>Expected outcome:</strong> Email list growth and high engagement</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.2:</strong> Master the comment-driving formula</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Create carousels that ask people to comment specific keywords</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Example: &quot;Comment HACK if you want me to show you what this is&quot;</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> The carousels and reels you&#039;re making have people comment specific keywords, which creates traffic, which creates sales</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This system turns comments into checkout page visits</div>
+<div class="step-meta"><strong>What you need:</strong> Simple keyword system for lead capture<br><strong>Expected outcome:</strong> Direct traffic to your offers</div>
+</div>
+<div class="phase-header">PHASE 3: EVENING CREDIBILITY POST (5PM)</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.1:</strong> Film your talking-head reel</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post talking-head selfie reels to educate and build trust at 3pm</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post studio talking-head reels that build credibility at 5pm</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Focus on teaching one clear concept or answering one question</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This positions you as the expert worth buying from</div>
+<div class="step-meta"><strong>What you need:</strong> One teaching point per reel<br><strong>Expected outcome:</strong> Increased authority and trust</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.2:</strong> Include subtle pitches</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Every post I make has a purpose. Every post moves my business forward.</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> A good pitch actually gains you followers when done right</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Daily sales are directly correlated to daily pitches</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Pitch in subtle and clever ways throughout your content</div>
+<div class="step-meta"><strong>What you need:</strong> Natural way to mention your main offer<br><strong>Expected outcome:</strong> Daily sales from your content system</div>
+</div>
+<div class="phase-header">PHASE 4: SYSTEM OPTIMIZATION</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.1:</strong> Track and audit your content</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Every nine posts, audit how they performed</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Look at which ones got the most comments, saves, and engagement</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Double down on what works, eliminate what doesn&#039;t</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This ensures your system keeps improving</div>
+<p class="body-text">This system grows my audience fast. And that audience buys when I&#039;m selling digital products. Selling digital products scales when you have a real content system.</p>
+<div class="step-meta"><strong>What you need:</strong> Simple tracking method for post performance<br><strong>Expected outcome:</strong> Continuously improving conversion rates</div>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">3</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 3</div>
+      <h1 class="chapter-title">Chapter 3: Implementation Guide - Turn Your First 100 Views Into $50 Today</h1>
+      <div class="divider"></div>
+      <div class="phase-header">PHASE 1: PRE-LAUNCH SETUP</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.1:</strong> Prepare your one digital product</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> You should only be doing 2 things: Sell 1 product and post content daily on 1 platform</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Your product should solve a real problem that many struggle with</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Price it appropriately - even a $7 product can generate $100+ daily</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Set up your checkout page on a reliable platform like SamCart</div>
+<div class="step-meta"><strong>What you need:</strong> One clear digital product solving a specific problem<br><strong>Expected outcome:</strong> Simple offer ready to promote</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.2:</strong> Create your content bank</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> I batch my content by filming 30 reels in less than two hours</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Film about 40 B-roll clips in one hour for your nurturing posts</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Batching changed everything - selling digital products gets easier when you plan ahead</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This gives you time freedom while maintaining consistency</div>
+<div class="step-meta"><strong>What you need:</strong> 2-3 hours for content creation session<br><strong>Expected outcome:</strong> Week&#039;s worth of content ready to post</div>
+</div>
+<div class="phase-header">PHASE 2: DAILY EXECUTION SYSTEM</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.1:</strong> Follow the exact posting schedule</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> 7am: Nurturing B-roll reel</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> 12pm: Value carousel with lead magnet</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> 5pm: Teaching/credibility reel with subtle pitch</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post at the exact same time every single day for consistency</div>
+<div class="step-meta"><strong>What you need:</strong> Commitment to daily posting at set times<br><strong>Expected outcome:</strong> Predictable audience engagement</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.2:</strong> Drive traffic to your checkout page</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Your goal is 100 checkout page views every single day</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> 80% of your time should be spent driving traffic to your checkout page</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Reels = traffic, Traffic = sales</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> The more reels you publish, the more people click your link in bio</div>
+<div class="step-meta"><strong>What you need:</strong> Clear link in bio directing to your offer<br><strong>Expected outcome:</strong> Daily traffic to your sales page</div>
+</div>
+<div class="phase-header">PHASE 3: OPTIMIZATION AND SCALING</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.1:</strong> Repurpose your winning content</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Download your best 30 reels and repost them</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post 5 of your best reels every single day as extra content</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This works because people forget what they saw, and new followers never saw the old reels</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> It creates extra engagement and gives your account more reach</div>
+<div class="step-meta"><strong>What you need:</strong> System to identify and repost top performers<br><strong>Expected outcome:</strong> Increased reach without creating new content</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.2:</strong> Follow up for maximum conversions</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Follow up with 3 people daily who showed interest but didn&#039;t buy</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Send them a simple 1-word message: &quot;[Name]?&quot; - this works incredibly well</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> As you pitch more, you&#039;ll build a list of warm prospects</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Daily follow-up directly correlates to increased sales</div>
+<div class="step-meta"><strong>What you need:</strong> Simple system to track interested prospects<br><strong>Expected outcome:</strong> Higher conversion rates from warm leads</div>
+</div>
+<div class="phase-header">PHASE 4: MEASURING SUCCESS</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.1:</strong> Track your key metrics</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Monitor daily checkout page views (goal: 100+)</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Track conversion rate (aim for 3-6 sales per 100 views)</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> With 100 views and proper conversion, you&#039;ll hit $50+ daily</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Scale by increasing views while maintaining conversion rate</div>
+<div class="step-meta"><strong>What you need:</strong> Analytics tracking for views and sales<br><strong>Expected outcome:</strong> Clear understanding of your performance</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.2:</strong> Solve one person&#039;s problem daily</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Set a goal to help one person each day through comments or DMs</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This could be a helpful comment, answering a question, or providing value</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Not everyone you help will become a sale, but you&#039;ll be stunned by how often it does</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> This builds genuine relationships that convert over time</div>
+<p class="body-text">Remember: Selling digital products is simple when you stay consistent. This system works because it&#039;s predictable, valuable, and focused. Follow it exactly, and your small audience will start buying from you daily.</p>
+<div class="step-meta"><strong>What you need:</strong> Commitment to daily value-giving<br><strong>Expected outcome:</strong> Increased trust and unexpected sales</div>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">4</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 4</div>
+      <h1 class="chapter-title">Chapter 4: The 7-Day Implementation Sprint - Your First Week Success Plan</h1>
+      <div class="divider"></div>
+      <p class="body-text">Here&#039;s your exact 7-day roadmap to implement the 3-Post Daily System and start seeing results immediately. Don&#039;t overthink this - just follow the phases.</p>
+<div class="phase-header">PHASE 1: PRE-LAUNCH SETUP</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: 30 minutes to prepare everything</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: Complete system ready to activate</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.1:</strong> Choose your $7-$27 digital product to sell (or create a simple PDF guide if you don&#039;t have one)</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.2:</strong> Write out 3 versions of your pitch: &quot;If you want [result], it&#039;s $[price]. Link in bio.&quot; Keep it simple.</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.3:</strong> Set phone alarms for 7am, 12pm, and 5pm in your timezone - these are your posting times</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.4:</strong> Create your SamCart checkout page (this takes 10 minutes max)</div>
+</div>
+<div class="phase-header">PHASE 2: DAYS 1-3 EXECUTION</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: Consistency without perfection</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: Getting into your rhythm</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.1:</strong> Day 1 - Post your first nurturing B-roll reel at 7am (no pitch, just value)</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.2:</strong> Day 1 - Post your first carousel at 12pm with clear call-to-action for free resource</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.3:</strong> Day 1 - Post your first talking-head education reel at 5pm with subtle product mention</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.4:</strong> Repeat this exact pattern for Days 2 and 3 - do NOT change anything yet</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.5:</strong> Track your checkout page views daily (you need 10-15 views to make your first $50)</div>
+</div>
+<div class="phase-header">PHASE 3: DAYS 4-7 OPTIMIZATION</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: Audit mindset and willingness to double down on what works</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: Improved performance and first sales</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.1:</strong> After 3 days, audit your content - which post got the most comments? Most saves? Most profile visits?</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.2:</strong> Create 2 more pieces of content similar to your best-performing post</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.3:</strong> Continue the 3-post daily rhythm but now you&#039;re posting with data, not guessing</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.4:</strong> Follow up with anyone who commented or DM&#039;d you - send a simple &quot;Hey [name]!&quot; message</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.5:</strong> By day 7, you should be getting 15+ checkout page views daily</div>
+</div>
+<div class="phase-header">PHASE 4: WEEK 1 REVIEW</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: Honest assessment of your results</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: Clear plan for week 2</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.1:</strong> Calculate total checkout page views for the week</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.2:</strong> Note which content style performed best (B-roll, carousel, or talking-head)</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.3:</strong> Identify your best posting time based on engagement</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.4:</strong> Plan week 2 with more of what worked</div>
+<p class="body-text">Remember: You&#039;re not trying to go viral here. You just need a few hundred views per post to make $50. Most people overcomplicate this. The students who follow this exact system typically see their first sales within 48 hours.</p>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">5</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">Chapter 5</div>
+      <h1 class="chapter-title">Chapter 5: Scaling Beyond $50 - Your 30-Day Growth Plan</h1>
+      <div class="divider"></div>
+      <p class="body-text">Once you&#039;re consistently making $50 daily, here&#039;s how to scale to $100, then $200, and beyond using the same system.</p>
+<div class="phase-header">PHASE 1: DOUBLE DOWN ON WHAT WORKS</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: Data from your first successful week</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: Increased consistency and better conversion rates</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.1:</strong> Identify your highest-converting post type from week 1</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.2:</strong> Create 5 more pieces of content exactly like your winner</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.3:</strong> Repost your best-performing content after 7 days - people forget what they saw</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 1.4:</strong> Increase your posting frequency - if 3 posts daily made $50, try 4 posts for $75</div>
+</div>
+<div class="phase-header">PHASE 2: OPTIMIZE YOUR CONVERSION FUNNEL</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: Focus on checkout page views and conversion rate</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: More sales from the same amount of traffic</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.1:</strong> Aim for 50-100 checkout page views daily (this typically generates $100-200 in sales)</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.2:</strong> Test different price points - if $7 works, try $27 for the same product</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.3:</strong> Add urgency to your pitches: &quot;Only 10 spots left&quot; or &quot;Price goes up tomorrow&quot;</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 2.4:</strong> Create a simple email follow-up sequence for people who viewed but didn&#039;t buy</div>
+</div>
+<div class="phase-header">PHASE 3: BATCH AND SYSTEMATIZE</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: 2-3 hours for content creation weekly</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: More time freedom while maintaining growth</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.1:</strong> Batch film 15-20 reels in one session (I do 30 in 2 hours)</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.2:</strong> Create content templates based on your winners - use the same hooks, different examples</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.3:</strong> Schedule your posts using Creator Studio or similar tools</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 3.4:</strong> Repurpose one piece of content into 3 different formats (reel, carousel, story)</div>
+</div>
+<div class="phase-header">PHASE 4: SCALE YOUR OFFERS</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> What you need: Understanding that more traffic = more revenue</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Expected outcome: $200-500+ daily sales</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.1:</strong> Create a $97 course related to your $7 product</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.2:</strong> Offer your $7 product as a tripwire to the higher-priced item</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.3:</strong> Start simple $5/day Facebook ads to your best-performing organic content</div>
+</div>
+<div class="step-item">
+<div class="step-title"><strong>STEP 4.4:</strong> Aim for 200+ checkout page views daily - this is where real money happens</div>
+<p class="body-text"><strong>CRITICAL SUCCESS FACTORS:</strong></p>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Post consistently for 90 days minimum - no exceptions</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Audit every 9 posts to see what&#039;s working</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Don&#039;t change the system when it&#039;s working, just do more of it</div>
+<div class="step-bullet"><span class="bullet-arrow">→</span> Track checkout page views daily - this is your most important metric</div>
+<p class="body-text">Most people quit right before it works. The students who stick to this system for 180 days consistently hit $10K+ months. It&#039;s not magic, it&#039;s math.</p>
+<p class="body-text">If you enjoyed this blueprint and want to see the exact 5 reels that convert best for small audiences, check out &quot;5 Reels That Turn 100 Views Into $50 Daily.&quot; It shows you the specific reel types, hooks, and pitches that work when you only have a few hundred views per post. Perfect for when you&#039;re just getting started with this system.</p>
+</div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">6</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="about-section">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="about-photo" alt="Martin Ebongue" onerror="this.style.background='#ddd'">
+        <div class="about-name">Martin Ebongue</div>
+        <div class="about-tagline">Make $3k Per Month With A Tiny Audience</div>
+        <div class="about-handle">@realmartinebongue</div>
+      </div>
+      <div class="divider" style="margin: 24px auto;"></div>
+      <p class="about-bio">Martin Ebongue helps creators make $50-$100 a day from a small audience on social media, delivering exceptional results for clients.</p>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="" onerror="this.style.background='#ddd'">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page">About</span>
+    </div>
+  </div>
+</body>
+</html>

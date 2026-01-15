@@ -474,7 +474,9 @@ export async function generateLeadMagnetPart2(funnelId) {
 
   // Build cross-promo paragraph for Front-End product
   // Lead Magnet always promotes Front-End (not Main Product)
-  const crossPromo = buildCrossPromoParagraph(frontend, false);
+  // front_end_link is a top-level column, not inside the JSONB
+  const frontendWithUrl = { ...frontend, url: funnel.front_end_link };
+  const crossPromo = buildCrossPromoParagraph(frontendWithUrl, false);
 
   // Get format instructions for content structure
   const formatInstructions = getFormatInstructions(lead_magnet?.format);

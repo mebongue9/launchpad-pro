@@ -15,6 +15,7 @@ import { TemplateSelector } from '../components/visual-builder/TemplateSelector'
 import { PreviewPanel } from '../components/visual-builder/PreviewPanel'
 import { StyleEditor } from '../components/visual-builder/StyleEditor'
 import { GeneratedPdfsList } from '../components/visual-builder/GeneratedPdfsList'
+import { CreativeLab } from '../components/cover-lab/CreativeLab'
 import {
   Palette,
   FileText,
@@ -547,20 +548,7 @@ export default function VisualBuilder() {
 
       {/* Creative Lab Tab */}
       {activeTab === 'lab' && (
-        <Card className="text-center py-12">
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <FlaskConical className="w-8 h-8 text-purple-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            Creative Lab
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto mb-4">
-            Experiment with custom designs, layouts, and styles. Coming soon!
-          </p>
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-            Coming Soon
-          </span>
-        </Card>
+        <CreativeLab />
       )}
 
       {/* Generated PDFs Tab */}

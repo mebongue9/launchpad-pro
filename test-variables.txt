@@ -1,0 +1,56 @@
+=== VARIABLE MAPPING TEST ===
+
+PROFILES TABLE SCHEMA (from docs/03-DATABASE-SCHEMA.md):
+- id: UUID PRIMARY KEY (profile's own ID)
+- user_id: UUID (auth user's ID - FOREIGN KEY)
+- name: VARCHAR(100)
+- social_handle: VARCHAR(100)
+- photo_url: TEXT
+- logo_url: TEXT
+- tagline: VARCHAR(500)
+- niche: VARCHAR(200)
+
+FRONTEND SENDS (from src/pages/VisualBuilder.jsx line 158-173):
+- userId: user?.id → auth user UUID
+- profileId: selectedProfile → profile's id column (from dropdown value={p.id})
+
+BACKEND RECEIVES (from netlify/functions/visual-builder-generate.js line 49-50):
+- userId → extracted from body
+- profileId → extracted from body
+
+PROFILE QUERY LOGIC (lines 154-185):
+- IF profileId provided → .eq('id', profileId) → queries profiles.id column ✓
+- ELSE IF userId provided → .eq('user_id', userId) → queries profiles.user_id column ✓
+
+FIELDS SELECTED (line 159):
+name, social_handle, photo_url, logo_url, tagline, niche
+
+MAPPING TO INTERIOR RENDERER (netlify/functions/lib/interior-renderer.js lines 22-31):
+- author = profile?.name || 'Author'           ← uses 'name' column ✓
+- handle = profile?.social_handle || ''        ← uses 'social_handle' column ✓
+- photoUrl = profile?.photo_url || PLACEHOLDER ← uses 'photo_url' column ✓
+- tagline = profile?.tagline || ''             ← uses 'tagline' column ✓
+- niche = profile?.niche || ''                 ← uses 'niche' column ✓
+
+BIO CONSTRUCTION (lines 29-31):
+const bio = niche
+  ? `${author} is an expert in ${niche}, helping clients achieve exceptional results.`
+  : `${author} is an expert in their field, helping clients achieve exceptional results.`
+
+=== ALL FIELDS VERIFIED AGAINST SCHEMA ===
+
+CODE VERIFICATION (interior-renderer.js lines 22-26):
+Line 22: profile?.name         → matches schema 'name' column ✓
+Line 23: profile?.social_handle → matches schema 'social_handle' column ✓
+Line 24: profile?.photo_url    → matches schema 'photo_url' column ✓
+Line 25: profile?.tagline      → matches schema 'tagline' column ✓
+Line 26: profile?.niche        → matches schema 'niche' column ✓
+
+BUG THAT WAS FIXED:
+BEFORE: When profileId null, used .eq('id', userId) - WRONG!
+        userId is stored in 'user_id' column, not 'id' column
+
+AFTER:  When profileId null, uses .eq('user_id', userId) - CORRECT!
+        Queries the correct column where auth user ID is stored
+
+=== READY FOR TESTING ===

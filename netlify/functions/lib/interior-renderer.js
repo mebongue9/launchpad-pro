@@ -51,7 +51,8 @@ export function renderInterior(template, data, profile) {
         chapter,
         index + 1,
         pageNumber,
-        { handle, photoUrl, primaryColor: primary_color }
+        { handle, photoUrl, primaryColor: primary_color },
+        format
       ))
       pageNumber++
     })
@@ -89,7 +90,7 @@ ${pages.join('\n')}
 }
 
 /**
- * Get complete interior CSS adapted for A4
+ * Get complete interior CSS adapted for Letter size (8.5in x 11in)
  */
 function getInteriorCSS(template, headerGradient, lightBg) {
   const { primary_color, secondary_color, font_family, is_gradient } = template
@@ -97,7 +98,7 @@ function getInteriorCSS(template, headerGradient, lightBg) {
   return `
 /* ============================================
    LAUNCHPAD PRO PDF INTERIOR STYLES
-   Adapted for A4 (210mm x 297mm)
+   Letter size (8.5in x 11in)
    ============================================ */
 
 /* CSS Variables */
@@ -125,21 +126,25 @@ html, body {
   print-color-adjust: exact;
 }
 
-/* Page Dimensions - A4 */
+/* Page Dimensions - Letter */
 @page {
-  size: A4;
+  size: 8.5in 11in;
   margin: 0;
 }
 
 .page {
-  width: 210mm;
-  height: 297mm;
+  width: 8.5in;
+  height: 11in;
+  box-sizing: border-box;
   position: relative;
   overflow: hidden;
   page-break-after: always;
   background: var(--background);
-  /* Safe zones for A4 */
-  padding: 15mm 20mm 25mm 20mm;
+  /* SAFE ZONES - INCREASED BOTTOM FOR FOOTER */
+  padding-top: 0.6in;
+  padding-bottom: 1.1in;
+  padding-left: 0.75in;
+  padding-right: 0.75in;
 }
 
 .page:last-child {
@@ -154,7 +159,7 @@ html, body {
   top: 0;
   left: 0;
   right: 0;
-  height: 8px;
+  height: 6px;
   background: var(--header-gradient);
 }
 
@@ -162,9 +167,8 @@ html, body {
    PAGE CONTENT AREA
    ============================================ */
 .page-content {
-  /* Content area: 210mm - 40mm = 170mm wide
-     Height: 297mm - 15mm - 25mm - footer = ~240mm */
-  max-height: 240mm;
+  max-width: 7in;
+  max-height: 9.1in;
   overflow: hidden;
 }
 
@@ -307,13 +311,13 @@ html, body {
 }
 
 /* ============================================
-   FOOTER - Every page
+   FOOTER - FIXED WITH PROPER SPACING
    ============================================ */
 .footer-line {
   position: absolute;
-  bottom: 18mm;
-  left: 20mm;
-  right: 20mm;
+  bottom: 0.85in;
+  left: 0.75in;
+  right: 0.75in;
   height: 1px;
   background: var(--primary-color);
   opacity: 0.3;
@@ -321,9 +325,9 @@ html, body {
 
 .page-footer {
   position: absolute;
-  bottom: 8mm;
-  left: 20mm;
-  right: 20mm;
+  bottom: 0.5in;
+  left: 0.75in;
+  right: 0.75in;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -336,21 +340,22 @@ html, body {
 }
 
 .footer-photo {
-  width: 24px;
-  height: 24px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
 }
 
 .footer-handle {
-  font-size: 9px;
-  color: #888;
+  font-size: 10px;
+  color: #666;
 }
 
-.footer-page {
-  font-size: 9px;
-  color: #888;
+.footer-page-number {
+  font-size: 10px;
+  color: #666;
+  font-weight: 600;
 }
 
 /* ============================================
@@ -423,23 +428,440 @@ p, .step-bullet {
   orphans: 2;
   widows: 2;
 }
+
+/* ============================================
+   BLUEPRINT FORMAT
+   ============================================ */
+.phase-header {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.meta-box {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f8f8f8;
+  border-radius: 4px;
+  line-height: 1.6;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.meta-box strong {
+  color: #000;
+}
+
+.blueprint-step {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: var(--primary-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+.step-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.step-text p {
+  margin-bottom: 12px;
+}
+
+.step-text p:last-child {
+  margin-bottom: 0;
+}
+
+.bullet-list {
+  margin: 16px 0;
+  padding-left: 0;
+  list-style: none;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.bullet-list li {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.bullet-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* ============================================
+   CHEAT SHEET FORMAT
+   ============================================ */
+.cheat-card {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-left: 3px solid var(--primary-color);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.cheat-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cheat-section {
+  margin-bottom: 14px;
+}
+
+.cheat-section:last-child {
+  margin-bottom: 0;
+}
+
+.cheat-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cheat-section-content {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.cheat-section-content ul {
+  list-style: none;
+  padding-left: 0;
+  margin: 0;
+}
+
+.cheat-section-content li {
+  padding-left: 16px;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.cheat-section-content li::before {
+  content: "•";
+  color: var(--primary-color);
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+}
+
+.cheat-section-content ol {
+  padding-left: 20px;
+  margin: 0;
+}
+
+.cheat-section-content ol li {
+  padding-left: 4px;
+  margin-bottom: 6px;
+}
+
+.cheat-section-content ol li::before {
+  content: none;
+}
+
+.example-box {
+  background: white;
+  border: 1px solid #ddd;
+  padding: 12px 14px;
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+  font-style: italic;
+}
+
+/* ============================================
+   PLANNER FORMAT
+   ============================================ */
+.day-header {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 14px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.day-header:first-of-type {
+  margin-top: 0;
+}
+
+.day-block {
+  page-break-inside: avoid;
+  break-inside: avoid;
+  margin-bottom: 8px;
+}
+
+.task-item {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.task-checkbox {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--primary-color);
+  border-radius: 3px;
+  margin-top: 3px;
+}
+
+.task-content {
+  flex: 1;
+}
+
+.task-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 4px;
+}
+
+.task-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 6px;
+}
+
+.task-details {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #444;
+}
+
+.task-details p {
+  margin-bottom: 4px;
+}
+
+.task-details strong {
+  color: #000;
+}
+
+.info-box {
+  background: #f8f8f8;
+  border: 1px solid #e0e0e0;
+  padding: 14px 16px;
+  margin: 20px 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.info-box-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 10px;
+}
+
+.info-box-content {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #444;
+}
+
+.info-box-content p {
+  margin-bottom: 4px;
+}
+
+.tracking-section {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  padding: 14px 16px;
+  margin-top: 20px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.tracking-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.tracking-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.tracking-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #444;
+}
+
+.tracking-line {
+  flex: 1;
+  height: 1px;
+  border-bottom: 1px solid #ccc;
+  max-width: 80px;
+}
+
+/* ============================================
+   SWIPE FILE FORMAT
+   ============================================ */
+.swipe-card {
+  background: #fafafa;
+  border: 1px solid #e0e0e0;
+  border-left: 3px solid var(--primary-color);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.swipe-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.swipe-content {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.swipe-content p {
+  margin-bottom: 12px;
+}
+
+.swipe-content p:last-child {
+  margin-bottom: 0;
+}
+
+.swipe-content strong {
+  color: #000;
+  font-weight: 600;
+}
+
+.fill-blank {
+  display: inline-block;
+  min-width: 120px;
+  border-bottom: 1px solid var(--primary-color);
+  margin: 0 4px;
+}
+
+/* ============================================
+   FORMAT-SPECIFIC PAGE BREAK RULES
+   ============================================ */
+.blueprint-step,
+.meta-box,
+.bullet-list,
+.cheat-card,
+.cheat-section,
+.day-block,
+.task-item,
+.info-box,
+.tracking-section,
+.swipe-card {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+.phase-header,
+.day-header,
+.step-title,
+.cheat-card-title,
+.swipe-card-title {
+  page-break-after: avoid !important;
+  break-after: avoid !important;
+}
 `
 }
 
 /**
- * Render a chapter page
+ * Render a chapter page with format-specific styling
  */
-function renderChapterPage(chapter, chapterNum, pageNum, profile) {
+function renderChapterPage(chapter, chapterNum, pageNum, profile, format = '') {
   const { handle, photoUrl, primaryColor } = profile
   const { title, content } = chapter
-
-  // Parse chapter content with structure detection
-  const parsedContent = parseChapterContent(content)
 
   // Handle display (don't show bare "@" if no handle)
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
 
-  return `
+  // Normalize format for comparison
+  const normalizedFormat = (format || '').toLowerCase().replace(/\s+/g, '-')
+
+  // Route to format-specific renderer
+  switch (normalizedFormat) {
+    case 'blueprint':
+      return renderBlueprintPage(chapter, chapterNum, pageNum, profile)
+    case 'cheat-sheet':
+      return renderCheatSheetPage(chapter, chapterNum, pageNum, profile)
+    case 'planner':
+      return renderPlannerPage(chapter, chapterNum, pageNum, profile)
+    case 'swipe-file':
+      return renderSwipeFilePage(chapter, chapterNum, pageNum, profile)
+    default:
+      // Default: use existing content parser
+      const parsedContent = parseChapterContent(content)
+      return `
   <div class="page">
     <div class="header-bar"></div>
     <div class="page-content">
@@ -454,9 +876,264 @@ function renderChapterPage(chapter, chapterNum, pageNum, profile) {
         <img src="${photoUrl}" class="footer-photo" alt="">
         <span class="footer-handle">${handleDisplay}</span>
       </div>
-      <span class="footer-page">${pageNum}</span>
+      <span class="footer-page-number">${pageNum}</span>
     </div>
   </div>`
+  }
+}
+
+/**
+ * Render Blueprint format page
+ */
+function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
+  const { handle, photoUrl } = profile
+  const { title, content } = chapter
+  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+
+  // Parse content into steps (simple split by numbered patterns or paragraphs)
+  const steps = parseContentToSteps(content)
+
+  return `
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER ${chapterNum}</div>
+      <h1 class="chapter-title">${escapeHtml(title)}</h1>
+
+      ${steps.map((step, i) => `
+      <div class="blueprint-step">
+        <div class="step-number">${i + 1}</div>
+        <div class="step-content">
+          <div class="step-title">${escapeHtml(step.title || `Step ${i + 1}`)}</div>
+          <div class="step-text">
+            <p>${escapeHtml(step.text)}</p>
+          </div>
+        </div>
+      </div>`).join('')}
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="${photoUrl}" class="footer-photo" alt="">
+        <span class="footer-handle">${handleDisplay}</span>
+      </div>
+      <span class="footer-page-number">${pageNum}</span>
+    </div>
+  </div>`
+}
+
+/**
+ * Render Cheat Sheet format page
+ */
+function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
+  const { handle, photoUrl } = profile
+  const { title, content } = chapter
+  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+
+  // Parse content into sections
+  const sections = parseContentToSections(content)
+
+  return `
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER ${chapterNum}</div>
+      <h1 class="chapter-title">${escapeHtml(title)}</h1>
+
+      <div class="cheat-card">
+        <div class="cheat-card-title">${escapeHtml(title)}</div>
+        ${sections.map(section => `
+        <div class="cheat-section">
+          <div class="cheat-section-title">${escapeHtml(section.title || 'Key Points')}</div>
+          <div class="cheat-section-content">
+            <ul>
+              ${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+            </ul>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="${photoUrl}" class="footer-photo" alt="">
+        <span class="footer-handle">${handleDisplay}</span>
+      </div>
+      <span class="footer-page-number">${pageNum}</span>
+    </div>
+  </div>`
+}
+
+/**
+ * Render Planner format page
+ */
+function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
+  const { handle, photoUrl } = profile
+  const { title, content } = chapter
+  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+
+  // Parse content into tasks
+  const tasks = parseContentToTasks(content)
+
+  return `
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">WEEK ${chapterNum}</div>
+      <h1 class="chapter-title">${escapeHtml(title)}</h1>
+
+      <div class="day-block">
+        <div class="day-header">DAY ${chapterNum}</div>
+        ${tasks.map((task, i) => `
+        <div class="task-item">
+          <div class="task-checkbox"></div>
+          <div class="task-content">
+            <div class="task-time">${task.time || `${7 + i}:00 AM`}</div>
+            <div class="task-title">${escapeHtml(task.title || `Task ${i + 1}`)}</div>
+            <div class="task-details">
+              <p>${escapeHtml(task.text)}</p>
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="${photoUrl}" class="footer-photo" alt="">
+        <span class="footer-handle">${handleDisplay}</span>
+      </div>
+      <span class="footer-page-number">${pageNum}</span>
+    </div>
+  </div>`
+}
+
+/**
+ * Render Swipe File format page
+ */
+function renderSwipeFilePage(chapter, chapterNum, pageNum, profile) {
+  const { handle, photoUrl } = profile
+  const { title, content } = chapter
+  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+
+  // For swipe file, content becomes a template card
+  const templateContent = content || ''
+
+  return `
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER ${chapterNum}</div>
+      <h1 class="chapter-title">${escapeHtml(title)}</h1>
+
+      <div class="swipe-card">
+        <div class="swipe-card-title">Template #${chapterNum}: ${escapeHtml(title)}</div>
+        <div class="swipe-content">
+          ${formatSwipeContent(templateContent)}
+        </div>
+      </div>
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="${photoUrl}" class="footer-photo" alt="">
+        <span class="footer-handle">${handleDisplay}</span>
+      </div>
+      <span class="footer-page-number">${pageNum}</span>
+    </div>
+  </div>`
+}
+
+/**
+ * Parse content into steps for Blueprint format
+ */
+function parseContentToSteps(content) {
+  if (!content) return [{ text: 'No content available', title: 'Step 1' }]
+
+  // Split by numbered patterns like "1.", "Step 1:", etc.
+  const stepPattern = /(?:^|\n)(?:\d+\.|Step\s+\d+:?)\s*/gi
+  const parts = content.split(stepPattern).filter(s => s.trim())
+
+  if (parts.length === 0) {
+    // No numbered steps found, split by paragraphs
+    return content.split(/\n\n+/).filter(s => s.trim()).map((text, i) => ({
+      title: `Step ${i + 1}`,
+      text: text.trim()
+    }))
+  }
+
+  return parts.map((text, i) => {
+    const lines = text.trim().split('\n')
+    const firstLine = lines[0] || ''
+    const rest = lines.slice(1).join(' ').trim()
+
+    return {
+      title: firstLine.replace(/^\*\*|\*\*$/g, '').substring(0, 50),
+      text: rest || firstLine
+    }
+  })
+}
+
+/**
+ * Parse content into sections for Cheat Sheet format
+ */
+function parseContentToSections(content) {
+  if (!content) return [{ title: 'Key Points', items: ['No content available'] }]
+
+  // Split by bullet points, arrows, or newlines
+  const bulletPattern = /(?:^|\n)[•→\-\*]\s*/g
+  const parts = content.split(bulletPattern).filter(s => s.trim())
+
+  if (parts.length <= 1) {
+    // No bullets found, split by sentences or lines
+    const items = content.split(/[.\n]+/).filter(s => s.trim().length > 10)
+    return [{ title: 'Key Points', items: items.length > 0 ? items : [content] }]
+  }
+
+  return [{ title: 'Key Points', items: parts }]
+}
+
+/**
+ * Parse content into tasks for Planner format
+ */
+function parseContentToTasks(content) {
+  if (!content) return [{ title: 'Task 1', text: 'No content available', time: '7:00 AM' }]
+
+  // Split by paragraphs or bullet points
+  const parts = content.split(/\n\n+|(?:^|\n)[•→\-\*]\s*/).filter(s => s.trim())
+
+  if (parts.length === 0) {
+    return [{ title: 'Task 1', text: content, time: '7:00 AM' }]
+  }
+
+  return parts.slice(0, 4).map((text, i) => {
+    const lines = text.trim().split('\n')
+    const firstLine = lines[0] || ''
+
+    return {
+      title: firstLine.substring(0, 40),
+      text: lines.slice(1).join(' ').trim() || firstLine,
+      time: `${7 + (i * 2)}:00 AM`
+    }
+  })
+}
+
+/**
+ * Format swipe file content with fill-in-the-blank styling
+ */
+function formatSwipeContent(content) {
+  if (!content) return '<p>No content available</p>'
+
+  // Split into paragraphs
+  const paragraphs = content.split(/\n\n+/).filter(s => s.trim())
+
+  return paragraphs.map(p => {
+    // Replace [blank] or ___ or similar patterns with fill-blank spans
+    let formatted = escapeHtml(p)
+    formatted = formatted.replace(/\[([^\]]*)\]/g, '<span class="fill-blank"></span>')
+    formatted = formatted.replace(/_{3,}/g, '<span class="fill-blank"></span>')
+    return `<p>${formatted}</p>`
+  }).join('\n')
 }
 
 /**
@@ -485,7 +1162,7 @@ function renderSampleChapter(pageNum, profile) {
         <img src="${photoUrl}" class="footer-photo" alt="">
         <span class="footer-handle">${handleDisplay}</span>
       </div>
-      <span class="footer-page">${pageNum}</span>
+      <span class="footer-page-number">${pageNum}</span>
     </div>
   </div>`
 }
@@ -516,7 +1193,7 @@ function renderAboutPage(profile) {
         <img src="${photoUrl}" class="footer-photo" alt="">
         <span class="footer-handle">${handleDisplay}</span>
       </div>
-      <span class="footer-page">About</span>
+      <span class="footer-page-number">About</span>
     </div>
   </div>`
 }

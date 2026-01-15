@@ -1,0 +1,1447 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+
+@page {
+  size: 210mm 297mm;
+  margin: 0;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #e0e0e0;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+:root {
+  --primary-color: #8B2500;
+  --primary-light: #CD4F00;
+  --primary-dark: #5a1800;
+  --light-bg: rgb(251, 241, 235);
+  --text-color: #1a1a1a;
+  --text-muted: #666;
+  --background: #ffffff;
+}
+
+.page {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 20px auto;
+  background: var(--background);
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+@media print {
+  .page {
+    margin: 0;
+    box-shadow: none;
+    page-break-after: always;
+  }
+}
+
+.page-content {
+  padding: 20mm 20mm 30mm 20mm;
+  min-height: calc(297mm - 50mm);
+}
+
+.header-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 6px;
+  background: var(--primary-color);
+}
+
+.chapter-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+}
+
+.chapter-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.3;
+  margin-bottom: 20px;
+}
+
+.body-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.body-text p {
+  margin-bottom: 12px;
+}
+
+.body-text strong {
+  color: #000;
+}
+
+.bullet-list {
+  margin: 12px 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.bullet-list li {
+  font-size: 15px;
+  line-height: 1.6;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.bullet-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* Footer - matching REFERENCE-16px-approved.html */
+.footer-line {
+  position: absolute;
+  bottom: 22mm;
+  left: 20mm;
+  right: 20mm;
+  height: 1px;
+  background: var(--primary-color);
+  opacity: 0.3;
+}
+
+.page-footer {
+  position: absolute;
+  bottom: 10mm;
+  left: 20mm;
+  right: 20mm;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.footer-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.footer-photo {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--primary-color);
+}
+
+.footer-handle {
+  font-size: 10px;
+  color: #666;
+}
+
+.footer-page-number {
+  font-size: 10px;
+  color: #666;
+  font-weight: 600;
+}
+
+/* Page break rules */
+.phase-header,
+.blueprint-step,
+.meta-box,
+.bullet-list,
+.cheat-card,
+.day-block,
+.task-item,
+.swipe-card {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
+
+.intro-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.intro-text p {
+  margin-bottom: 12px;
+}
+
+.phase-header {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-top: 24px;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--primary-light);
+}
+
+.meta-box {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  background: #f8f8f8;
+  border-radius: 4px;
+  line-height: 1.6;
+}
+
+.meta-box strong {
+  color: #000;
+}
+
+.blueprint-step {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.step-number {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  background: var(--primary-color);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: white;
+}
+
+.step-content {
+  flex: 1;
+}
+
+.step-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 8px;
+}
+
+.step-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.step-text p {
+  margin-bottom: 12px;
+}
+
+.step-text p:last-child {
+  margin-bottom: 0;
+}
+
+.critical-section {
+  margin-top: 24px;
+  padding: 16px;
+  background: #f8f8f8;
+  border-left: 3px solid var(--primary-color);
+}
+
+.critical-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+
+.critical-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.critical-list li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  padding-left: 20px;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.critical-list li::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.closing-text {
+  font-size: 15px;
+  line-height: 1.7;
+  color: #333;
+  margin-top: 20px;
+}
+
+.closing-text p {
+  margin-bottom: 12px;
+}
+
+
+.about-section {
+  text-align: center;
+  padding-top: 80px;
+}
+
+.about-photo {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--primary-color);
+  margin: 0 auto 20px;
+  display: block;
+}
+
+.about-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.about-tagline {
+  font-size: 13px;
+  color: var(--primary-color);
+  font-weight: 500;
+  margin-bottom: 6px;
+}
+
+.about-handle {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 20px;
+}
+
+.about-divider {
+  width: 60px;
+  height: 4px;
+  background: var(--primary-color);
+  margin: 20px auto;
+}
+
+.about-bio {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #444;
+  text-align: left;
+  max-width: 5.5in;
+  margin: 0 auto;
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 1</div>
+      <h1 class="chapter-title">Chapter 1: The Foundation Phase - Setting Up Your Automated Money Machine</h1>
+      <div class="intro-text">
+        <p>Here&#039;s the truth: Most people think automation is complicated. They hear words like &quot;systems&quot; and &quot;funnels&quot; and immediately feel overwhelmed. But after making over $14 million selling digital products, I can tell you that the best automations are actually simple. They&#039;re just small pieces that stack together to create something powerful.</p>
+        <p>This blueprint isn&#039;t about fancy tech or complicated workflows. It&#039;s about building what I call &quot;little automations&quot; that work 24/7 to put money in your pocket. I currently have about 30 of these running every single day, and they generate an average of $25,000 daily in cash collected. That&#039;s not luck - that&#039;s systems.</p>
+      </div>
+      <div class="phase-header">FOUNDATION SETUP</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> One digital product (course, PDF, or template under $100), basic checkout system, email collection method<br><br>
+        <strong>Expected outcome:</strong> A simple funnel that can process sales automatically
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.1</div>
+        <div class="step-content">
+          <div class="step-title">Create Your Core Digital Product</div>
+          <div class="step-text">
+            <p>Start with something simple. Don&#039;t overthink this. I&#039;ve seen students make millions with basic PDFs and simple courses. Your first product should solve one specific problem for one specific type of person. Think cleaning schedules for busy moms, meal prep guides for beginners, or Instagram templates for small businesses.</p>
+            <p>The key is speed over perfection. I literally created products in 2 hours that went on to make hundreds of thousands. Focus on value, not polish.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.2</div>
+        <div class="step-content">
+          <div class="step-title">Set Up Your Checkout System</div>
+          <div class="step-text">
+            <p>Use something simple like SamCart (I&#039;ve been using them for years). You need a page where people can buy your product and automatically receive it. This is non-negotiable. If someone wants to buy at 2 AM, your system needs to handle it without you.</p>
+            <p>Your checkout page should be clean and direct. No fancy graphics needed. Just tell them what they&#039;re getting and how it helps them.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.3</div>
+        <div class="step-content">
+          <div class="step-title">Create Your Lead Magnet</div>
+          <div class="step-text">
+            <p>This is how you capture emails. Create a free version of your paid product - maybe the first chapter of your course or a simplified version of your template. The goal is to give value while showing them what&#039;s possible with the full version.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.4</div>
+        <div class="step-content">
+          <div class="step-title">Build Your Simple Funnel Structure</div>
+          <div class="step-text">
+            <p>Here&#039;s your basic flow: Instagram → Lead Magnet → Email List → Sales Page → Checkout → Automated Delivery</p>
+            <p>That&#039;s it. Clean, direct, beginner-friendly. This structure has made me millions because it works and it&#039;s simple to maintain.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.5</div>
+        <div class="step-content">
+          <div class="step-title">Test Your System</div>
+          <div class="step-text">
+            <p>Before you do anything else, test this entire flow. Sign up for your own lead magnet. Buy your own product. Make sure everything works smoothly. I can&#039;t tell you how many people skip this step and lose sales because their system is broken.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">2</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 1 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 1: The Foundation Phase - Setting Up Your Automated Money Machine</h1>
+      <div class="critical-section">
+        <div class="critical-title">Critical Success Factors</div>
+        <ul class="critical-list">
+          <li>Keep it simple - complexity kills conversions</li>
+          <li>Focus on one product first - don&#039;t spread yourself thin</li>
+          <li>Test everything multiple times</li>
+          <li>Make sure your delivery is instant and automatic</li>
+        </ul>
+      </div>
+      <div class="closing-text">
+        <p>Remember, this foundation phase is about building something that works, not something that&#039;s perfect. Perfect never launches. Working systems make money. Once you have this foundation running smoothly, you can add the other automation layers that will multiply your results.</p>
+        <p>The beauty of this approach is that once it&#039;s built, it runs without you. I wake up every morning to an inbox full of sales notifications. That&#039;s the power of having systems work for you around the clock.</p>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">3</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 2</div>
+      <h1 class="chapter-title">Chapter 2: The Traffic Phase - Getting Eyeballs On Your Offers Automatically</h1>
+      <div class="intro-text">
+        <p>Traffic is the lifeblood of any automated business. Without people seeing your offers, even the best systems in the world won&#039;t make you money. But here&#039;s what most people get wrong - they think traffic has to be complicated or expensive. It doesn&#039;t.</p>
+        <p>I get about 70,000 new followers every month, and it&#039;s not random. It&#039;s not luck. It&#039;s strategy and consistency. Every post I make has a purpose. Every post moves my business forward. In this phase, I&#039;m going to show you how to create traffic systems that work while you sleep.</p>
+      </div>
+      <div class="phase-header">AUTOMATED TRAFFIC GENERATION</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Content creation system, posting schedule, engagement strategy, basic ad budget (optional but recommended)<br><br>
+        <strong>Expected outcome:</strong> Consistent daily traffic flowing to your checkout pages
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.1</div>
+        <div class="step-content">
+          <div class="step-title">Create Your Content System</div>
+          <div class="step-text">
+            <p>I post 4 times per day with specific purposes:</p>
+            <p>- Morning: Nurturing b-roll reel</p>
+            <p>- Noon: Carousel that gets 1K+ comments with free resource offer</p>
+            <p>- 3 PM: Talking-head selfie reels for education and trust</p>
+            <p>- 5 PM: Studio talking-head reels for credibility</p>
+            <p>This isn&#039;t random. Each post type serves a specific function in moving people from stranger to customer. You don&#039;t need to post 4 times daily to start, but you do need a system.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.2</div>
+        <div class="step-content">
+          <div class="step-title">Build Your Content Calendar</div>
+          <div class="step-text">
+            <p>I film 30 reels in one studio session. Batch creation is key to consistency. Plan your content around these themes:</p>
+            <p>- Educational (teaching something valuable)</p>
+            <p>- Social proof (showing results)</p>
+            <p>- Behind-the-scenes (building connection)</p>
+            <p>- Subtle pitches (5-7 times per week)</p>
+            <p>Remember: You should be pitching every single day in subtle ways. I make an average of $25,000 daily because I pitch daily. People don&#039;t even realize I&#039;m pitching, but I am.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.3</div>
+        <div class="step-content">
+          <div class="step-title">Set Up Your Automation Tools</div>
+          <div class="step-text">
+            <p>Use tools like ManyChat to automate your lead capture. When someone comments a specific word, they automatically get your lead magnet. This is huge for scaling. I have dozens of these automations running simultaneously.</p>
+            <p>For example: Someone comments &quot;blueprint&quot; and automatically receives this guide. No manual work required.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.4</div>
+        <div class="step-content">
+          <div class="step-title">Implement Your $5/Day Ad Strategy</div>
+          <div class="step-text">
+            <p>You can run very profitable ads for as little as $5 per day. Start with retargeting ads to people who&#039;ve visited your checkout page but didn&#039;t buy. These are the warmest prospects and convert at high rates.</p>
+            <p>Your ad copy should be simple and direct. Focus on the transformation your product provides, not features. &quot;Stop spending hours on social media with zero results&quot; performs better than &quot;Get 50 Instagram templates.&quot;</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.5</div>
+        <div class="step-content">
+          <div class="step-title">Create Your Engagement Loops</div>
+          <div class="step-text">
+            <p>Every piece of content should direct people to take action:</p>
+            <p>- Comment a word for a free resource</p>
+            <p>- Follow for more tips</p>
+            <p>- Save this post</p>
+            <p>- Share with someone who needs this</p>
+            <p>These engagement signals tell the algorithm to show your content to more people. More eyeballs = more potential customers.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">4</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 2 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 2: The Traffic Phase - Getting Eyeballs On Your Offers Automatically</h1>
+      <div class="blueprint-step">
+        <div class="step-number">2.6</div>
+        <div class="step-content">
+          <div class="step-title">Set Up Your Tracking System</div>
+          <div class="step-text">
+            <p>Track your links. Know which content drives the most traffic to your checkout pages. Double down on what works. I use simple UTM codes to see exactly which posts generate sales.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.7</div>
+        <div class="step-content">
+          <div class="step-title">Build Your Retargeting Sequences</div>
+          <div class="step-text">
+            <p>Not everyone buys immediately. Set up email sequences for people who downloaded your lead magnet but haven&#039;t bought yet. Also create ad sequences that follow people around the internet until they purchase.</p>
+            <p>- Consistency beats perfection every time</p>
+            <p>- Track everything so you know what&#039;s working</p>
+            <p>- Focus on one platform first, then expand</p>
+            <p>- Always be pitching (subtly) in your content</p>
+            <p>The goal of this phase is to create predictable, daily traffic to your offers. When you have 100 people visiting your checkout page daily (a realistic goal), and you convert 10% of them, that&#039;s 10 sales per day. At $50 per product, that&#039;s $500 daily or $15,000 monthly.</p>
+            <p>This phase transforms your business from hoping content goes viral to systematically driving qualified traffic to your offers every single day.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">5</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 3</div>
+      <h1 class="chapter-title">Chapter 3: The Conversion Phase - Turning Visitors Into Paying Customers</h1>
+      <div class="intro-text">
+        <p>Getting traffic is only half the battle. The real money is made in converting those visitors into paying customers. This is where most people fail. They get people to their checkout page, but then lose them because their conversion systems are broken or non-existent.</p>
+        <p>After processing over 200 sales per day, I&#039;ve learned exactly what makes people buy and what makes them leave. In this phase, I&#039;m going to show you how to build conversion systems that turn casual browsers into eager buyers.</p>
+      </div>
+      <div class="phase-header">CONVERSION OPTIMIZATION SYSTEMS</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Optimized checkout pages, email sequences, retargeting systems, urgency mechanisms, social proof elements<br><br>
+        <strong>Expected outcome:</strong> 10-15% conversion rate on your checkout pages (industry average is 2-3%)
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.1</div>
+        <div class="step-content">
+          <div class="step-title">Optimize Your Checkout Page</div>
+          <div class="step-text">
+            <p>Your checkout page is where money is made or lost. After $7 million in sales, here&#039;s what must be on every checkout page:</p>
+            <p>- Clear headline stating the main benefit</p>
+            <p>- Social proof (testimonials, number of customers)</p>
+            <p>- Urgency element (limited time bonus, price increase)</p>
+            <p>- Risk reversal (guarantee)</p>
+            <p>- Simple, single checkout option (don&#039;t overwhelm with choices)</p>
+            <p>Keep it clean and focused. Every element should move them toward purchase.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.2</div>
+        <div class="step-content">
+          <div class="step-title">Build Your Email Follow-Up Sequence</div>
+          <div class="step-text">
+            <p>Most people need 7-12 touchpoints before buying. Your email sequence should:</p>
+            <p>Day 1: Deliver lead magnet + soft introduction to paid offer</p>
+            <p>Day 3: Educational content + customer success story</p>
+            <p>Day 5: Address common objection + testimonials</p>
+            <p>Day 7: Strong pitch with urgency</p>
+            <p>Day 10: Last chance + social proof</p>
+            <p>Day 14: Re-engagement campaign</p>
+            <p>This sequence runs automatically for everyone who joins your list.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.3</div>
+        <div class="step-content">
+          <div class="step-title">Set Up Your Retargeting Campaigns</div>
+          <div class="step-text">
+            <p>People who visit your checkout page but don&#039;t buy are gold. They&#039;re interested but need more convincing. Create ads that:</p>
+            <p>- Remind them what they&#039;re missing</p>
+            <p>- Add urgency (&quot;Only 48 hours left&quot;)</p>
+            <p>- Show social proof from other customers</p>
+            <p>- Address their biggest objection</p>
+            <p>I spend about 60% of my ad budget on retargeting because it converts so well.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.4</div>
+        <div class="step-content">
+          <div class="step-title">Create Your Urgency Systems</div>
+          <div class="step-text">
+            <p>Urgency drives action. Without it, people procrastinate forever. Use:</p>
+            <p>- Limited-time bonuses that expire</p>
+            <p>- Price increases on specific dates</p>
+            <p>- Scarcity (&quot;Only 100 copies available&quot;)</p>
+            <p>- Seasonal urgency (&quot;Before the new year&quot;)</p>
+            <p>But make it real urgency, not fake countdown timers that reset.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.5</div>
+        <div class="step-content">
+          <div class="step-title">Build Social Proof Automations</div>
+          <div class="step-text">
+            <p>Nothing sells like success stories. Set up systems to automatically collect and display:</p>
+            <p>- Customer testimonials</p>
+            <p>- Success stories</p>
+            <p>- Usage statistics (&quot;Join 50,000+ students&quot;)</p>
+            <p>- Reviews and ratings</p>
+            <p>I use tools like UseProof to show real-time purchases on my checkout pages. When people see others buying, they&#039;re more likely to buy too.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">6</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 3 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 3: The Conversion Phase - Turning Visitors Into Paying Customers</h1>
+      <div class="blueprint-step">
+        <div class="step-number">3.6</div>
+        <div class="step-content">
+          <div class="step-title">Implement Your Abandoned Cart Sequence</div>
+          <div class="step-text">
+            <p>Someone adds your product to cart but doesn&#039;t complete purchase? Automatically send:</p>
+            <p>Email 1 (1 hour later): &quot;You forgot something...&quot;</p>
+            <p>Email 2 (24 hours later): &quot;Still thinking it over?&quot;</p>
+            <p>Email 3 (72 hours later): &quot;Last chance + bonus&quot;</p>
+            <p>This sequence alone can recover 15-25% of abandoned carts.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.7</div>
+        <div class="step-content">
+          <div class="step-title">Create Your Objection-Handling System</div>
+          <div class="step-text">
+            <p>Every product has common objections. Address them proactively:</p>
+            <p>- &quot;I don&#039;t have time&quot; → Show how it saves time</p>
+            <p>- &quot;It&#039;s too expensive&quot; → Break down cost per day</p>
+            <p>- &quot;Will this work for me?&quot; → Show diverse success stories</p>
+            <p>- &quot;I&#039;m not technical&quot; → Emphasize simplicity</p>
+            <p>Build these answers into your sales pages and email sequences.</p>
+            <p>- Use exit-intent popups with special offers</p>
+            <p>- Add payment plans to reduce price resistance</p>
+            <p>- Create comparison charts showing value</p>
+            <p>- Use video testimonials (convert 3x better than text)</p>
+            <p>When you optimize each step:</p>
+            <p>- 1000 visitors × 15% conversion = 150 sales</p>
+            <p>- 150 sales × $50 = $7,500</p>
+            <p>- That&#039;s $225,000 per month from the same traffic</p>
+            <p>Without optimization:</p>
+            <p>- 1000 visitors × 3% conversion = 30 sales</p>
+            <p>- 30 sales × $50 = $1,500</p>
+            <p>- Only $45,000 per month</p>
+            <p>Same traffic, 5x more revenue. That&#039;s the power of conversion optimization.</p>
+            <p>Remember: Traffic gets people to the door. Conversion systems get them to open their wallets. Master both, and you have an unstoppable automated business that generates consistent $3K+ months.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">7</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 4</div>
+      <h1 class="chapter-title">Chapter 4: The Optimization Phase - Scaling Your Automations to $3K+ Months</h1>
+      <div class="intro-text">
+        <p>Now that you&#039;ve got traffic flowing and conversions happening, it&#039;s time to optimize everything to hit consistent $3K+ months. This is where most people plateau because they think &quot;more content&quot; is the answer. It&#039;s not. The answer is building better systems that do more of the selling for you.</p>
+      </div>
+      <div class="phase-header">The Revenue Audit</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Your current revenue numbers, conversion rates, and traffic sources<br><br>
+        <strong>Expected outcome:</strong> Clear picture of what&#039;s working and what&#039;s not
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.1</div>
+        <div class="step-content">
+          <div class="step-title">Track your daily average revenue for the past 30 days</div>
+          <div class="step-text">
+            <p>To hit $3K months consistently, you need roughly $100 per day. Look at your numbers honestly. Are you at $30/day? $50/day? This tells us exactly what needs to be fixed.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.2</div>
+        <div class="step-content">
+          <div class="step-title">Identify your highest-converting automation</div>
+          <div class="step-text">
+            <p>Which automation makes you the most money? That&#039;s your golden goose. We&#039;re going to clone this process for other products and traffic sources.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.3</div>
+        <div class="step-content">
+          <div class="step-title">Find your biggest revenue leak</div>
+          <div class="step-text">
+            <p>Most people lose money in three places: not enough traffic, terrible conversion rates, or no backend sales. Figure out which one is killing your revenue.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Scaling Systems</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Your best-performing automation and 2-3 hours to set up duplicates<br><br>
+        <strong>Expected outcome:</strong> Multiple revenue streams running simultaneously
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.1</div>
+        <div class="step-content">
+          <div class="step-title">Clone your best automation across platforms</div>
+          <div class="step-text">
+            <p>If your Instagram comment automation works, build the same thing on TikTok, YouTube, and Facebook. Same offer, same process, different platforms.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">8</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 4 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 4: The Optimization Phase - Scaling Your Automations to $3K+ Months</h1>
+      <div class="blueprint-step">
+        <div class="step-number">2.2</div>
+        <div class="step-content">
+          <div class="step-title">Create backend automations for existing customers</div>
+          <div class="step-text">
+            <p>Your current customers are 5x more likely to buy again. Build an email sequence that automatically pitches complementary products 7 days after their first purchase.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.3</div>
+        <div class="step-content">
+          <div class="step-title">Set up abandoned cart recovery</div>
+          <div class="step-text">
+            <p>People who hit your checkout page but don&#039;t buy are hot leads. Create an automation that emails them 1 hour, 1 day, and 3 days later with a slight discount or bonus.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Profit Multipliers</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Existing customer base and one new product or service<br><br>
+        <strong>Expected outcome:</strong> Higher order values and recurring revenue
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.1</div>
+        <div class="step-content">
+          <div class="step-title">Add order bumps to every checkout page</div>
+          <div class="step-text">
+            <p>This is the fastest way to increase revenue without getting more traffic. Add a $27-47 complementary product that people can add with one click at checkout.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.2</div>
+        <div class="step-content">
+          <div class="step-title">Create upsell sequences</div>
+          <div class="step-text">
+            <p>After someone buys your main product, immediately offer them something more expensive. A $97 product customer can become a $297 customer in the same transaction.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.3</div>
+        <div class="step-content">
+          <div class="step-title">Build subscription or recurring elements</div>
+          <div class="step-text">
+            <p>Even if your main product is one-time, add a monthly element. A $97 course + $27/month membership = way more lifetime value.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Optimization Loop</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Basic analytics and 30 minutes per week<br><br>
+        <strong>Expected outcome:</strong> Continuous improvement and growth
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">9</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 4 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 4: The Optimization Phase - Scaling Your Automations to $3K+ Months</h1>
+      <div class="blueprint-step">
+        <div class="step-number">4.1</div>
+        <div class="step-content">
+          <div class="step-title">Test one element per week</div>
+          <div class="step-text">
+            <p>Change one thing: subject line, offer, price, or call-to-action. Small improvements compound into big results.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">4.2</div>
+        <div class="step-content">
+          <div class="step-title">Double down on what works</div>
+          <div class="step-text">
+            <p>When something increases revenue by even 10%, do more of it. Most people find something that works and then... stop doing it. That&#039;s insane.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">4.3</div>
+        <div class="step-content">
+          <div class="step-title">Kill what doesn&#039;t work</div>
+          <div class="step-text">
+            <p>Be ruthless about cutting automations that don&#039;t make money. Your time and mental energy are limited.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The $3K+ Breakthrough</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> All previous phases implemented<br><br>
+        <strong>Expected outcome:</strong> Consistent $3K+ months
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.1</div>
+        <div class="step-content">
+          <div class="step-title">Focus on daily metrics, not monthly goals</div>
+          <div class="step-text">
+            <p>$3K per month = $100 per day. Much easier to think about hitting $100 today than $3K this month.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.2</div>
+        <div class="step-content">
+          <div class="step-title">Build redundancy in your systems</div>
+          <div class="step-text">
+            <p>Don&#039;t rely on one platform, one product, or one automation. Have at least 3 different ways to make $100/day.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.3</div>
+        <div class="step-content">
+          <div class="step-title">Reinvest profits into what&#039;s working</div>
+          <div class="step-text">
+            <p>When you hit $3K months, resist the urge to lifestyle creep. Take 50% of profits and reinvest into scaling your best-performing automations.</p>
+            <p>Remember: optimization is not about perfection. It&#039;s about making your good systems even better. Small improvements across multiple automations compound into massive results.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">10</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 5</div>
+      <h1 class="chapter-title">Chapter 5: The Maintenance Phase - Keeping Your Money Machine Running Smoothly</h1>
+      <div class="intro-text">
+        <p>Here&#039;s what nobody tells you about automated businesses: they require maintenance. Not constant babysitting, but regular check-ups to keep the money flowing. Think of this like maintaining a car - ignore it completely and eventually it breaks down.</p>
+      </div>
+      <div class="phase-header">The Weekly Health Check</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> 20 minutes every Monday morning<br><br>
+        <strong>Expected outcome:</strong> Problems caught before they cost you money
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.1</div>
+        <div class="step-content">
+          <div class="step-title">Check all automation triggers</div>
+          <div class="step-text">
+            <p>Go through each automation and make sure it&#039;s still firing correctly. Platforms update, things break, and you want to catch issues fast.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.2</div>
+        <div class="step-content">
+          <div class="step-title">Review conversion rates</div>
+          <div class="step-text">
+            <p>If your usual 10% conversion rate suddenly drops to 5%, something&#039;s wrong. Could be a broken link, payment processor issue, or platform change.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.3</div>
+        <div class="step-content">
+          <div class="step-title">Monitor traffic sources</div>
+          <div class="step-text">
+            <p>Make sure your content is still driving traffic to your automations. Sometimes hashtags stop working, algorithms change, or competitors start copying your strategy.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Monthly Deep Dive</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> 1 hour at the end of each month<br><br>
+        <strong>Expected outcome:</strong> Strategic improvements and growth planning
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.1</div>
+        <div class="step-content">
+          <div class="step-title">Analyze your best-performing content</div>
+          <div class="step-text">
+            <p>What content drove the most sales this month? Create more like it. I literally repeat what works over and over. If a post made me $500, I&#039;ll create 10 variations of it.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">11</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 5 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 5: The Maintenance Phase - Keeping Your Money Machine Running Smoothly</h1>
+      <div class="blueprint-step">
+        <div class="step-number">2.2</div>
+        <div class="step-content">
+          <div class="step-title">Update your email sequences</div>
+          <div class="step-text">
+            <p>Refresh your automated email sequences every 90 days. Add new testimonials, update offers, remove outdated information. Fresh copy converts better.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.3</div>
+        <div class="step-content">
+          <div class="step-title">Audit customer feedback</div>
+          <div class="step-text">
+            <p>Look at support emails, reviews, and comments. Are people confused about something? Fix it. Are they asking for a specific product? Create it.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Quarterly Expansion</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Half a day every 3 months<br><br>
+        <strong>Expected outcome:</strong> New revenue streams and improved systems
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.1</div>
+        <div class="step-content">
+          <div class="step-title">Launch one new automation</div>
+          <div class="step-text">
+            <p>Every quarter, add one new automation to your arsenal. Could be a new platform, new product, or new traffic source. Growth comes from building more systems, not working harder.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.2</div>
+        <div class="step-content">
+          <div class="step-title">Retire underperforming automations</div>
+          <div class="step-text">
+            <p>If an automation hasn&#039;t made money in 90 days, kill it. Focus your energy on what actually works.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.3</div>
+        <div class="step-content">
+          <div class="step-title">Expand successful automations</div>
+          <div class="step-text">
+            <p>Take your best automation and figure out how to scale it. More traffic sources, different audiences, or additional products.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Annual Overhaul</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> One full day per year (I do this in December)<br><br>
+        <strong>Expected outcome:</strong> Strategic planning and system upgrades
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">12</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 5 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 5: The Maintenance Phase - Keeping Your Money Machine Running Smoothly</h1>
+      <div class="blueprint-step">
+        <div class="step-number">4.1</div>
+        <div class="step-content">
+          <div class="step-title">Review all systems and processes</div>
+          <div class="step-text">
+            <p>What worked this year? What didn&#039;t? What took too much manual effort? Plan to automate or eliminate these pain points.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">4.2</div>
+        <div class="step-content">
+          <div class="step-title">Plan next year&#039;s product launches</div>
+          <div class="step-text">
+            <p>Map out 3-4 new products or major updates. Having a roadmap prevents you from randomly launching things that don&#039;t fit your business.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">4.3</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade your tech stack</div>
+          <div class="step-text">
+            <p>Are you still using free tools that limit your growth? Invest in better software that can handle more traffic and customers.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Troubleshooting Protocol</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> This checklist when things go wrong<br><br>
+        <strong>Expected outcome:</strong> Quick problem resolution
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.1</div>
+        <div class="step-content">
+          <div class="step-title">When sales suddenly drop</div>
+          <div class="step-text">
+            <p>- Check if automations are working</p>
+            <p>- Look for broken payment links</p>
+            <p>- See if your content posting schedule changed</p>
+            <p>- Review if competitors are running similar campaigns</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.2</div>
+        <div class="step-content">
+          <div class="step-title">When traffic disappears</div>
+          <div class="step-text">
+            <p>- Check if your social media accounts are shadowbanned</p>
+            <p>- Look for platform algorithm changes</p>
+            <p>- Review if your content strategy shifted</p>
+            <p>- See if you stopped posting consistently</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.3</div>
+        <div class="step-content">
+          <div class="step-title">When conversions tank</div>
+          <div class="step-text">
+            <p>- Test your checkout process</p>
+            <p>- Review recent changes to sales pages</p>
+            <p>- Check customer feedback for confusion points</p>
+            <p>- Look at competitor offers (maybe yours isn&#039;t competitive anymore)</p>
+            <p>Consistency beats perfection. I&#039;d rather have you do a 10-minute weekly check consistently than spend 3 hours once a month trying to fix everything.</p>
+            <p>Your automated business should feel easy most of the time. If it doesn&#039;t, you&#039;re either over-complicating things or not maintaining your systems properly.</p>
+            <p>Remember: the goal isn&#039;t to never touch your business again. The goal is to touch it strategically, not reactively.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">13</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 6</div>
+      <h1 class="chapter-title">Chapter 6: The Growth Phase - Beyond $3K to Sustainable Scale</h1>
+      <div class="intro-text">
+        <p>Congratulations! If you&#039;ve implemented everything so far, you should be consistently hitting $3K months. Now let&#039;s talk about what comes next - scaling beyond $3K without losing your sanity or your automation-first approach.</p>
+      </div>
+      <div class="phase-header">The Mindset Shift</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> A new way of thinking about your business<br><br>
+        <strong>Expected outcome:</strong> Clarity on what actually drives growth
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.1</div>
+        <div class="step-content">
+          <div class="step-title">Stop thinking like a solopreneur, start thinking like a content creator</div>
+          <div class="step-text">
+            <p>This is the shift that took me from $3K months to $30K months. Content creation is the last high-leverage activity you have to do manually. Everything else should be automated.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.2</div>
+        <div class="step-content">
+          <div class="step-title">Focus on systems, not tactics</div>
+          <div class="step-text">
+            <p>Tactics stop working. Systems compound. Instead of chasing the latest social media hack, build better systems that work across all platforms.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">1.3</div>
+        <div class="step-content">
+          <div class="step-title">Embrace the compound effect</div>
+          <div class="step-text">
+            <p>Small improvements across multiple automations create massive results. A 10% improvement across 5 automations = 50% more revenue.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Revenue Multiplication Strategy</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Your current successful automations<br><br>
+        <strong>Expected outcome:</strong> Multiple $3K+ revenue streams
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.1</div>
+        <div class="step-content">
+          <div class="step-title">Clone your success across platforms</div>
+          <div class="step-text">
+            <p>If you&#039;re making $3K/month on Instagram, the same strategy can work on TikTok, YouTube, and Facebook. Same offers, same automations, different audiences.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">14</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 6 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 6: The Growth Phase - Beyond $3K to Sustainable Scale</h1>
+      <div class="blueprint-step">
+        <div class="step-number">2.2</div>
+        <div class="step-content">
+          <div class="step-title">Create product ladders</div>
+          <div class="step-text">
+            <p>Your $97 customers should have an automatic path to become $297, then $997 customers. Build this progression into your automations.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">2.3</div>
+        <div class="step-content">
+          <div class="step-title">Develop recurring revenue streams</div>
+          <div class="step-text">
+            <p>One-time sales cap your growth. Add membership sites, monthly challenges, or subscription products that automatically bill customers.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Scaling Infrastructure</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Better tools and processes<br><br>
+        <strong>Expected outcome:</strong> Systems that can handle 10x more customers
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.1</div>
+        <div class="step-content">
+          <div class="step-title">Upgrade your email marketing</div>
+          <div class="step-text">
+            <p>Move from basic autoresponders to sophisticated segmentation. Different customers should get different offers based on their behavior.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.2</div>
+        <div class="step-content">
+          <div class="step-title">Implement advanced automation workflows</div>
+          <div class="step-text">
+            <p>Use tools that can handle complex &quot;if this, then that&quot; logic. Someone who bought Product A gets different follow-ups than someone who only downloaded your free guide.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">3.3</div>
+        <div class="step-content">
+          <div class="step-title">Create self-service customer support</div>
+          <div class="step-text">
+            <p>Build FAQ automations and help desk systems so you&#039;re not manually answering the same questions over and over.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Content Multiplication System</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> A systematic approach to content creation<br><br>
+        <strong>Expected outcome:</strong> More content with less effort
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">15</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">CHAPTER 6 (CONTINUED)</div>
+      <h1 class="chapter-title">Chapter 6: The Growth Phase - Beyond $3K to Sustainable Scale</h1>
+      <div class="blueprint-step">
+        <div class="step-number">4.1</div>
+        <div class="step-content">
+          <div class="step-title">Develop content themes and templates</div>
+          <div class="step-text">
+            <p>Create 5-7 content templates you can use repeatedly. I probably have 20 different post formats I rotate through.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">4.2</div>
+        <div class="step-content">
+          <div class="step-title">Batch create and schedule content</div>
+          <div class="step-text">
+            <p>Spend one day creating a week&#039;s worth of content rather than creating daily. This frees up mental energy for other growth activities.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">4.3</div>
+        <div class="step-content">
+          <div class="step-title">Repurpose everything</div>
+          <div class="step-text">
+            <p>One good piece of content should become a post, story, email, and video. Squeeze maximum value from every idea.</p>
+          </div>
+        </div>
+      </div>
+      <div class="phase-header">The Long-term Growth Plan</div>
+      <div class="meta-box">
+        <strong>What you need:</strong> Strategic thinking and patience<br><br>
+        <strong>Expected outcome:</strong> Predictable, sustainable growth
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.1</div>
+        <div class="step-content">
+          <div class="step-title">Build an email list like your life depends on it</div>
+          <div class="step-text">
+            <p>Social media platforms come and go. Your email list is the only audience you truly own. Every automation should be collecting emails.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.2</div>
+        <div class="step-content">
+          <div class="step-title">Create evergreen products and content</div>
+          <div class="step-text">
+            <p>Build products that sell year-round, not just during launches. Evergreen products with automated marketing create predictable revenue.</p>
+          </div>
+        </div>
+      </div>
+      <div class="blueprint-step">
+        <div class="step-number">5.3</div>
+        <div class="step-content">
+          <div class="step-title">Focus on customer lifetime value</div>
+          <div class="step-text">
+            <p>It&#039;s easier to sell more to existing customers than find new ones. Build automations that nurture relationships and create repeat purchases.</p>
+            <p>Scaling beyond $3K months isn&#039;t about working more hours. It&#039;s about building better systems and creating more valuable products. If you find yourself working harder instead of smarter, step back and automate more.</p>
+            <p>The goal is to build a business that grows while you sleep. That only happens when you have multiple automated systems working together to create a predictable customer journey.</p>
+            <p>If you&#039;re just getting started and this all feels overwhelming, don&#039;t worry. You don&#039;t need to implement everything at once. Focus on getting your first $3K month, then come back to these advanced strategies.</p>
+            <p>Speaking of getting started, if you&#039;re still struggling to hit that first $3K month milestone, I&#039;ve created something specifically for people in your position. &quot;How to Make $3k/Month (When You&#039;re Just Getting Started &amp; Have A Tiny Audience)&quot; walks you through the exact repeatable process to add $3,000 a month to your income, even if you&#039;re starting from zero. It covers the essentials you actually need, how to turn social media followers into paying clients, and how to automate the entire process for predictable income. This is the foundation everything else is built on - and without it, the advanced strategies in this chapter won&#039;t work.</p>
+            <p>---</p>
+            <p>If you found this valuable, you&#039;ll love &quot;How to Make $3k/Month (When You’re Just Getting Started &amp; Have A Tiny Audience)&quot;. this product will help you get your first $3,000 a month, even if you&#039;re a nobody who has no audience and have never been able to make a dollar online before, simply because you didn&#039;t have the right systems. So first, what we&#039;re going to do is we&#039;re going to show you the exact repeatable process to add $3,000 a month to your income using the framework that we built.</p>
+            <p>We&#039;re going to basically show you also why people struggle to hit this and how we can fix it for you. Then we&#039;re going to teach you the essentials, what you actually need to get to $3,000 a month. And give you tips on how to use social media to get people from being just an eyeball into a client that is paying you money.</p>
+            <p>And then we&#039;re going to teach you how to pretty much automate the process and create repeatable, predictable income.</p>
+            <p><a href="https://martinebongue.com/3ktiny-audience" style="color: var(--primary-color); text-decoration: none;"><strong>Learn more about How to Make $3k/Month (When You’re Just Getting Started &amp; Have A Tiny Audience)</strong></a></p>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">16</span>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="about-section">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="about-photo" alt="Martin Ebongue">
+        <div class="about-name">Martin Ebongue</div>
+        <div class="about-tagline">Helping creators monetize small audiences</div>
+        <div class="about-handle">@realmartinebongue</div>
+        <div class="about-divider"></div>
+        <p class="about-bio">Martin Ebongue is an expert in digital product creation and social media monetization, helping clients achieve exceptional results. With years of experience building successful digital product businesses, he has helped thousands of creators turn their knowledge into profitable income streams. His practical, no-fluff approach focuses on strategies that work for people with small audiences who want to generate consistent revenue without needing millions of followers.</p>
+      </div>
+    </div>
+    
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="https://psfgnelrxzdckucvytzj.supabase.co/storage/v1/object/public/photos/10391013-6e2e-4b9d-9abc-208f7668df56/1767696269597.png" class="footer-photo" alt="">
+        <span class="footer-handle">@realmartinebongue</span>
+      </div>
+      <span class="footer-page-number">About</span>
+    </div>
+  </div>
+</body>
+</html>
