@@ -54,20 +54,8 @@ export async function handler(event) {
 
     console.log(`${LOG_TAG} Job created with ID: ${job.id}`);
 
-    // Trigger background function (fire and forget)
-    // Get the site URL from environment or construct from request
-    const siteUrl = process.env.URL || `https://${event.headers.host}`;
-
-    console.log(`${LOG_TAG} Triggering background function at ${siteUrl}`);
-
-    // Fire and forget - don't await
-    fetch(`${siteUrl}/.netlify/functions/process-cover-generation-background`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jobId: job.id })
-    }).catch((err) => {
-      console.log(`${LOG_TAG} Background trigger fire-and-forget (expected):`, err.message);
-    });
+    // Note: Background function is triggered directly by the frontend
+    // This avoids issues with function-to-function calls in Netlify
 
     return {
       statusCode: 200,

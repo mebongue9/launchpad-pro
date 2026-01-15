@@ -158,7 +158,7 @@ export function CreativeLab() {
     setElapsedTime(0)
 
     try {
-      // Step 1: Start the background job
+      // Step 1: Create the job record
       const startResponse = await fetch('/.netlify/functions/start-cover-generation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -172,10 +172,20 @@ export function CreativeLab() {
       }
 
       const { jobId } = startData
-      console.log('Generation job started:', jobId)
-      setProgressMessage('Job queued, processing...')
+      console.log('Generation job created:', jobId)
+      setProgressMessage('Job queued, starting background process...')
 
-      // Step 2: Poll for results
+      // Step 2: Trigger the background function directly from frontend
+      // This returns immediately due to -background suffix, but continues processing
+      fetch('/.netlify/functions/process-cover-generation-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId })
+      }).catch(() => {}) // Fire and forget - background function returns immediately
+
+      setProgressMessage('Processing...')
+
+      // Step 3: Poll for results
       const result = await pollForResult(jobId)
 
       if (result.status === 'completed') {
