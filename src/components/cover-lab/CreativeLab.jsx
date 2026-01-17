@@ -13,6 +13,7 @@ import { ImageUploader } from './ImageUploader'
 import { AnalysisResult } from './AnalysisResult'
 import { VariationsGrid } from './VariationsGrid'
 import { SaveTemplateDialog } from './SaveTemplateDialog'
+import { TemplateImporter } from './TemplateImporter'
 import {
   Loader2,
   Wand2,
@@ -427,6 +428,19 @@ export function CreativeLab() {
         onSave={handleSaveTemplate}
         saving={saving}
       />
+
+      {/* Divider */}
+      <div className="relative my-8">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-gray-200" />
+        </div>
+        <div className="relative flex justify-center text-sm">
+          <span className="px-3 bg-gray-50 text-gray-500">or</span>
+        </div>
+      </div>
+
+      {/* Import Template Section */}
+      <TemplateImporter />
     </div>
   )
 }
