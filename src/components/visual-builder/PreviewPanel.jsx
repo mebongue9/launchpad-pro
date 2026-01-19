@@ -238,6 +238,36 @@ function generateCoverHtml(template, data) {
       --handle-scale: ${handleSize / 100};
     }
     ${template.css_styles}
+
+    /* Override styles for imported templates - must come AFTER template.css_styles */
+    /* Issue 2 fix: Remove white margins from imported templates */
+    body {
+      margin: 0 !important;
+      padding: 0 !important;
+      background: transparent !important;
+      display: block !important;
+    }
+    .cover {
+      box-shadow: none !important;
+      margin: 0 !important;
+    }
+
+    /* Issue 1 fix: Apply slider scaling to imported template classes */
+    .title-text {
+      font-size: calc(72px * var(--title-scale, 1)) !important;
+    }
+    .subtitle-text {
+      font-size: calc(14px * var(--subtitle-scale, 1)) !important;
+    }
+    .author-name {
+      font-size: calc(14px * var(--author-scale, 1)) !important;
+    }
+    .author-handle {
+      font-size: calc(12px * var(--handle-scale, 1)) !important;
+    }
+    .author-tagline {
+      font-size: calc(13px * var(--subtitle-scale, 1)) !important;
+    }
   </style>
 </head>
 <body>
