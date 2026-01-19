@@ -20,17 +20,33 @@ import {
   Eye
 } from 'lucide-react'
 
-// Required CSS variables that must be present in the HTML
+// Required CSS variables - must be present in the HTML
 const REQUIRED_CSS_VARS = [
   'primary-color',
   'primary-light',
-  'primary-dark',
+  'primary-dark'
+]
+
+// Optional CSS variables - extracted if present, otherwise defaults used
+const OPTIONAL_CSS_VARS = [
   'header-gradient',
   'light-bg',
   'text-color',
   'text-muted',
   'background'
 ]
+
+// All CSS variables for display purposes
+const ALL_CSS_VARS = [...REQUIRED_CSS_VARS, ...OPTIONAL_CSS_VARS]
+
+// Default values for optional CSS variables (what interior-renderer uses)
+const OPTIONAL_DEFAULTS = {
+  'header-gradient': '(derived from colors)',
+  'light-bg': '(derived from primary-light)',
+  'text-color': '#000000',
+  'text-muted': '#666666',
+  'background': '#ffffff'
+}
 
 // Display labels for CSS variables
 const CSS_VAR_LABELS = {
@@ -45,7 +61,11 @@ const CSS_VAR_LABELS = {
 }
 
 /**
- * Extract all 8 CSS variables from HTML :root block
+ * Extract CSS variables from HTML :root block
+ * Returns { palette, extracted, defaulted }
+ * - palette: all color values (snake_case keys)
+ * - extracted: which vars were found in the HTML
+ * - defaulted: which vars used default values
  */
 function extractColorPalette(htmlContent) {
   // Find :root block
@@ -56,27 +76,46 @@ function extractColorPalette(htmlContent) {
 
   const rootContent = rootMatch[1]
   const palette = {}
-  const missing = []
+  const extracted = []
+  const defaulted = []
+  const missingRequired = []
 
+  // Extract required variables (must all be present)
   for (const varName of REQUIRED_CSS_VARS) {
-    // Match CSS variable value (handles colors, gradients, rgba, etc.)
     const regex = new RegExp(`--${varName}\\s*:\\s*([^;]+);`, 's')
     const match = rootContent.match(regex)
 
     if (match) {
-      // Convert kebab-case to snake_case for storage key
       const key = varName.replace(/-/g, '_')
       palette[key] = match[1].trim()
+      extracted.push(varName)
     } else {
-      missing.push(`--${varName}`)
+      missingRequired.push(`--${varName}`)
     }
   }
 
-  if (missing.length > 0) {
-    throw new Error(`Missing required CSS variables: ${missing.join(', ')}`)
+  // Fail if any required variables are missing
+  if (missingRequired.length > 0) {
+    throw new Error(`Missing required CSS variables: ${missingRequired.join(', ')}`)
   }
 
-  return palette
+  // Extract optional variables (use defaults if missing)
+  for (const varName of OPTIONAL_CSS_VARS) {
+    const regex = new RegExp(`--${varName}\\s*:\\s*([^;]+);`, 's')
+    const match = rootContent.match(regex)
+    const key = varName.replace(/-/g, '_')
+
+    if (match) {
+      palette[key] = match[1].trim()
+      extracted.push(varName)
+    } else {
+      // Use default value
+      palette[key] = OPTIONAL_DEFAULTS[varName]
+      defaulted.push(varName)
+    }
+  }
+
+  return { palette, extracted, defaulted }
 }
 
 /**
@@ -136,6 +175,8 @@ export function TemplateImporter() {
   const [htmlContent, setHtmlContent] = useState(null)
   const [fileName, setFileName] = useState('')
   const [palette, setPalette] = useState(null)
+  const [extractedVars, setExtractedVars] = useState([])
+  const [defaultedVars, setDefaultedVars] = useState([])
   const [cssStyles, setCssStyles] = useState(null)
   const [htmlTemplate, setHtmlTemplate] = useState(null)
   const [fontFamily, setFontFamily] = useState(null)
@@ -158,6 +199,8 @@ export function TemplateImporter() {
     setFileName(file.name)
     setParseError(null)
     setPalette(null)
+    setExtractedVars([])
+    setDefaultedVars([])
     setCssStyles(null)
     setHtmlTemplate(null)
     setShowPreview(false)
@@ -192,13 +235,15 @@ export function TemplateImporter() {
 
     try {
       // Extract all components
-      const extractedPalette = extractColorPalette(htmlContent)
+      const { palette: extractedPalette, extracted, defaulted } = extractColorPalette(htmlContent)
       const extractedCss = extractCssStyles(htmlContent)
       const extractedHtml = extractHtmlTemplate(htmlContent)
       const extractedFont = extractFontFamily(extractedCss)
       const extractedFontUrl = extractFontUrl(htmlContent)
 
       setPalette(extractedPalette)
+      setExtractedVars(extracted)
+      setDefaultedVars(defaulted)
       setCssStyles(extractedCss)
       setHtmlTemplate(extractedHtml)
       setFontFamily(extractedFont)
@@ -208,6 +253,8 @@ export function TemplateImporter() {
     } catch (err) {
       setParseError(err.message)
       setPalette(null)
+      setExtractedVars([])
+      setDefaultedVars([])
       setCssStyles(null)
       setHtmlTemplate(null)
       setShowPreview(false)
@@ -275,6 +322,8 @@ export function TemplateImporter() {
       setHtmlContent(null)
       setFileName('')
       setPalette(null)
+      setExtractedVars([])
+      setDefaultedVars([])
       setCssStyles(null)
       setHtmlTemplate(null)
       setFontFamily(null)
@@ -298,6 +347,8 @@ export function TemplateImporter() {
     setHtmlContent(null)
     setFileName('')
     setPalette(null)
+    setExtractedVars([])
+    setDefaultedVars([])
     setCssStyles(null)
     setHtmlTemplate(null)
     setFontFamily(null)
@@ -310,23 +361,31 @@ export function TemplateImporter() {
   }, [])
 
   // Render color swatch
-  const renderColorSwatch = (varName, value) => {
+  const renderColorSwatch = (varName, value, isDefaulted = false) => {
     const label = CSS_VAR_LABELS[varName] || varName
-    const isHex = isHexColor(value)
     const isGradient = value.includes('gradient')
-    const isRgba = value.includes('rgba')
+    const isDerived = value.startsWith('(derived')
 
     return (
       <div key={varName} className="flex items-center gap-2 py-1.5">
         <div
-          className="w-8 h-8 rounded border border-gray-300 flex-shrink-0"
+          className={`w-8 h-8 rounded border flex-shrink-0 ${isDefaulted ? 'border-dashed border-gray-400' : 'border-gray-300'}`}
           style={{
-            background: value,
+            background: isDerived ? '#f3f4f6' : value,
             boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.1)'
           }}
-        />
+        >
+          {isDerived && (
+            <span className="flex items-center justify-center h-full text-xs text-gray-400">~</span>
+          )}
+        </div>
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium text-gray-700">{label}</p>
+          <p className="text-xs font-medium text-gray-700 flex items-center gap-1">
+            {label}
+            {isDefaulted && (
+              <span className="text-[10px] text-gray-400 font-normal">(default)</span>
+            )}
+          </p>
           <p className="text-xs text-gray-500 truncate font-mono" title={value}>
             {isGradient ? 'linear-gradient(...)' : value}
           </p>
@@ -465,15 +524,23 @@ export function TemplateImporter() {
             </div>
           </div>
 
-          {/* Extracted Colors - All 8 */}
+          {/* Color Variables */}
           <div>
-            <p className="text-xs font-medium text-gray-700 mb-2">Extracted Colors (8 variables)</p>
+            <p className="text-xs font-medium text-gray-700 mb-2">
+              Color Variables ({extractedVars.length} extracted, {defaultedVars.length} defaulted)
+            </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-3 bg-gray-50 rounded-lg">
-              {REQUIRED_CSS_VARS.map(varName => {
+              {ALL_CSS_VARS.map(varName => {
                 const key = varName.replace(/-/g, '_')
-                return renderColorSwatch(varName, palette[key])
+                const isDefaulted = defaultedVars.includes(varName)
+                return renderColorSwatch(varName, palette[key], isDefaulted)
               })}
             </div>
+            {defaultedVars.length > 0 && (
+              <p className="text-xs text-gray-400 mt-2">
+                Variables marked (default) will be derived by interior-renderer.js
+              </p>
+            )}
           </div>
 
           {/* Database Mapping Info */}
