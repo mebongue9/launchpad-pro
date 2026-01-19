@@ -210,11 +210,18 @@ function generateCoverHtml(template, data) {
   const { title, subtitle, author, handle, year, titleSize = 100, subtitleSize = 100, authorSize = 100, handleSize = 100 } = data
 
   let html = template.html_template
+    // Standard placeholders (existing templates)
     .replace(/\{\{title\}\}/g, escapeHtml(title))
     .replace(/\{\{subtitle\}\}/g, escapeHtml(subtitle))
     .replace(/\{\{author\}\}/g, escapeHtml(author))
     .replace(/\{\{handle\}\}/g, escapeHtml(handle))
     .replace(/\{\{year\}\}/g, year)
+    // Alternative placeholders (imported templates)
+    .replace(/\{\{product_title\}\}/gi, escapeHtml(title))
+    .replace(/\{\{product_subtitle\}\}/gi, escapeHtml(subtitle))
+    .replace(/\{\{author_name\}\}/gi, escapeHtml(author))
+    .replace(/\{\{author_handle\}\}/gi, escapeHtml(handle))
+    .replace(/\{\{author_tagline\}\}/gi, escapeHtml(subtitle))
 
   return `<!DOCTYPE html>
 <html>
