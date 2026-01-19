@@ -76,7 +76,7 @@ export function useCoverTemplates() {
       .from('cover_templates')
       .delete()
       .eq('id', templateId)
-      .eq('user_id', session.user.id)
+      .eq('created_by', session.user.id)
       .eq('is_default', false) // Cannot delete default templates
 
     if (deleteError) {
