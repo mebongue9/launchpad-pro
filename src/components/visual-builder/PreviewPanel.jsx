@@ -240,14 +240,21 @@ function generateCoverHtml(template, data) {
     ${template.css_styles}
 
     /* Override styles for imported templates - must come AFTER template.css_styles */
-    /* Issue 2 fix: Remove white margins from imported templates */
-    body {
+    /* Fix: Remove margins and make content fill iframe */
+    html, body {
+      width: 100% !important;
+      height: 100% !important;
       margin: 0 !important;
       padding: 0 !important;
       background: transparent !important;
       display: block !important;
+      overflow: hidden !important;
     }
     .cover {
+      width: 100% !important;
+      height: 100% !important;
+      min-width: 100% !important;
+      min-height: 100% !important;
       box-shadow: none !important;
       margin: 0 !important;
     }
