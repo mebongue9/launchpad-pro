@@ -137,9 +137,9 @@ export function PreviewPanel({
         <div
           className="bg-white rounded-lg shadow-2xl overflow-hidden"
           style={{
-            width: '420px',
-            height: '594px',
-            minWidth: '420px'
+            width: 'calc(210mm * 0.5)',
+            height: 'calc(297mm * 0.5)',
+            minWidth: 'calc(210mm * 0.5)'
           }}
         >
           <iframe
