@@ -18,6 +18,10 @@
 [functions."process-cover-generation-background"]
   type = "background"
 
+# Background function for funnel idea generation (can run up to 15 minutes)
+[functions."process-funnel-idea-task-background"]
+  type = "background"
+
 # Cache headers - prevent browser caching of HTML, allow caching of hashed assets
 [[headers]]
   for = "/index.html"

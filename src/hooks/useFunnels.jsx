@@ -50,31 +50,65 @@ export function useFunnels() {
     }
   }
 
+  // Poll for funnel idea task result
+  async function pollForFunnelIdeaResult(taskId, maxAttempts = 90, intervalMs = 2000) {
+    // Poll every 2 seconds for up to 3 minutes
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const response = await fetch(`/.netlify/functions/get-funnel-idea-task?task_id=${taskId}`)
+
+      if (!response.ok) {
+        throw new Error('Failed to check task status')
+      }
+
+      const data = await response.json()
+      console.log(`📊 [FUNNEL-IDEA] Poll ${attempt + 1}: status=${data.status}`)
+
+      if (data.status === 'completed') {
+        console.log('✅ [FUNNEL-IDEA] Generation complete!')
+        return data.result
+      }
+
+      if (data.status === 'failed') {
+        throw new Error(data.error || 'Funnel generation failed')
+      }
+
+      // Still processing, wait and try again
+      await new Promise(resolve => setTimeout(resolve, intervalMs))
+    }
+
+    throw new Error('Funnel generation timed out. Please try again.')
+  }
+
   async function generateFunnel(profile, audience, existingProduct = null) {
     try {
-      const response = await fetch('/.netlify/functions/generate-funnel', {
+      console.log('🚀 [FUNNEL-IDEA] Starting background generation...')
+
+      // 1. Create task (returns immediately with task_id)
+      const createResponse = await fetch('/.netlify/functions/create-funnel-idea-task', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profile,
           audience,
           existing_product: existingProduct,
-          user_id: user?.id  // Pass user_id for freshness check
+          user_id: user?.id
         })
       })
 
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type')
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json()
-          throw new Error(errorData.error || 'Failed to generate funnel')
-        } else {
-          throw new Error(`Server error (${response.status}). Please try again.`)
-        }
+      if (!createResponse.ok) {
+        const errorData = await createResponse.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to start funnel generation')
       }
 
-      return await response.json()
+      const { task_id } = await createResponse.json()
+      console.log('📋 [FUNNEL-IDEA] Task created:', task_id)
+
+      // 2. Poll for result (background function processes it)
+      const result = await pollForFunnelIdeaResult(task_id)
+
+      return result
     } catch (err) {
+      console.error('❌ [FUNNEL-IDEA] Error:', err.message)
       throw err
     }
   }
