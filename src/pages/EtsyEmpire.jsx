@@ -154,7 +154,7 @@ export default function EtsyEmpire() {
         })
       }
     } catch (err) {
-      addToast('Failed to load project details', 'error')
+      addToast('Failed to load generation details', 'error')
     }
   }, [getProject, pollForResult, addToast])
 
@@ -184,14 +184,14 @@ export default function EtsyEmpire() {
     setDeleteLoading(true)
     try {
       await deleteProject(deletingProject.id)
-      addToast('Project deleted', 'success')
+      addToast('Generation deleted', 'success')
       setDeletingProject(null)
       if (expandedProject === deletingProject.id) {
         setExpandedProject(null)
         setProjectDetails(null)
       }
     } catch (err) {
-      addToast(err.message || 'Failed to delete project', 'error')
+      addToast(err.message || 'Failed to delete generation', 'error')
     } finally {
       setDeleteLoading(false)
     }
@@ -294,7 +294,7 @@ export default function EtsyEmpire() {
 
           {/* Results count */}
           <span className="ml-auto text-sm text-gray-500">
-            {filteredProjects.length} of {projects.length} projects
+            {filteredProjects.length} of {projects.length} generations
           </span>
         </div>
       </Card>
@@ -329,15 +329,15 @@ export default function EtsyEmpire() {
             <Crown className="w-8 h-8 text-purple-600" />
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Projects Yet
+            No Generations Yet
           </h3>
           <p className="text-gray-500 max-w-md mx-auto mb-4">
-            Create your first Etsy Empire project to generate beautiful
+            Start your first generation to create beautiful
             listing mockups and Pinterest pins from your PDF products.
           </p>
           <Button onClick={() => setShowNewModal(true)}>
             <Plus className="w-4 h-4 mr-2" />
-            Create First Project
+            Start First Generation
           </Button>
         </Card>
       )}
@@ -361,7 +361,7 @@ export default function EtsyEmpire() {
                 <Trash2 className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">Delete Project</h3>
+                <h3 className="font-semibold text-gray-900">Delete Generation</h3>
                 <p className="text-sm text-gray-500">This action cannot be undone</p>
               </div>
             </div>
@@ -390,7 +390,7 @@ export default function EtsyEmpire() {
                 ) : (
                   <>
                     <Trash2 className="w-4 h-4 mr-2" />
-                    Delete Project
+                    Delete Generation
                   </>
                 )}
               </Button>

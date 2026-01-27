@@ -67,7 +67,7 @@ export function ProjectList({
   if (projects.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
-        <p>No projects yet. Click "+ New Generation" to get started.</p>
+        <p>No generations yet. Click "New Generation" to get started.</p>
       </div>
     )
   }

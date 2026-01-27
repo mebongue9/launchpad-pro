@@ -20,186 +20,51 @@ const RETRY_DELAYS = [0, 5000, 30000, 120000, 300000]; // ms: immediate, 5s, 30s
 // PROMPT TEMPLATES
 // ============================================================
 
+// Data-backed prompts based on analysis of 3,251 Pinterest pins
+// Top performers: Study Desk Flatlay (57,782 repins), Sticky Note Cork Board (25,879), Minimalist Typography (18,055)
+// Engagement boosters: Handwritten notes +42%, Feminine hands +40%, iPad/Tablet +35%, Gold accents +31%
+// Validated palettes: Black+Cream (#1A1A1A + #F5F0E8) 14,200 avg, Warm Wood (#A57C55 + #F5F0E8) 5,100 avg
+
 const ETSY_SLIDE_PROMPTS = {
-  hero: `Professional product mockup for digital product listing. Two iPads overlapping at slight angles on light beige linen surface, displaying "{PRODUCT_TITLE}" {FORMAT} pages. Minimal composition with generous negative space. Golden hour lighting from top-left creating soft elongated shadows. Soft-minimalist luxury aesthetic. No text overlays. 4:5 aspect ratio.
+  hero: `Bird's eye flatlay of iPad Pro in space gray displaying {FORMAT} pages alongside MacBook Pro showing spreadsheet, warm oak wood desk surface #A08060, white ceramic coffee mug upper left, small potted succulent in terracotta pot lower right, gold paperclips scattered naturally, soft diffused window light from left creating gentle shadows, professional product photography style. 4:5 aspect ratio.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  detail: `Feminine hands with natural manicure holding iPad Pro in landscape displaying colorful {FORMAT} interface, cozy living room setting with cream knit blanket visible, warm ambient lighting from right side, shallow depth of field with soft bokeh background showing houseplants, lifestyle photography aesthetic. 4:5 aspect ratio.`,
 
-  detail: `Single iPad Pro at 15-degree angle on light oak desk surface, screen showing detailed page from "{PRODUCT_TITLE}" {FORMAT}. Soft window light from left creating gentle shadow. Minimalist composition, no props. Beige linen cloth visible at edge. Professional product photography. 4:5 aspect ratio.
+  feature: `Bird's eye shot of iPad Pro on white marble surface with subtle gray veins displaying {FORMAT} layout, small potted succulent in white ceramic pot upper right corner, gold pen diagonal lower left, soft even lighting from above with minimal shadows, clean minimalist product photography style. 4:5 aspect ratio.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  cascading: `Bird's eye flatlay of printed {FORMAT} pages fanned out diagonally on cream linen fabric background #F5F0E8, gold binder clips securing page corners, single dried eucalyptus stem placed organically across pages, soft natural window light from top creating subtle texture shadows, editorial product photography aesthetic. 4:5 aspect ratio.`,
 
-  feature: `iPad displaying "{PRODUCT_TITLE}" {FORMAT} on cream linen background. Clean product shot with soft natural lighting. Space around device for potential text callouts. Luxury minimalist aesthetic. Golden hour warmth. 4:5 aspect ratio.
+  book: `Bird's eye flatlay of aesthetic workspace on warm wood desk #A08060, open ring binder showing {FORMAT} pages center frame, MacBook Pro corner visible upper left with spreadsheet on screen, white coffee mug with latte art right side, gold scissors and washi tape rolls scattered lower area, natural daylight from window left side, aspirational desk setup photography. 4:5 aspect ratio.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  index: `Bird's eye shot of single {FORMAT} printed page centered on smooth cream paper background #F5F0E6, slight natural paper texture visible, soft even diffused lighting from above creating no harsh shadows, ultra minimal composition with generous negative space all sides, clean product documentation style. 4:5 aspect ratio.`,
 
-  cascading: `Multiple printed pages from "{PRODUCT_TITLE}" {FORMAT} fanning diagonally across light beige surface. Pages showing various sections of the document. Soft shadows, golden hour lighting from top-left. Elegant paper cascade composition. No hands. 4:5 aspect ratio.
+  cover_options: `Bird's eye lifestyle shot of feminine hands with light skin tone writing with black pen in open planner showing {FORMAT} layout, cream chunky knit sweater sleeves visible, warm wood desk surface #A57C55 beneath, gold ring on finger catching light, soft warm lighting from upper right, cozy planning session aesthetic. 4:5 aspect ratio.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  features_layout: `45-degree angle shot of printed {FORMAT} pages in leather folio on organized white desk, silver laptop open to side showing document, wireless keyboard lower frame, small green plant in white pot background right, natural office lighting from large window behind camera, professional home office context photography. 4:5 aspect ratio.`,
 
-  book: `Physical spiral-bound document next to iPad showing same "{PRODUCT_TITLE}" {FORMAT} content. Both on light oak wood surface. Textured paper visible on physical book. Soft minimalist styling with beige linen cloth accent. Professional product photography. 4:5 aspect ratio.
+  floating: `Close-up macro shot of {FORMAT} printed page corner showing paper texture and print quality, selective focus with soft bokeh background of blurred desk items, natural side lighting emphasizing paper weight and premium feel, detail-oriented product photography for quality showcase. 4:5 aspect ratio.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  library: `45-degree shot of {FORMAT} pages bound with gold spiral binding, slight angle showing thickness of page stack approximately 50 pages, clean white background with soft shadow beneath binding, even studio lighting from both sides, product catalog photography style highlighting binding quality. 4:5 aspect ratio.`,
 
-  index: `iPad straight-on view showing table of contents or overview page of "{PRODUCT_TITLE}" {FORMAT}. Clean composition on cream surface. Soft diffused lighting, no harsh shadows. Focus on screen content visibility. Luxury minimal aesthetic. 4:5 aspect ratio.
+  desk_burgundy: `Bird's eye flatlay of iMac in silver displaying {FORMAT} on smooth burgundy leather desk pad #800020, small grid notepad with off-white pen to left, white cube candle upper left, beige ceramic mug and small jewelry dish with gold rings upper right, soft diffused overhead lighting, minimal shadows, warm sophisticated tones, executive desk aesthetic, professional product photography. 4:5 aspect ratio.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
-
-  cover_options: `Two iPads side by side showing different cover design options for "{PRODUCT_TITLE}" {FORMAT}. Light beige linen background. Devices at slight angles toward each other. Soft shadows, professional lighting. Clean minimal composition. 4:5 aspect ratio.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
-
-  features_layout: `iPad on left side of frame displaying "{PRODUCT_TITLE}" {FORMAT} page. Right side has clean negative space on beige background. Soft natural lighting with gentle shadows. Room for feature list overlay. Minimalist product photography. 4:5 aspect ratio.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
-
-  floating: `Large iPad showing "{PRODUCT_TITLE}" {FORMAT} with single printed page floating beside it on light surface. Pages appear to lift off naturally. Soft shadows beneath both elements. Golden hour lighting. Elegant minimal composition. 4:5 aspect ratio.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
-
-  library: `Grid layout showing multiple pages and sections from "{PRODUCT_TITLE}" {FORMAT} arranged neatly on cream surface. Bird's eye view flatlay. Each page clearly visible. Demonstrates volume and variety of content. Soft even lighting. 4:5 aspect ratio.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`
+  smartphone_gift: `Bird's eye lifestyle shot of black smartphone displaying {FORMAT} interface on warm cream surface #F5F0E8, sheer brown organza ribbon #8B4513 tied in bow around phone, feminine hands with natural nails adjusting ribbon, soft natural lighting from top-right, minimal diffused shadows, warm celebratory tones, gift presentation aesthetic, professional product photography. 4:5 aspect ratio.`
 };
 
 const PINTEREST_PIN_PROMPTS = {
-  quote: `Minimalist motivational quote card design. Solid light beige (#F5F5DC) textured linen background. Space for text overlay. Subtle grain texture. Soft warm lighting. Clean modern aesthetic suitable for Pinterest. Vertical 2:3 format. NO text in image.
+  quote: `Elegant minimalist {FORMAT} cover design, large stacked serif numerals "2026" in black #1A1A1A centered, cream textured paper background #F5F0E8 with subtle linen texture, thin gold foil line accent beneath year, generous negative space above and below text, soft even lighting with no shadows, typography-focused graphic design aesthetic. Vertical 2:3 format.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  lifestyle: `Grid layout showing 16 {FORMAT} page thumbnails in 4x4 arrangement on cream background #F5F0E6, consistent sage green #9DBF82 and cream color scheme across all pages, slight drop shadow beneath each thumbnail, clean white borders between grid items, soft diffused lighting, product catalog overview style showing variety of included pages. Vertical 2:3 format.`,
 
-  lifestyle: `Feminine hands with neutral nail polish holding iPad displaying "{PRODUCT_TITLE}" {FORMAT}. Cozy setting with cream knit blanket visible. Golden hour lighting. Anatomically correct hands with 5 fingers. Lifestyle photography for Pinterest. Vertical 2:3 format.
+  desk: `Feminine hands holding iPad Pro displaying {FORMAT} interface with pastel sections, seated on gray fabric couch with warm wooden floor visible below, cozy living room setting with soft natural window light from left, cream throw pillow partially visible, shallow depth of field, lifestyle product photography with human connection element. Vertical 2:3 format.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Anatomically correct hands with exactly 5 fingers
-- Feminine hands with neutral nail polish
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  mood: `Single {FORMAT} page design flat composition on cream background #F5F0E8, soft pastel color palette featuring pink #FFC0CB yellow #FFC45C mint #98FF98 and lavender #E6E6FA section headers, clean grid layout with rounded corners on content blocks, soft even lighting with no shadows, digital product mockup aesthetic showcasing page design details. Vertical 2:3 format.`,
 
-  desk: `Clean minimal desk flatlay with iPad showing "{PRODUCT_TITLE}" {FORMAT}. Light wood desk, single coffee cup, small plant. Very minimal props. Soft overhead lighting. Aspirational workspace aesthetic for Pinterest. Vertical 2:3 format.
+  document_hands: `Minimalist {FORMAT} typography design on crumpled cream paper texture #F5F0E8, elegant black serif text centered reading "Plan Your Success" in two lines, generous negative space surrounding text, subtle paper fold shadows at corners, soft warm lighting from above, motivational quote pin aesthetic matching high-engagement Pinterest typography style. Vertical 2:3 format.`,
 
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
+  flatlay: `White sticky note pinned to cork board background #B8956E with orange pushpin #FF6B35 at top center, handwritten style black text reading "Start Your {FORMAT} Today", authentic tactile texture of cork visible, warm natural lighting from upper left creating soft shadow beneath note, goal-oriented vision board aesthetic matching 25K repin sticky note pattern. Vertical 2:3 format.`,
 
-  mood: `Mood board style collage grid featuring neutral tones, productivity aesthetics, coffee, cozy textures. Aspirational lifestyle imagery. Cream and beige color palette. Pinterest aesthetic grid layout. {PRODUCT_TITLE} {FORMAT} visible in one section. Vertical 2:3 format.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
-
-  document_hands: `Feminine hands with neutral nails flipping through printed pages of "{PRODUCT_TITLE}" {FORMAT}. Cream sweater sleeves visible. Cozy aesthetic. Anatomically correct hands with exactly 5 fingers. Soft natural lighting. Pinterest lifestyle content. Vertical 2:3 format.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Anatomically correct hands with exactly 5 fingers
-- Feminine hands with neutral nail polish
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`,
-
-  flatlay: `Styled flatlay of "{PRODUCT_TITLE}" {FORMAT} pages with minimal props: dried eucalyptus, gold pen, linen napkin. Light beige surface. Soft shadows. Editorial product photography for Pinterest. Vertical 2:3 format.
-
-AESTHETIC REQUIREMENTS:
-- Soft-minimalist luxury style
-- Light beige linen background (#F5F5DC) or linen white (#FAF0E6)
-- Golden hour lighting from top-left at 45 degrees
-- Elongated soft shadows (window-pane or botanical pattern)
-- Generous negative space
-- NO busy elements, NO loud colors, NO Canva template look
-- Professional product photography quality`
+  typography_bold: `Straight-on motivational typography design, bold dark red brush script text #8B0000 reading "I CAN AND I WILL" centered on smooth light gray background #D3D3D3, generous negative space above and below, energetic hand-lettered style, no decorative elements, high contrast, {FORMAT} cover design, Pinterest vertical format. Vertical 2:3 format.`
 };
 
 // ============================================================

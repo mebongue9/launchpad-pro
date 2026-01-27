@@ -333,7 +333,7 @@ export function NewProjectModal({
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Link to Funnel (Optional)</h3>
                 <p className="text-sm text-gray-500 mb-4">
-                  Optionally link this project to one of your funnels for organization.
+                  Optionally link this generation to one of your funnels for organization.
                 </p>
               </div>
 
@@ -349,7 +349,7 @@ export function NewProjectModal({
                   }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
                 >
-                  <option value="">None - Standalone Project</option>
+                  <option value="">None - Standalone</option>
                   {funnels.map(funnel => (
                     <option key={funnel.id} value={funnel.id}>
                       {funnel.name}
