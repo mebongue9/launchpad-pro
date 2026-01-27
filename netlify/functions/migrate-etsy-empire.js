@@ -214,8 +214,20 @@ export async function handler(event, context) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  // Use transaction mode pooler (port 6543)
-  const connectionString = `postgresql://postgres.psfgnelrxzdckucvytzj:${encodeURIComponent(process.env.SUPABASE_DB_PASSWORD)}@aws-0-us-west-1.pooler.supabase.com:6543/postgres`;
+  // Extract project ref from SUPABASE_URL
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const projectRef = supabaseUrl?.match(/https:\/\/([^.]+)\.supabase/)?.[1];
+
+  if (!projectRef) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ error: 'Could not extract project ref from SUPABASE_URL' })
+    };
+  }
+
+  // Use session mode pooler (port 5432) with correct username format
+  const connectionString = `postgresql://postgres.${projectRef}:${encodeURIComponent(process.env.SUPABASE_DB_PASSWORD)}@aws-0-us-west-1.pooler.supabase.com:5432/postgres`;
   const client = new Client({
     connectionString,
     ssl: { rejectUnauthorized: false }
