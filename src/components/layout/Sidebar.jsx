@@ -12,6 +12,7 @@ import {
   Rocket,
   Magnet,
   Palette,
+  Crown,
   History,
   Settings,
   LogOut,
@@ -28,6 +29,7 @@ const navItems = [
   { to: '/funnels', icon: Rocket, label: 'Funnel Builder' },
   { to: '/lead-magnets', icon: Magnet, label: 'Lead Magnets' },
   { to: '/visual-builder', icon: Palette, label: 'Visual Builder' },
+  { to: '/etsy-empire', icon: Crown, label: 'Etsy Empire' },
   { to: '/history', icon: History, label: 'History' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]

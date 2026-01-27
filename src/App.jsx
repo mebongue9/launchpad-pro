@@ -18,6 +18,7 @@ import FunnelDetails from './pages/FunnelDetails'
 import LeadMagnetBuilder from './pages/LeadMagnetBuilder'
 import LeadMagnetDetails from './pages/LeadMagnetDetails'
 import VisualBuilder from './pages/VisualBuilder'
+import EtsyEmpire from './pages/EtsyEmpire'
 import History from './pages/History'
 import Settings from './pages/Settings'
 import Admin from './pages/Admin'
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="/lead-magnets" element={<LeadMagnetBuilder />} />
         <Route path="/lead-magnets/:id" element={<LeadMagnetDetails />} />
         <Route path="/visual-builder" element={<VisualBuilder />} />
+        <Route path="/etsy-empire" element={<EtsyEmpire />} />
         <Route path="/history" element={<History />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />

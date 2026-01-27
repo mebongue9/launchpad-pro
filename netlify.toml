@@ -22,6 +22,10 @@
 [functions."process-funnel-idea-task-background"]
   type = "background"
 
+# Background function for Etsy Empire image generation (can run up to 15 minutes)
+[functions."process-etsy-empire-background"]
+  type = "background"
+
 # Cache headers - prevent browser caching of HTML, allow caching of hashed assets
 [[headers]]
   for = "/index.html"
