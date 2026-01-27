@@ -21,7 +21,7 @@ const RETRY_DELAYS = [0, 5000, 30000, 120000, 300000]; // ms: immediate, 5s, 30s
 // ============================================================
 
 const ETSY_SLIDE_PROMPTS = {
-  hero: `Professional product mockup for digital planner listing. Two iPads overlapping at slight angles on light beige linen surface, displaying "{PRODUCT_TITLE}" digital planner pages. Minimal composition with generous negative space. Golden hour lighting from top-left creating soft elongated shadows. Soft-minimalist luxury aesthetic. No text overlays. 4:5 aspect ratio.
+  hero: `Professional product mockup for digital product listing. Two iPads overlapping at slight angles on light beige linen surface, displaying "{PRODUCT_TITLE}" {FORMAT} pages. Minimal composition with generous negative space. Golden hour lighting from top-left creating soft elongated shadows. Soft-minimalist luxury aesthetic. No text overlays. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -32,7 +32,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  detail: `Single iPad Pro at 15-degree angle on light oak desk surface, screen showing detailed page from "{PRODUCT_TITLE}" planner. Soft window light from left creating gentle shadow. Minimalist composition, no props. Beige linen cloth visible at edge. Professional product photography. 4:5 aspect ratio.
+  detail: `Single iPad Pro at 15-degree angle on light oak desk surface, screen showing detailed page from "{PRODUCT_TITLE}" {FORMAT}. Soft window light from left creating gentle shadow. Minimalist composition, no props. Beige linen cloth visible at edge. Professional product photography. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -43,7 +43,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  feature: `iPad displaying "{PRODUCT_TITLE}" digital planner on cream linen background. Clean product shot with soft natural lighting. Space around device for potential text callouts. Luxury minimalist aesthetic. Golden hour warmth. 4:5 aspect ratio.
+  feature: `iPad displaying "{PRODUCT_TITLE}" {FORMAT} on cream linen background. Clean product shot with soft natural lighting. Space around device for potential text callouts. Luxury minimalist aesthetic. Golden hour warmth. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -54,7 +54,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  cascading: `Multiple printed planner pages from "{PRODUCT_TITLE}" fanning diagonally across light beige surface. Pages showing various sections of the planner. Soft shadows, golden hour lighting from top-left. Elegant paper cascade composition. No hands. 4:5 aspect ratio.
+  cascading: `Multiple printed pages from "{PRODUCT_TITLE}" {FORMAT} fanning diagonally across light beige surface. Pages showing various sections of the document. Soft shadows, golden hour lighting from top-left. Elegant paper cascade composition. No hands. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -65,7 +65,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  book: `Physical spiral-bound planner next to iPad showing same "{PRODUCT_TITLE}" content. Both on light oak wood surface. Textured paper visible on physical book. Soft minimalist styling with beige linen cloth accent. Professional product photography. 4:5 aspect ratio.
+  book: `Physical spiral-bound document next to iPad showing same "{PRODUCT_TITLE}" {FORMAT} content. Both on light oak wood surface. Textured paper visible on physical book. Soft minimalist styling with beige linen cloth accent. Professional product photography. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -76,7 +76,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  index: `iPad straight-on view showing table of contents or index page of "{PRODUCT_TITLE}" planner. Clean composition on cream surface. Soft diffused lighting, no harsh shadows. Focus on screen content visibility. Luxury minimal aesthetic. 4:5 aspect ratio.
+  index: `iPad straight-on view showing table of contents or overview page of "{PRODUCT_TITLE}" {FORMAT}. Clean composition on cream surface. Soft diffused lighting, no harsh shadows. Focus on screen content visibility. Luxury minimal aesthetic. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -87,7 +87,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  cover_options: `Two iPads side by side showing different cover design options for "{PRODUCT_TITLE}" digital planner. Light beige linen background. Devices at slight angles toward each other. Soft shadows, professional lighting. Clean minimal composition. 4:5 aspect ratio.
+  cover_options: `Two iPads side by side showing different cover design options for "{PRODUCT_TITLE}" {FORMAT}. Light beige linen background. Devices at slight angles toward each other. Soft shadows, professional lighting. Clean minimal composition. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -98,7 +98,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  features_layout: `iPad on left side of frame displaying "{PRODUCT_TITLE}" planner page. Right side has clean negative space on beige background. Soft natural lighting with gentle shadows. Room for feature list overlay. Minimalist product photography. 4:5 aspect ratio.
+  features_layout: `iPad on left side of frame displaying "{PRODUCT_TITLE}" {FORMAT} page. Right side has clean negative space on beige background. Soft natural lighting with gentle shadows. Room for feature list overlay. Minimalist product photography. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -109,7 +109,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  floating: `Large iPad showing "{PRODUCT_TITLE}" planner with single printed page floating beside it on light surface. Pages appear to lift off naturally. Soft shadows beneath both elements. Golden hour lighting. Elegant minimal composition. 4:5 aspect ratio.
+  floating: `Large iPad showing "{PRODUCT_TITLE}" {FORMAT} with single printed page floating beside it on light surface. Pages appear to lift off naturally. Soft shadows beneath both elements. Golden hour lighting. Elegant minimal composition. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -120,7 +120,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  library: `Grid layout showing multiple pages and sections from "{PRODUCT_TITLE}" planner arranged neatly on cream surface. Bird's eye view flatlay. Each page clearly visible. Demonstrates volume and variety of content. Soft even lighting. 4:5 aspect ratio.
+  library: `Grid layout showing multiple pages and sections from "{PRODUCT_TITLE}" {FORMAT} arranged neatly on cream surface. Bird's eye view flatlay. Each page clearly visible. Demonstrates volume and variety of content. Soft even lighting. 4:5 aspect ratio.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -144,7 +144,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  lifestyle: `Feminine hands with neutral nail polish holding iPad displaying "{PRODUCT_TITLE}" digital planner. Cozy setting with cream knit blanket visible. Golden hour lighting. Anatomically correct hands with 5 fingers. Lifestyle photography for Pinterest. Vertical 2:3 format.
+  lifestyle: `Feminine hands with neutral nail polish holding iPad displaying "{PRODUCT_TITLE}" {FORMAT}. Cozy setting with cream knit blanket visible. Golden hour lighting. Anatomically correct hands with 5 fingers. Lifestyle photography for Pinterest. Vertical 2:3 format.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -156,7 +156,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  desk: `Clean minimal desk flatlay with iPad showing "{PRODUCT_TITLE}" planner. Light wood desk, single coffee cup, small plant. Very minimal props. Soft overhead lighting. Aspirational workspace aesthetic for Pinterest. Vertical 2:3 format.
+  desk: `Clean minimal desk flatlay with iPad showing "{PRODUCT_TITLE}" {FORMAT}. Light wood desk, single coffee cup, small plant. Very minimal props. Soft overhead lighting. Aspirational workspace aesthetic for Pinterest. Vertical 2:3 format.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -167,7 +167,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  mood: `Mood board style collage grid featuring neutral tones, planners, coffee, cozy textures. Aspirational lifestyle imagery. Cream and beige color palette. Pinterest aesthetic grid layout. {PRODUCT_TITLE} planner visible in one section. Vertical 2:3 format.
+  mood: `Mood board style collage grid featuring neutral tones, productivity aesthetics, coffee, cozy textures. Aspirational lifestyle imagery. Cream and beige color palette. Pinterest aesthetic grid layout. {PRODUCT_TITLE} {FORMAT} visible in one section. Vertical 2:3 format.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -178,7 +178,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  planner_hands: `Feminine hands with neutral nails flipping through printed pages of "{PRODUCT_TITLE}" planner. Cream sweater sleeves visible. Cozy aesthetic. Anatomically correct hands with exactly 5 fingers. Soft natural lighting. Pinterest lifestyle content. Vertical 2:3 format.
+  document_hands: `Feminine hands with neutral nails flipping through printed pages of "{PRODUCT_TITLE}" {FORMAT}. Cream sweater sleeves visible. Cozy aesthetic. Anatomically correct hands with exactly 5 fingers. Soft natural lighting. Pinterest lifestyle content. Vertical 2:3 format.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -190,7 +190,7 @@ AESTHETIC REQUIREMENTS:
 - NO busy elements, NO loud colors, NO Canva template look
 - Professional product photography quality`,
 
-  flatlay: `Styled flatlay of "{PRODUCT_TITLE}" planner pages with minimal props: dried eucalyptus, gold pen, linen napkin. Light beige surface. Soft shadows. Editorial product photography for Pinterest. Vertical 2:3 format.
+  flatlay: `Styled flatlay of "{PRODUCT_TITLE}" {FORMAT} pages with minimal props: dried eucalyptus, gold pen, linen napkin. Light beige surface. Soft shadows. Editorial product photography for Pinterest. Vertical 2:3 format.
 
 AESTHETIC REQUIREMENTS:
 - Soft-minimalist luxury style
@@ -259,20 +259,24 @@ async function generateImage(prompt, aspectRatio) {
 
 function buildPrompt(task, project) {
   const { task_type, slide_type } = task;
-  const { product_title, tldr_text } = project;
+  const { product_title, tldr_text, product_format } = project;
 
   // Get base prompt template
   const templates = task_type === 'etsy_slide' ? ETSY_SLIDE_PROMPTS : PINTEREST_PIN_PROMPTS;
   const template = templates[slide_type];
 
+  // Get format (defaults to "digital product" if not specified)
+  const format = product_format || 'digital product';
+
   if (!template) {
     console.warn(`${LOG_TAG} No template found for ${task_type}/${slide_type}, using generic`);
-    return `Professional product mockup for "${product_title}" digital planner. Soft-minimalist luxury style. Light beige linen background. Golden hour lighting. 4:5 aspect ratio.`;
+    return `Professional product mockup for "${product_title}" ${format}. Soft-minimalist luxury style. Light beige linen background. Golden hour lighting. 4:5 aspect ratio.`;
   }
 
   // Replace placeholders
   return template
     .replace(/{PRODUCT_TITLE}/g, product_title)
+    .replace(/{FORMAT}/g, format)
     .replace(/{TLDR}/g, tldr_text || '');
 }
 
@@ -314,7 +318,7 @@ async function getQueuedTasks(supabase, projectId) {
 async function getProject(supabase, projectId) {
   const { data, error } = await supabase
     .from('etsy_empire_projects')
-    .select('id, user_id, product_title, tldr_text, manifestable_ratio, include_pinterest')
+    .select('id, user_id, product_title, tldr_text, product_format, manifestable_ratio, pinterest_enabled')
     .eq('id', projectId)
     .single();
 
@@ -619,7 +623,7 @@ export async function handler(event) {
 
     // 2. Get project details
     const project = await getProject(supabase, project_id);
-    console.log(`${LOG_TAG} Project: "${project.product_title}" (Pinterest: ${project.include_pinterest})`);
+    console.log(`${LOG_TAG} Project: "${project.product_title}" (Pinterest: ${project.pinterest_enabled})`);
 
     // 3. Fetch all queued tasks
     const tasks = await getQueuedTasks(supabase, project_id);
@@ -649,7 +653,7 @@ export async function handler(event) {
 
     if (finalStatus.allCompleted) {
       // 6. Generate spintax (only if Pinterest was enabled)
-      if (project.include_pinterest) {
+      if (project.pinterest_enabled) {
         await generateSpintax(supabase, project_id, project);
       }
 
@@ -666,7 +670,7 @@ export async function handler(event) {
       const partialCost = finalStatus.completedCount * COST_PER_IMAGE;
 
       // Still generate spintax for whatever was completed
-      if (project.include_pinterest && finalStatus.completedCount > 0) {
+      if (project.pinterest_enabled && finalStatus.completedCount > 0) {
         await generateSpintax(supabase, project_id, project);
       }
 

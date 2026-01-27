@@ -24,10 +24,10 @@ const ETSY_SLIDE_TYPES = [
 // 6 Pinterest pin categories (per vision doc Part 13)
 const PINTEREST_CATEGORIES = [
   'quote',          // Quote/Affirmation Card - motivational text
-  'lifestyle',      // iPad in Use - hands holding iPad showing planner
+  'lifestyle',      // iPad in Use - hands holding iPad showing product
   'desk',           // Clean Desk Setup - minimal workspace flatlay
   'mood',           // Mood Board Collage - grid of aspirational images
-  'planner_hands',  // Physical Planner in Hands - holding/flipping printed pages
+  'document_hands', // Physical Document in Hands - holding/flipping printed pages
   'flatlay'         // Flatlay with Props - product pages with styled accessories
 ];
 
@@ -54,6 +54,7 @@ export async function handler(event) {
       secondary_benefits = [],
       funnel_id = null,
       product_type = null,
+      product_format = 'digital product',
       pinterest_enabled = true,
       manifestable_ratio = 0.70,
       user_id
@@ -124,6 +125,7 @@ export async function handler(event) {
         secondary_benefits,
         funnel_id,
         product_type,
+        product_format,
         pinterest_enabled,
         manifestable_ratio: ratio,
         status: 'pending',
@@ -167,7 +169,7 @@ export async function handler(event) {
         'lifestyle': 6,       // More lifestyle shots
         'desk': 5,
         'mood': 5,
-        'planner_hands': 5,
+        'document_hands': 5,  // Renamed from planner_hands for format flexibility
         'flatlay': 5
       };
 

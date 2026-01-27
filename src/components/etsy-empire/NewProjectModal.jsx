@@ -37,6 +37,16 @@ const PRODUCT_TYPES = [
   { value: 'upsell_2', label: 'Upsell 2' }
 ]
 
+// Format options matching the 6 Launchpad Pro formats
+const FORMAT_OPTIONS = [
+  { value: 'checklist', label: 'Checklist' },
+  { value: 'worksheet', label: 'Worksheet' },
+  { value: 'planner', label: 'Planner' },
+  { value: 'swipe file', label: 'Swipe File' },
+  { value: 'blueprint', label: 'Blueprint' },
+  { value: 'cheat sheet', label: 'Cheat Sheet' }
+]
+
 export function NewProjectModal({
   isOpen,
   onClose,
@@ -53,6 +63,7 @@ export function NewProjectModal({
   const [productTitle, setProductTitle] = useState('')
   const [tldrText, setTldrText] = useState('')
   const [secondaryBenefits, setSecondaryBenefits] = useState('')
+  const [productFormat, setProductFormat] = useState('checklist')
   const [selectedFunnel, setSelectedFunnel] = useState('')
   const [productType, setProductType] = useState('')
   const [pinterestEnabled, setPinterestEnabled] = useState(true)
@@ -66,6 +77,7 @@ export function NewProjectModal({
       setProductTitle('')
       setTldrText('')
       setSecondaryBenefits('')
+      setProductFormat('checklist')
       setSelectedFunnel('')
       setProductType('')
       setPinterestEnabled(true)
@@ -130,6 +142,7 @@ export function NewProjectModal({
       secondary_benefits: secondaryBenefits
         ? secondaryBenefits.split(',').map(b => b.trim()).filter(Boolean)
         : [],
+      product_format: productFormat,
       funnel_id: selectedFunnel || null,
       product_type: selectedFunnel ? productType : null,
       pinterest_enabled: pinterestEnabled,
@@ -274,6 +287,26 @@ export function NewProjectModal({
                 {errors.tldr && (
                   <p className="text-sm text-red-600 mt-1">{errors.tldr}</p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Product Format *
+                </label>
+                <select
+                  value={productFormat}
+                  onChange={(e) => setProductFormat(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                >
+                  {FORMAT_OPTIONS.map(format => (
+                    <option key={format.value} value={format.value}>
+                      {format.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  What type of digital product is this?
+                </p>
               </div>
 
               <div>
@@ -431,6 +464,12 @@ export function NewProjectModal({
                   <span className="text-gray-600">Main Benefit</span>
                   <span className="font-medium text-gray-900 text-right max-w-[60%] truncate">
                     {tldrText}
+                  </span>
+                </div>
+                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Format</span>
+                  <span className="font-medium text-gray-900 capitalize">
+                    {productFormat}
                   </span>
                 </div>
                 <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
