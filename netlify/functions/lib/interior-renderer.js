@@ -90,7 +90,7 @@ ${pages.join('\n')}
 }
 
 /**
- * Get complete interior CSS adapted for Letter size (8.5in x 11in)
+ * Get complete interior CSS adapted for A4 size (210mm x 297mm)
  */
 function getInteriorCSS(template, headerGradient, lightBg) {
   const { primary_color, secondary_color, font_family, is_gradient } = template
@@ -98,7 +98,7 @@ function getInteriorCSS(template, headerGradient, lightBg) {
   return `
 /* ============================================
    LAUNCHPAD PRO PDF INTERIOR STYLES
-   Letter size (8.5in x 11in)
+   A4 size (210mm x 297mm)
    ============================================ */
 
 /* CSS Variables */
@@ -126,15 +126,15 @@ html, body {
   print-color-adjust: exact;
 }
 
-/* Page Dimensions - Letter */
+/* Page Dimensions - A4 (must match cover) */
 @page {
-  size: 8.5in 11in;
+  size: A4;
   margin: 0;
 }
 
 .page {
-  width: 8.5in;
-  height: 11in;
+  width: 210mm;
+  height: 297mm;
   box-sizing: border-box;
   position: relative;
   overflow: hidden;
@@ -808,6 +808,212 @@ p, .step-bullet {
 }
 
 /* ============================================
+   WORKSHEET FORMAT
+   ============================================ */
+.exercise-block {
+  margin-bottom: 24px;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.exercise-prompt {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+.exercise-description {
+  font-size: 14px;
+  color: #444;
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+
+.fill-field {
+  display: inline-block;
+  min-width: 200px;
+  border-bottom: 2px solid var(--primary-color);
+  margin: 0 6px 4px 0;
+  vertical-align: bottom;
+  height: 1.4em;
+}
+
+.field-group {
+  margin-bottom: 16px;
+}
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.write-area {
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  min-height: 80px;
+  padding: 12px;
+  margin: 10px 0 16px 0;
+  background: #fafafa;
+}
+
+.write-area-large {
+  border: 2px solid #e0e0e0;
+  border-radius: 4px;
+  min-height: 160px;
+  padding: 12px;
+  margin: 10px 0 16px 0;
+  background: #fafafa;
+}
+
+.numbered-inputs {
+  margin: 12px 0 20px 0;
+}
+
+.numbered-input {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.input-number {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+}
+
+.input-line {
+  flex: 1;
+  border-bottom: 2px solid #ddd;
+  height: 1px;
+  margin-bottom: 6px;
+}
+
+.reflection-box {
+  background: var(--light-bg);
+  border-left: 4px solid var(--primary-color);
+  padding: 16px 18px;
+  margin: 20px 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.reflection-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.reflection-prompt {
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  font-style: italic;
+}
+
+.worksheet-checkbox-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 20px 0;
+}
+
+.worksheet-checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.worksheet-checkbox-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--primary-color);
+  border-radius: 3px;
+  margin-top: 2px;
+}
+
+.worksheet-checkbox-text {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  flex: 1;
+}
+
+.two-column {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin: 16px 0;
+}
+
+.column-box {
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  padding: 14px;
+  background: #fafafa;
+}
+
+.column-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rating-scale {
+  margin: 16px 0 20px 0;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.scale-label-left,
+.scale-label-right {
+  font-size: 11px;
+  color: #666;
+}
+
+.scale-circles {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.scale-circle {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--primary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* ============================================
    FORMAT-SPECIFIC PAGE BREAK RULES
    ============================================ */
 .blueprint-step,
@@ -819,7 +1025,12 @@ p, .step-bullet {
 .task-item,
 .info-box,
 .tracking-section,
-.swipe-card {
+.swipe-card,
+.exercise-block,
+.reflection-box,
+.rating-scale,
+.numbered-inputs,
+.two-column {
   page-break-inside: avoid !important;
   break-inside: avoid !important;
 }
@@ -828,7 +1039,10 @@ p, .step-bullet {
 .day-header,
 .step-title,
 .cheat-card-title,
-.swipe-card-title {
+.swipe-card-title,
+.exercise-prompt,
+.reflection-title,
+.field-label {
   page-break-after: avoid !important;
   break-after: avoid !important;
 }
@@ -858,6 +1072,8 @@ function renderChapterPage(chapter, chapterNum, pageNum, profile, format = '') {
       return renderPlannerPage(chapter, chapterNum, pageNum, profile)
     case 'swipe-file':
       return renderSwipeFilePage(chapter, chapterNum, pageNum, profile)
+    case 'worksheet':
+      return renderWorksheetPage(chapter, chapterNum, pageNum, profile)
     default:
       // Default: use existing content parser
       const parsedContent = parseChapterContent(content)
@@ -1042,6 +1258,181 @@ function renderSwipeFilePage(chapter, chapterNum, pageNum, profile) {
       <span class="footer-page-number">${pageNum}</span>
     </div>
   </div>`
+}
+
+/**
+ * Render Worksheet format page
+ */
+function renderWorksheetPage(chapter, chapterNum, pageNum, profile) {
+  const { handle, photoUrl } = profile
+  const { title, content } = chapter
+  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+
+  // Parse content into worksheet elements
+  const worksheetContent = parseContentToWorksheet(content)
+
+  return `
+  <div class="page">
+    <div class="header-bar"></div>
+    <div class="page-content">
+      <div class="chapter-label">EXERCISE ${chapterNum}</div>
+      <h1 class="chapter-title">${escapeHtml(title)}</h1>
+
+      ${worksheetContent}
+    </div>
+    <div class="footer-line"></div>
+    <div class="page-footer">
+      <div class="footer-left">
+        <img src="${photoUrl}" class="footer-photo" alt="">
+        <span class="footer-handle">${handleDisplay}</span>
+      </div>
+      <span class="footer-page-number">${pageNum}</span>
+    </div>
+  </div>`
+}
+
+/**
+ * Parse content into worksheet elements
+ * Recognizes: numbered questions, [WRITE AREA], [FILL FIELD], [REFLECTION], checkbox markers, [RATING]
+ */
+function parseContentToWorksheet(content) {
+  if (!content) return '<p class="exercise-description">No content available</p>'
+
+  const lines = content.split('\n')
+  let html = ''
+  let inNumberedInputs = false
+  let numberedInputCount = 0
+  let inCheckboxList = false
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim()
+    if (!line) continue
+
+    // Check for [WRITE AREA] or [WRITE AREA LARGE]
+    if (line.match(/\[WRITE\s*AREA\s*LARGE\]/i)) {
+      closeOpenLists()
+      html += '<div class="write-area-large"></div>'
+      continue
+    }
+
+    if (line.match(/\[WRITE\s*AREA\]/i)) {
+      closeOpenLists()
+      html += '<div class="write-area"></div>'
+      continue
+    }
+
+    // Check for [FILL FIELD: label] pattern
+    const fillFieldMatch = line.match(/\[FILL\s*FIELD(?::\s*(.+?))?\]/i)
+    if (fillFieldMatch) {
+      closeOpenLists()
+      const label = fillFieldMatch[1] || ''
+      if (label) {
+        html += `<div class="field-group"><div class="field-label">${escapeHtml(label)}</div><div class="fill-field"></div></div>`
+      } else {
+        html += '<div class="fill-field"></div>'
+      }
+      continue
+    }
+
+    // Check for [REFLECTION: prompt] pattern
+    const reflectionMatch = line.match(/\[REFLECTION(?::\s*(.+?))?\]/i)
+    if (reflectionMatch) {
+      closeOpenLists()
+      const prompt = reflectionMatch[1] || 'Take a moment to reflect...'
+      html += `<div class="reflection-box"><div class="reflection-title">Reflection</div><div class="reflection-prompt">${escapeHtml(prompt)}</div></div>`
+      continue
+    }
+
+    // Check for [RATING: low label - high label] pattern
+    const ratingMatch = line.match(/\[RATING(?::\s*(.+?)\s*-\s*(.+?))?\]/i)
+    if (ratingMatch) {
+      closeOpenLists()
+      const lowLabel = ratingMatch[1] || 'Not at all'
+      const highLabel = ratingMatch[2] || 'Completely'
+      html += `<div class="rating-scale">
+        <div class="scale-label-left">${escapeHtml(lowLabel)}</div>
+        <div class="scale-circles">
+          ${[1, 2, 3, 4, 5].map(n => `<div class="scale-circle">${n}</div>`).join('')}
+        </div>
+        <div class="scale-label-right">${escapeHtml(highLabel)}</div>
+      </div>`
+      continue
+    }
+
+    // Check for numbered question (starts with number + period or parenthesis)
+    const numberedMatch = line.match(/^(\d+)[.)]\s*(.+)/)
+    if (numberedMatch) {
+      closeOpenLists()
+      const questionText = numberedMatch[2]
+      html += `<div class="exercise-block"><div class="exercise-prompt">${escapeHtml(line)}</div></div>`
+      continue
+    }
+
+    // Check for checkbox item (starts with [ ] or - [ ])
+    const checkboxMatch = line.match(/^(?:-\s*)?\[\s*\]\s*(.+)/)
+    if (checkboxMatch) {
+      if (!inCheckboxList) {
+        if (inNumberedInputs) {
+          html += '</div>'
+          inNumberedInputs = false
+        }
+        html += '<ul class="worksheet-checkbox-list">'
+        inCheckboxList = true
+      }
+      html += `<li class="worksheet-checkbox-item"><div class="worksheet-checkbox-box"></div><span class="worksheet-checkbox-text">${escapeHtml(checkboxMatch[1])}</span></li>`
+      continue
+    }
+
+    // Check for numbered input line (starts with number + colon or just underscore pattern)
+    const inputLineMatch = line.match(/^(\d+)[.:]\s*_{2,}/) || line.match(/^(\d+)[.:]\s*$/)
+    if (inputLineMatch) {
+      if (!inNumberedInputs) {
+        if (inCheckboxList) {
+          html += '</ul>'
+          inCheckboxList = false
+        }
+        html += '<div class="numbered-inputs">'
+        inNumberedInputs = true
+        numberedInputCount = 0
+      }
+      numberedInputCount++
+      html += `<div class="numbered-input"><div class="input-number">${numberedInputCount}</div><div class="input-line"></div></div>`
+      continue
+    }
+
+    // Default: treat as description text or prompt
+    closeOpenLists()
+
+    // Check if line looks like a section header (all caps or ends with colon)
+    if (line === line.toUpperCase() && line.length > 3 && line.length < 50) {
+      html += `<div class="field-label" style="margin-top: 16px;">${escapeHtml(line)}</div>`
+    } else if (line.endsWith(':')) {
+      html += `<div class="exercise-prompt">${escapeHtml(line)}</div>`
+    } else {
+      html += `<p class="exercise-description">${escapeHtml(line)}</p>`
+    }
+  }
+
+  // Close any open lists
+  closeOpenLists()
+
+  function closeOpenLists() {
+    if (inNumberedInputs) {
+      html += '</div>'
+      inNumberedInputs = false
+    }
+    if (inCheckboxList) {
+      html += '</ul>'
+      inCheckboxList = false
+    }
+  }
+
+  // If no content was generated, return a default
+  if (!html.trim()) {
+    return '<p class="exercise-description">Complete the exercises below.</p><div class="write-area"></div>'
+  }
+
+  return html
 }
 
 /**

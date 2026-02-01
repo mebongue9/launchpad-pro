@@ -232,6 +232,38 @@ export async function handler(event) {
 
     // 5. Call PDFShift API
     console.log(`📄 ${LOG_TAG} Calling PDFShift API...`)
+
+    // ========== PDFSHIFT DEBUG LOGGING ==========
+    console.log('========== PDFSHIFT DEBUG START ==========')
+    console.log('Timestamp:', new Date().toISOString())
+
+    // Log the full HTML (first 8000 chars to see cover structure)
+    const htmlToLog = combinedHtml.length > 8000
+      ? combinedHtml.substring(0, 8000) + '\n... [TRUNCATED at 8000 chars, total: ' + combinedHtml.length + ']'
+      : combinedHtml
+    console.log('HTML PAYLOAD:')
+    console.log(htmlToLog)
+
+    // Log the CSS specifically
+    console.log('COVER CSS IN PAYLOAD:')
+    const coverCssMatch = combinedHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/)
+    if (coverCssMatch) {
+      console.log(coverCssMatch[1])
+    } else {
+      console.log('NO STYLE TAG FOUND')
+    }
+
+    // Log PDFShift options that will be sent
+    console.log('PDFSHIFT OPTIONS:', JSON.stringify({
+      format: 'A4',
+      margin: '0',
+      sandbox: false,
+      use_print: true
+    }, null, 2))
+
+    console.log('========== PDFSHIFT DEBUG END ==========')
+    // ========== END DEBUG LOGGING ==========
+
     const pdfBuffer = await generatePdfWithPdfShift(combinedHtml, startTime)
 
     if (!pdfBuffer) {
@@ -355,7 +387,17 @@ function combineDocuments(coverHtml, interiorHtml) {
     .cover-page {
       width: 210mm;
       height: 297mm;
+      max-height: 297mm;
+      overflow: hidden;
       page-break-after: always;
+      break-after: page;
+      box-sizing: border-box;
+    }
+    /* Force inner template container to also clip content */
+    .cover-page > .cover {
+      overflow: hidden !important;
+      max-height: 100% !important;
+      height: 100% !important;
     }
     ${coverStyles}
     ${interiorStyles}

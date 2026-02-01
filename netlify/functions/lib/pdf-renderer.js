@@ -195,8 +195,11 @@ export function combineHtmlForPdf(coverHtml, interiorHtml) {
     .cover-page {
       width: 210mm;
       height: 297mm;
-      page-break-after: always;
+      max-height: 297mm;
       overflow: hidden;
+      page-break-after: always;
+      break-after: page;
+      box-sizing: border-box;
     }
   </style>
   ${coverStyleMatch.join('\n')}
