@@ -35,30 +35,54 @@ Do not include any English unless the user's language is English.
 `;
 }
 
-// Bundle Listing System Prompt
+// Bundle Listing System Prompt - Manifestable-proven Etsy SEO patterns
 const BUNDLE_SYSTEM_PROMPT = `You are an expert at creating irresistible bundle offers for digital products.
 
-## BUNDLE PSYCHOLOGY
-1. Emphasize the TOTAL VALUE vs BUNDLE PRICE
-2. Create urgency without fake scarcity
-3. List each product's individual value
-4. Highlight the convenience of getting everything
-5. Use specific numbers (savings amount, total pages, etc.)
-
 ## TITLE FORMULA (140 chars max)
-[Total Items] Bundle | [Main Benefit] | [Value Highlight] | Save $[Amount]
+[Bundle Name] | Digital Download | [Format] Bundle | Save $[Amount]
 
-## DESCRIPTION STRUCTURE
-1. Hook: Headline about the complete solution
-2. The Problem: What they're struggling with
-3. The Solution: Your bundle solves everything
-4. What's Included: List each product with value
-5. Total Value vs Bundle Price
-6. CTA: Clear next step
+CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
 
-## TAGS (13 total)
-- Include "bundle", "digital bundle", format names
-- Mix specific niche terms with broad marketplace terms
+## BUNDLE DESCRIPTION - MANIFESTABLE FRAMEWORK
+
+[SECTION 1: EMOTIONAL HOOK - 2 paragraphs]
+Open with a question about their pain point.
+Acknowledge their struggle with empathy ("It's not your fault").
+Position this COMPLETE bundle as the all-in-one solution.
+Emphasize the incredible savings and convenience.
+
+[SECTION 2: WHY YOU'LL LOVE THIS BUNDLE - 5 bullets]
+✓ Outcome-focused benefit statements
+✓ Emphasize total value vs bundle price
+✓ Highlight convenience of getting everything
+
+[SECTION 3: WHAT'S INSIDE THE BUNDLE - list each product]
+✓ [Product 1 Name] ($XX value) - brief benefit
+✓ [Product 2 Name] ($XX value) - brief benefit
+✓ [Product 3 Name] ($XX value) - brief benefit
+✓ [Product 4 Name] ($XX value) - brief benefit
+✓ Instant digital download - all products
+
+[SECTION 4: WHO THIS IS FOR]
+Perfect for [specific audience ready for a complete solution].
+
+[SECTION 5: WHAT YOU'LL RECEIVE]
+✓ [X] Complete Digital Products
+✓ Total Value: $[XX] | Your Price: $[XX] | You Save: $[XX]
+
+[SECTION 6: LEGAL/TERMS]
+PLEASE NOTE: This is a digital product. No physical items will be shipped.
+TERMS OF SERVICE: Due to the digital nature of this product, all sales are final.
+This product is for PERSONAL USE ONLY.
+Copyright 2026. All rights reserved.
+
+## TAGS (EXACTLY 13, each MAX 20 chars)
+Tag Framework:
+- 2 bundle tags: bundle, digital bundle
+- 3 format tags: checklist bundle, worksheet pack, template bundle
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: lead generation, sales funnel, business growth
+- 2 audience tags: coach, consultant
 
 Return ONLY valid JSON.`;
 
@@ -154,7 +178,7 @@ export async function handler(event) {
     ).join('\n');
 
     const bundlePrompt = `
-Create a marketplace bundle listing:
+Create a marketplace bundle listing using the Manifestable framework:
 
 FUNNEL NAME: ${funnel.name}
 CREATOR: ${profile.name} (${profile.business_name || profile.name})
@@ -172,13 +196,24 @@ TARGET AUDIENCE: ${audience?.name || 'General'}
 
 Return JSON:
 {
-  "title": "Bundle title (MAX 140 chars, include savings)",
-  "etsy_description": "Etsy description (500-800 chars)",
-  "normal_description": "Gumroad description (1500-2500 chars with full product breakdown)",
+  "title": "Bundle title using formula: [Bundle Name] | Digital Download | [Format] Bundle | Save $${savings} (MAX 140 chars - use only 2 keywords if 3 exceeds limit)",
+  "etsy_description": "Etsy description (500-800 chars) with: Emotional hook question, What's in the bundle with values, Total savings emphasized, Legal/terms",
+  "normal_description": "Gumroad description (1500-2500 chars) with: Emotional hook (2 paragraphs), Why You'll Love This Bundle (5 checkmark bullets), What's Inside listing each product with value, Who This Is For, What You'll Receive with pricing breakdown, Legal/Terms",
   "tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13"
 }
 
-Include specific dollar amounts for savings and total value.
+TAG FRAMEWORK (fill all 13 slots):
+- 2 bundle tags: bundle, digital bundle
+- 3 format tags: checklist bundle, worksheet pack, template bundle
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: lead generation, sales funnel, business growth
+- 2 audience tags: coach, consultant
+
+CRITICAL:
+- Title MUST be under 140 characters (use 2 keywords if 3 exceeds limit)
+- Tags MUST be exactly 13, each under 20 characters
+- No duplicate tags
+- Include specific dollar amounts for savings and total value
 ${getLanguagePromptSuffix(language)}`;
 
     console.log('🔄 [BUNDLE] Calling Claude API for bundle listing generation...');

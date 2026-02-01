@@ -35,27 +35,47 @@ Do not include any English unless the user's language is English.
 `;
 }
 
-// Marketplace Listing System Prompt
-const MARKETPLACE_SYSTEM_PROMPT = `You are an expert Etsy and Gumroad marketplace listing copywriter.
+// Marketplace Listing System Prompt - Manifestable-proven Etsy SEO patterns
+const MARKETPLACE_SYSTEM_PROMPT = `You are an expert Etsy and Gumroad marketplace listing copywriter specializing in digital products.
 
-## ETSY SEO REQUIREMENTS
-1. **Title**: 140 characters MAX, front-load keywords
-   - Format: [Main Keyword] | [Benefit] | [Format] | [Creator/Brand]
-   - Use pipes (|) to separate sections
-   - Include 3-4 keywords naturally
+## TITLE FORMAT (MAX 140 chars)
+Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
 
-2. **Description** (works for both Etsy and Gumroad): 800-1200 characters
-   - Hook in first line
-   - Key benefits (bullet points)
-   - What's included
-   - Clear deliverables list
-   - End with soft CTA
+Platform Keywords (pick 1): Digital Download, Instant PDF, Printable, PDF Template
+Format Keywords: Marketing Checklist, Business Worksheet, Strategy Blueprint, Quick Guide, Business Planner, Swipe File
+Benefit Keywords: Lead Generation, Sales Funnel, Email Marketing, Content Strategy, Social Media, Online Business
 
-3. **Tags**: EXACTLY 13 tags
-   - Each tag MAX 20 characters
-   - Mix of specific and broad
-   - Include format variations
-   - No duplicate words across tags
+CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
+
+## DESCRIPTION - MANIFESTABLE FRAMEWORK (800-1200 chars)
+[SECTION 1: EMOTIONAL HOOK]
+Open with a question about their pain point.
+Acknowledge their struggle with empathy.
+
+[SECTION 2: WHY YOU'LL LOVE THIS - 5 bullets]
+✓ Outcome-focused benefit statements
+
+[SECTION 3: WHAT'S INSIDE - 6-8 bullets]
+✓ Specific features with brief explanations
+✓ End with "Instant digital download"
+
+[SECTION 4: WHO THIS IS FOR]
+Perfect for [specific audience].
+
+[SECTION 5: WHAT YOU'LL RECEIVE]
+✓ 1 PDF [Product Name]
+
+[SECTION 6: LEGAL/TERMS]
+PLEASE NOTE: Digital product. No physical items shipped.
+TERMS: All sales final. Personal use only.
+
+## TAGS: EXACTLY 13 tags (each MAX 20 chars)
+Tag Framework:
+- 3 format tags: checklist, worksheet, template
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: lead generation, sales funnel, email list
+- 2 platform tags: digital download, instant pdf
+- 2 audience tags: coach, consultant, course creator
 
 ## OUTPUT REQUIREMENTS
 Return ONLY valid JSON. No markdown, no code blocks.
@@ -68,7 +88,7 @@ async function generateProductListing(product, profile, audience, language, prod
   console.log('📋 [MARKETPLACE] Product level:', productLevel);
 
   const prompt = `
-Create marketplace listings for this digital product:
+Create marketplace listings for this digital product using the Manifestable framework:
 
 PRODUCT:
 Name: ${product.name}
@@ -84,15 +104,23 @@ Pain Points: ${(audience?.pain_points || []).join(', ') || 'Not specified'}
 
 Return JSON:
 {
-  "marketplace_title": "SEO title (MAX 140 chars)",
-  "marketplace_description": "Etsy/Gumroad description (800-1200 chars)",
+  "marketplace_title": "SEO title using formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword] (MAX 140 chars - use only 2 keywords if 3 exceeds limit)",
+  "marketplace_description": "Manifestable-style description (800-1200 chars) with: Emotional hook question, Why You'll Love This (5 checkmark bullets), What's Inside (6-8 checkmark bullets), Perfect for [audience], What You'll Receive, Legal/Terms",
   "marketplace_tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13"
 }
 
+TAG FRAMEWORK (fill all 13 slots):
+- 3 format tags: checklist, worksheet, template, etc.
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: lead generation, sales funnel, email list
+- 2 platform tags: digital download, instant pdf
+- 2 audience tags: coach, consultant, course creator
+
 CRITICAL:
-- Title MUST be under 140 characters
+- Title MUST be under 140 characters (use 2 keywords if 3 exceeds limit)
 - Tags MUST be exactly 13, each under 20 characters
 - Tags separated by commas
+- No duplicate tags
 ${getLanguagePromptSuffix(language)}`;
 
   try {

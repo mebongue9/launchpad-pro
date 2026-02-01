@@ -30,45 +30,61 @@ const LOG_TAG = '[BATCHED-GENERATORS]';
 const SECTION_SEPARATOR = '===SECTION_BREAK===';
 
 // MARKETPLACE LISTING FRAMEWORK - Creates Etsy/Gumroad-ready descriptions
-// Uses 7-section structure from individual-product-description-framework.md
+// Uses Manifestable-proven Etsy SEO patterns for maximum conversions
 // MUST use Unicode bold characters for Etsy/Gumroad compatibility (no markdown)
-const MARKETPLACE_SYSTEM = `You are an expert Etsy and Gumroad marketplace copywriter.
+const MARKETPLACE_SYSTEM = `You are an expert Etsy and Gumroad marketplace copywriter specializing in digital products.
 
-## INDIVIDUAL PRODUCT DESCRIPTION - 7 SECTIONS:
+## TITLE FORMAT (MAX 140 chars)
+Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
 
-1. **WHAT IT IS:** (1 sentence)
-   - One clear statement with the key promise
-   - Focus on END RESULT, no hype words
+Platform Keywords (pick 1): Digital Download, Instant PDF, Printable, PDF Template
+Format Keywords (based on format): Marketing Checklist, Business Worksheet, Strategy Blueprint, Quick Guide, Business Planner, Swipe File
+Benefit Keywords (based on niche): Lead Generation, Sales Funnel, Email Marketing, Content Strategy, Social Media, Online Business
 
-2. **WHO IT'S FOR:** (1-2 sentences)
-   - Specific situation + frustration
-   - Make them feel "this is for ME"
+CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
 
-3. **PROBLEM SOLVED:** (1 sentence)
-   - Emotional root problem
-   - What they're experiencing right now
+## TAG FRAMEWORK (EXACTLY 13 tags, each MAX 20 chars)
+Fill all 13 slots:
+- 3 format tags: checklist, worksheet, template, etc.
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: lead generation, sales funnel, email list
+- 2 platform tags: digital download, instant pdf
+- 2 audience tags: coach, consultant, course creator
 
-4. **KEY BENEFITS:** (4-5 bullet points)
-   - Transformation statements (before → after)
-   - Start with action verbs: Turn, Stop, Get, Start, Finally
-   - These must NOT repeat in What's Inside
+## INDIVIDUAL PRODUCT DESCRIPTION - MANIFESTABLE FRAMEWORK:
 
-5. **WHAT'S INSIDE:** (4-6 bullet points)
-   - Format: "[Bold deliverable] so you can [benefit]"
-   - Benefits here must be DIFFERENT from Key Benefits
-   - Example: "𝟯 𝗵𝗶𝗴𝗵𝗲𝘀𝘁-𝗰𝗼𝗻𝘃𝗲𝗿𝘁𝗶𝗻𝗴 𝗿𝗲𝗲𝗹 𝗳𝗼𝗿𝗺𝗮𝘁𝘀 so you can use proven structures that work in any niche"
+[SECTION 1: EMOTIONAL HOOK - 2 paragraphs]
+Open with a question about their pain point.
+Acknowledge their struggle with empathy ("It's not your fault").
+Position the product as the solution designed specifically for them.
 
-6. **WHAT YOU'LL BE ABLE TO DO AFTER GETTING THIS:** (4-5 bullet points)
-   - Format: "[Bold action] [result they'll achieve]"
-   - Show transformed life, flip problems into possibilities
-   - Example: "𝗣𝗼𝘀𝘁 𝗮 𝗿𝗲𝗲𝗹 𝗮𝗻𝗱 𝗸𝗻𝗼𝘄 𝗶𝘁 𝘄𝗶𝗹𝗹 𝗰𝗼𝗻𝘃𝗲𝗿𝘁 instead of hoping someone buys"
+[SECTION 2: WHY YOU'LL LOVE THIS - 5 bullets with checkmarks]
+𝗪𝗵𝘆 𝗬𝗼𝘂'𝗹𝗹 𝗟𝗼𝘃𝗲 𝗧𝗵𝗶𝘀 [Product Name]:
+✓ Outcome-focused benefit statements
+✓ Start with transformation, not features
+✓ Use action verbs: Turn, Stop, Get, Start, Finally
 
-7. **CTA:** (1 line)
-   - Short, action-oriented
-   - Action verb + outcome
+[SECTION 3: WHAT'S INSIDE - 6-8 bullets with checkmarks]
+𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:
+✓ Specific feature with brief explanation
+✓ Include page count or content volume
+✓ End with "Instant digital download"
+
+[SECTION 4: WHO THIS IS FOR - 1 paragraph]
+𝗣𝗲𝗿𝗳𝗲𝗰𝘁 𝗳𝗼𝗿 [audience description with specific situations].
+
+[SECTION 5: WHAT YOU'LL RECEIVE]
+𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗥𝗘𝗖𝗘𝗜𝗩𝗘:
+✓ 1 PDF [Product Name]
+
+[SECTION 6: LEGAL/TERMS]
+𝗣𝗟𝗘𝗔𝗦𝗘 𝗡𝗢𝗧𝗘: This is a digital product. No physical items will be shipped.
+𝗧𝗘𝗥𝗠𝗦 𝗢𝗙 𝗦𝗘𝗥𝗩𝗜𝗖𝗘: Due to the digital nature of this product, all sales are final.
+This product is for PERSONAL USE ONLY.
+Copyright 2026. All rights reserved.
 
 ## UNICODE BOLD CHARACTERS (CRITICAL):
-You MUST use Unicode bold for deliverables and actions. This is how bold displays on Etsy/Gumroad.
+You MUST use Unicode bold for section headers. This is how bold displays on Etsy/Gumroad.
 
 Unicode bold alphabet to use:
 - Bold letters: 𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭 𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇
@@ -243,6 +259,19 @@ async function logRagForBatchedGen(funnelId, funnel, taskName, ragMetrics) {
   }
 }
 
+// Helper: Get language-specific prompt suffix
+// LANGUAGE FIX: Ensures all 14 generation tasks output content in the selected language
+function getLanguagePromptSuffix(language) {
+  if (!language || language === 'English') {
+    return '';
+  }
+  return `
+
+OUTPUT LANGUAGE: ${language}
+All content must be written entirely in ${language}.
+Do not include any English unless the user's language is English.`;
+}
+
 // Helper: Get funnel data (including Main Product for cross-promo)
 // SCHEMA-VERIFIED: front_end, bump, upsell_1, upsell_2 are JSONB columns, NOT FK relationships
 async function getFunnelData(funnelId) {
@@ -393,14 +422,14 @@ Section 4 - CHAPTER 3 (JSON):
   "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 400-600 words]"
 }
 
-IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.`;
+IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.${getLanguagePromptSuffix(funnel.language)}`;
 
   console.log(`🔄 ${LOG_TAG} Calling Claude API for batched generation...`);
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
-    system: 'You are a lead magnet content writer. Use the creator\'s knowledge to create valuable, specific content. Return valid JSON for each section separated by the exact separator.',
+    system: `You are a lead magnet content writer. Use the creator's knowledge to create valuable, specific content. Return valid JSON for each section separated by the exact separator.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -523,7 +552,7 @@ Section 2 - CHAPTER 5 (JSON):
   "content": "[400-600 words following FORMAT INSTRUCTIONS - wrap up content AND include a natural cross-promo paragraph at the end promoting ${frontend.name}]"
 }
 
-Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -645,7 +674,7 @@ Section 4 - CHAPTER 3 (JSON):
   "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
-Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -756,7 +785,7 @@ Section 3 - CHAPTER 6 (JSON):
   "content": "[500-800 words following FORMAT INSTRUCTIONS - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -868,7 +897,7 @@ Section 3 - CHAPTER 2 (JSON):
   "content": "[300-400 words following FORMAT INSTRUCTIONS - actionable steps AND end with brief cross-promo for ${promoProductName}]"
 }
 
-Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
+Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -941,7 +970,7 @@ Generate 4 sections separated by: ${SECTION_SEPARATOR}
 
 Section 1 - COVER (JSON), Section 2-4 - CHAPTERS 1-3 (JSON following FORMAT INSTRUCTIONS)
 
-Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JSON.`;
+Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JSON.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -1044,7 +1073,7 @@ Section 3 - CHAPTER 6 (JSON):
   "content": "[600-800 words following FORMAT INSTRUCTIONS - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
+Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -1122,12 +1151,12 @@ Your response MUST follow this EXACT structure:
 {"type":"chapter","number":3,"title":"Chapter 3: ...","content":"..."}
 
 Each chapter content should be 600-800 words following the FORMAT INSTRUCTIONS above.
-Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== between each.`;
+Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== between each.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
-    system: 'You are a content generator. You MUST output exactly 4 JSON objects separated by ===SECTION_BREAK===. Do NOT use markdown formatting. Output raw JSON with the exact separator between sections.',
+    system: `You are a content generator. You MUST output exactly 4 JSON objects separated by ===SECTION_BREAK===. Do NOT use markdown formatting. Output raw JSON with the exact separator between sections.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1227,7 +1256,7 @@ Section 3 - CHAPTER 6 (JSON):
   "content": "[600-800 words following FORMAT INSTRUCTIONS - conclusion AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.`;
+Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -1312,12 +1341,12 @@ Output 5 JSON objects separated by ===SECTION_BREAK=== (no markdown headers, raw
 ===SECTION_BREAK===
 {"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}
 ===SECTION_BREAK===
-{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}`;
+{"what_it_is":"...","who_its_for":"...","problem_solved":"...","whats_inside":["...","...","..."],"key_benefits":["...","...","..."],"cta":"..."}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 8000,
-    system: 'Output exactly 5 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.',
+    system: `Output exactly 5 JSON objects separated by ===SECTION_BREAK===. No markdown. Raw JSON only.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1406,88 +1435,115 @@ Format: ${bump?.format || 'Quick-win resource'}
 TLDR (use as source of truth):
 ${JSON.stringify(tldrData?.bump_tldr, null, 2) || 'No TLDR available'}
 
-== 7-SECTION FRAMEWORK FOR marketplace_description ==
+== MANIFESTABLE DESCRIPTION FRAMEWORK FOR marketplace_description ==
 
-For EACH product, create a description with these 7 sections:
+For EACH product, create a description with these 6 sections:
 
-𝗪𝗛𝗔𝗧 𝗜𝗧 𝗜𝗦:
-[One sentence - use TLDR "what_it_is" field, refine into clear benefit statement]
+[SECTION 1: EMOTIONAL HOOK - 2 paragraphs]
+Open with a question about their pain point (use TLDR "problem_solved" field).
+Acknowledge their struggle with empathy ("It's not your fault").
+Position this product as the solution designed specifically for them.
 
-𝗪𝗛𝗢 𝗜𝗧'𝗦 𝗙𝗢𝗥:
-[1-2 sentences - use TLDR "who_its_for" field, add situation + frustration]
+━━━━━━━━━━
 
-𝗣𝗥𝗢𝗕𝗟𝗘𝗠 𝗦𝗢𝗟𝗩𝗘𝗗:
-[1 sentence - use TLDR "problem_solved" field, make it emotional]
+[SECTION 2: WHY YOU'LL LOVE THIS - 5 bullets]
+𝗪𝗵𝘆 𝗬𝗼𝘂'𝗹𝗹 𝗟𝗼𝘃𝗲 𝗧𝗵𝗶𝘀 [Product Name]:
 
-𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:
-• [Transformation statement 1]
-• [Transformation statement 2]
-• [Transformation statement 3]
-• [Transformation statement 4]
+✓ [Transformation statement - use TLDR benefits]
+✓ [Outcome-focused benefit]
+✓ [Outcome-focused benefit]
+✓ [Outcome-focused benefit]
+✓ [Outcome-focused benefit]
 
-𝗪𝗛𝗔𝗧'𝗦 𝗜𝗡𝗦𝗜𝗗𝗘:
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟭 so you can [specific benefit]
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟮 so you can [specific benefit]
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟯 so you can [specific benefit]
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟰 so you can [specific benefit]
+━━━━━━━━━━
 
-𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢:
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟭 [result they'll achieve]
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟮 [result they'll achieve]
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟯 [result they'll achieve]
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟰 [result they'll achieve]
+[SECTION 3: WHAT'S INSIDE - 6-8 bullets]
+𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:
 
-[CTA - one action-oriented line]
+✓ [Specific feature from TLDR with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ Instant digital download
+
+━━━━━━━━━━
+
+[SECTION 4: WHO THIS IS FOR - 1 paragraph]
+𝗣𝗲𝗿𝗳𝗲𝗰𝘁 𝗳𝗼𝗿 [use TLDR "who_its_for" field with specific situations].
+
+━━━━━━━━━━
+
+[SECTION 5: WHAT YOU'LL RECEIVE]
+𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗥𝗘𝗖𝗘𝗜𝗩𝗘:
+
+✓ 1 PDF [Product Name]
+
+━━━━━━━━━━
+
+[SECTION 6: LEGAL/TERMS]
+𝗣𝗟𝗘𝗔𝗦𝗘 𝗡𝗢𝗧𝗘: This is a digital product. No physical items will be shipped.
+𝗧𝗘𝗥𝗠𝗦 𝗢𝗙 𝗦𝗘𝗥𝗩𝗜𝗖𝗘: Due to the digital nature of this product, all sales are final.
+This product is for PERSONAL USE ONLY.
+Copyright 2026. All rights reserved.
 
 == CRITICAL FORMATTING RULES ==
 
-1. Use Unicode bold characters (𝗔-𝗭, 𝗮-𝘇, 𝟬-𝟵) for:
-   - Section headers
-   - Deliverables in "What's Inside"
-   - Actions in "What You'll Be Able To Do"
+1. Use Unicode bold characters (𝗔-𝗭, 𝗮-𝘇, 𝟬-𝟵) for section headers only
 
 2. Use ━━━━━━━━━━ as section dividers
 
 3. NO markdown ** symbols - they show as raw text on Etsy/Gumroad
 
-4. Keep benefits in "Key Benefits" DIFFERENT from benefits in "What's Inside"
+4. Use ✓ checkmarks for all bullet points
 
 5. CRITICAL - BULLET POINT FORMATTING:
    Each bullet point MUST be on its own line with a newline character between them.
-   WRONG: "• Item 1 • Item 2 • Item 3" (all on one line)
+   WRONG: "✓ Item 1 ✓ Item 2 ✓ Item 3" (all on one line)
    CORRECT:
-   "• Item 1
-   • Item 2
-   • Item 3"
+   "✓ Item 1
+   ✓ Item 2
+   ✓ Item 3"
 
 6. CRITICAL - SECTION HEADER FORMATTING:
    After each section header, use TWO newlines before bullets (for proper UI rendering).
-   WRONG: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n• Item 1" (single newline)
-   CORRECT: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n\n• Item 1" (double newline)
+   WRONG: "𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:\n✓ Item 1" (single newline)
+   CORRECT: "𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:\n\n✓ Item 1" (double newline)
 
 == OUTPUT FORMAT ==
 
 marketplace_title: SEO title (MAX 140 chars)
-- Front-load keywords, use | separators
-- Example: "3 Reels That Convert 100 Views to $50 | Proven Formats for Small Creators"
+Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
+- Platform Keywords: Digital Download, Instant PDF, Printable, PDF Template
+- Format Keywords: Marketing Checklist, Business Worksheet, Strategy Blueprint, Quick Guide
+- Benefit Keywords: Lead Generation, Sales Funnel, Email Marketing, Content Strategy
+- CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords
 
 marketplace_bullets: Array of 4-6 short items for display card
 - Format: ["Deliverable 1", "Deliverable 2", ...]
 - No benefits here, just scannable items
 
 marketplace_tags: Array of EXACTLY 13 SEO tags (each MAX 20 chars)
+Tag Framework (fill all 13 slots):
+- 3 format tags: checklist, worksheet, template, etc.
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: lead generation, sales funnel, email list
+- 2 platform tags: digital download, instant pdf
+- 2 audience tags: coach, consultant, course creator
+CRITICAL: Each tag must be 20 characters or less. No duplicate tags.
 
 Output 3 JSON objects separated by ${SECTION_SEPARATOR}:
 {"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
 ${SECTION_SEPARATOR}
 {"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
 ${SECTION_SEPARATOR}
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}`;
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
-    system: MARKETPLACE_SYSTEM + '\n\nOutput exactly 3 JSON objects separated by ===SECTION_BREAK===. Raw JSON only, no markdown code blocks.',
+    system: MARKETPLACE_SYSTEM + `\n\nOutput exactly 3 JSON objects separated by ===SECTION_BREAK===. Raw JSON only, no markdown code blocks.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1564,73 +1620,94 @@ Format: ${upsell2?.format || 'Complete automation'}
 TLDR (use as source of truth):
 ${JSON.stringify(tldrData?.upsell_2_tldr, null, 2) || 'No TLDR available'}
 
-== 7-SECTION FRAMEWORK FOR marketplace_description ==
+== MANIFESTABLE DESCRIPTION FRAMEWORK FOR marketplace_description ==
 
-For EACH product, create a description with these 7 sections:
+For EACH PREMIUM product, create a description with these 6 sections:
 
-𝗪𝗛𝗔𝗧 𝗜𝗧 𝗜𝗦:
-[One sentence - use TLDR "what_it_is" field, refine into clear benefit statement]
+[SECTION 1: EMOTIONAL HOOK - 2 paragraphs]
+Open with a question about their pain point (use TLDR "problem_solved" field).
+Acknowledge their struggle with empathy ("It's not your fault").
+Position this PREMIUM product as the complete solution designed specifically for them.
+Emphasize the comprehensive/premium nature of this higher-ticket product.
 
-𝗪𝗛𝗢 𝗜𝗧'𝗦 𝗙𝗢𝗥:
-[1-2 sentences - use TLDR "who_its_for" field, add situation + frustration]
+━━━━━━━━━━
 
-𝗣𝗥𝗢𝗕𝗟𝗘𝗠 𝗦𝗢𝗟𝗩𝗘𝗗:
-[1 sentence - use TLDR "problem_solved" field, make it emotional]
+[SECTION 2: WHY YOU'LL LOVE THIS - 5 bullets]
+𝗪𝗵𝘆 𝗬𝗼𝘂'𝗹𝗹 𝗟𝗼𝘃𝗲 𝗧𝗵𝗶𝘀 [Product Name]:
 
-𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:
-• [Transformation statement 1]
-• [Transformation statement 2]
-• [Transformation statement 3]
-• [Transformation statement 4]
+✓ [Transformation statement - use TLDR benefits, emphasize premium value]
+✓ [Outcome-focused benefit]
+✓ [Outcome-focused benefit]
+✓ [Outcome-focused benefit]
+✓ [Outcome-focused benefit]
 
-𝗪𝗛𝗔𝗧'𝗦 𝗜𝗡𝗦𝗜𝗗𝗘:
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟭 so you can [specific benefit]
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟮 so you can [specific benefit]
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟯 so you can [specific benefit]
-• 𝗗𝗲𝗹𝗶𝘃𝗲𝗿𝗮𝗯𝗹𝗲 𝟰 so you can [specific benefit]
+━━━━━━━━━━
 
-𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗕𝗘 𝗔𝗕𝗟𝗘 𝗧𝗢 𝗗𝗢:
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟭 [result they'll achieve]
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟮 [result they'll achieve]
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟯 [result they'll achieve]
-• 𝗔𝗰𝘁𝗶𝗼𝗻 𝟰 [result they'll achieve]
+[SECTION 3: WHAT'S INSIDE - 6-8 bullets]
+𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:
 
-[CTA - one action-oriented line]
+✓ [Specific feature from TLDR with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ [Feature with brief explanation]
+✓ Instant digital download
+
+━━━━━━━━━━
+
+[SECTION 4: WHO THIS IS FOR - 1 paragraph]
+𝗣𝗲𝗿𝗳𝗲𝗰𝘁 𝗳𝗼𝗿 [use TLDR "who_its_for" field - emphasize those ready for a complete/premium solution].
+
+━━━━━━━━━━
+
+[SECTION 5: WHAT YOU'LL RECEIVE]
+𝗪𝗛𝗔𝗧 𝗬𝗢𝗨'𝗟𝗟 𝗥𝗘𝗖𝗘𝗜𝗩𝗘:
+
+✓ 1 PDF [Product Name]
+
+━━━━━━━━━━
+
+[SECTION 6: LEGAL/TERMS]
+𝗣𝗟𝗘𝗔𝗦𝗘 𝗡𝗢𝗧𝗘: This is a digital product. No physical items will be shipped.
+𝗧𝗘𝗥𝗠𝗦 𝗢𝗙 𝗦𝗘𝗥𝗩𝗜𝗖𝗘: Due to the digital nature of this product, all sales are final.
+This product is for PERSONAL USE ONLY.
+Copyright 2026. All rights reserved.
 
 == CRITICAL FORMATTING RULES ==
 
-1. Use Unicode bold characters (𝗔-𝗭, 𝗮-𝘇, 𝟬-𝟵) for:
-   - Section headers
-   - Deliverables in "What's Inside"
-   - Actions in "What You'll Be Able To Do"
+1. Use Unicode bold characters (𝗔-𝗭, 𝗮-𝘇, 𝟬-𝟵) for section headers only
 
 2. Use ━━━━━━━━━━ as section dividers
 
 3. NO markdown ** symbols - they show as raw text on Etsy/Gumroad
 
-4. Keep benefits in "Key Benefits" DIFFERENT from benefits in "What's Inside"
+4. Use ✓ checkmarks for all bullet points
 
 5. CRITICAL - BULLET POINT FORMATTING:
    Each bullet point MUST be on its own line with a newline character between them.
-   WRONG: "• Item 1 • Item 2 • Item 3" (all on one line)
+   WRONG: "✓ Item 1 ✓ Item 2 ✓ Item 3" (all on one line)
    CORRECT:
-   "• Item 1
-   • Item 2
-   • Item 3"
+   "✓ Item 1
+   ✓ Item 2
+   ✓ Item 3"
 
 6. CRITICAL - SECTION HEADER FORMATTING:
    After each section header, use TWO newlines before bullets (for proper UI rendering).
-   WRONG: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n• Item 1" (single newline)
-   CORRECT: "𝗞𝗘𝗬 𝗕𝗘𝗡𝗘𝗙𝗜𝗧𝗦:\n\n• Item 1" (double newline)
+   WRONG: "𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:\n✓ Item 1" (single newline)
+   CORRECT: "𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:\n\n✓ Item 1" (double newline)
 
-5. Emphasize PREMIUM value - these are higher-ticket products
+7. Emphasize PREMIUM value - these are higher-ticket products
 
 == OUTPUT FORMAT ==
 
 marketplace_title: SEO title (MAX 140 chars)
-- Front-load keywords, use | separators
+Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
+- Platform Keywords: Digital Download, Instant PDF, Printable, PDF Template
+- Format Keywords: Complete System, Business Blueprint, Strategy Guide, Master Class
+- Benefit Keywords: Business Growth, Revenue System, Content Strategy, Marketing System
 - Emphasize comprehensive/premium value
-- Example: "Complete 5-Week Content System | Daily Revenue Blueprint for Creators"
+- CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords
 
 marketplace_bullets: Array of 4-6 short items for display card
 - Format: ["Deliverable 1", "Deliverable 2", ...]
@@ -1638,16 +1715,23 @@ marketplace_bullets: Array of 4-6 short items for display card
 - No benefits here, just scannable items
 
 marketplace_tags: Array of EXACTLY 13 SEO tags (each MAX 20 chars)
+Tag Framework (fill all 13 slots):
+- 3 format tags: complete system, blueprint, master guide, etc.
+- 3 niche tags: online business, entrepreneur, marketing
+- 3 benefit tags: business growth, revenue system, content strategy
+- 2 platform tags: digital download, instant pdf
+- 2 audience tags: coach, consultant, course creator
+CRITICAL: Each tag must be 20 characters or less. No duplicate tags.
 
 Output 2 JSON objects separated by ${SECTION_SEPARATOR}:
 {"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
 ${SECTION_SEPARATOR}
-{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}`;
+{"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 12000,
-    system: MARKETPLACE_SYSTEM + '\n\nOutput exactly 2 JSON objects separated by ===SECTION_BREAK===. Raw JSON only, no markdown code blocks.',
+    system: MARKETPLACE_SYSTEM + `\n\nOutput exactly 2 JSON objects separated by ===SECTION_BREAK===. Raw JSON only, no markdown code blocks.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1743,12 +1827,12 @@ Output 6 JSON objects separated by ===SECTION_BREAK=== (no markdown, no headers,
 ===SECTION_BREAK===
 {"subject":"...","preview_text":"...","body":"..."}
 ===SECTION_BREAK===
-{"subject":"...","preview_text":"...","body":"..."}`;
+{"subject":"...","preview_text":"...","body":"..."}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
-    system: 'Output exactly 6 JSON objects separated by ===SECTION_BREAK===. No markdown formatting. Raw JSON only.',
+    system: `Output exactly 6 JSON objects separated by ===SECTION_BREAK===. No markdown formatting. Raw JSON only.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1908,12 +1992,12 @@ Return valid JSON:
 CRITICAL FORMATTING:
 - Use Unicode bold (𝗔-𝗭) for product names and section headers - NO markdown ** symbols
 - Each bullet point MUST be on its own line
-- Include ALL 7 sections, especially Section 6 (What You'll Be Able To Do)`;
+- Include ALL 7 sections, especially Section 6 (What You'll Be Able To Do)${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 12000,
-    system: 'You are an expert Etsy/Gumroad marketplace copywriter. Output valid JSON only, no markdown code blocks.',
+    system: `You are an expert Etsy/Gumroad marketplace copywriter. Output valid JSON only, no markdown code blocks.${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
