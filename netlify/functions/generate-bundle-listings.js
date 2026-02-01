@@ -45,6 +45,8 @@ CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
 
 ## BUNDLE DESCRIPTION - MANIFESTABLE FRAMEWORK
 
+CRITICAL FORMATTING: Each ✓ bullet MUST be on its own line. Use actual newline characters between bullets and sections. Never put multiple bullets on the same line.
+
 [SECTION 1: EMOTIONAL HOOK - 2 paragraphs]
 Open with a question about their pain point.
 Acknowledge their struggle with empathy ("It's not your fault").
@@ -52,9 +54,11 @@ Position this COMPLETE bundle as the all-in-one solution.
 Emphasize the incredible savings and convenience.
 
 [SECTION 2: WHY YOU'LL LOVE THIS BUNDLE - 5 bullets]
-✓ Outcome-focused benefit statements
-✓ Emphasize total value vs bundle price
-✓ Highlight convenience of getting everything
+✓ Benefit 1
+✓ Benefit 2
+✓ Benefit 3
+✓ Benefit 4
+✓ Benefit 5
 
 [SECTION 3: WHAT'S INSIDE THE BUNDLE - list each product]
 ✓ [Product 1 Name] ($XX value) - brief benefit

@@ -48,16 +48,28 @@ Benefit Keywords: Lead Generation, Sales Funnel, Email Marketing, Content Strate
 CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
 
 ## DESCRIPTION - MANIFESTABLE FRAMEWORK (800-1200 chars)
+
+CRITICAL FORMATTING: Each ✓ bullet MUST be on its own line. Use actual newline characters between bullets and sections.
+
 [SECTION 1: EMOTIONAL HOOK]
 Open with a question about their pain point.
 Acknowledge their struggle with empathy.
 
 [SECTION 2: WHY YOU'LL LOVE THIS - 5 bullets]
-✓ Outcome-focused benefit statements
+✓ Benefit 1
+✓ Benefit 2
+✓ Benefit 3
+✓ Benefit 4
+✓ Benefit 5
 
 [SECTION 3: WHAT'S INSIDE - 6-8 bullets]
-✓ Specific features with brief explanations
-✓ End with "Instant digital download"
+✓ Feature 1
+✓ Feature 2
+✓ Feature 3
+✓ Feature 4
+✓ Feature 5
+✓ Feature 6
+✓ Instant digital download
 
 [SECTION 4: WHO THIS IS FOR]
 Perfect for [specific audience].

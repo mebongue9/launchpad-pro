@@ -53,6 +53,8 @@ Fill all 13 slots:
 
 ## INDIVIDUAL PRODUCT DESCRIPTION - MANIFESTABLE FRAMEWORK:
 
+CRITICAL FORMATTING: Each ✓ bullet MUST be on its own line. Use actual newline characters between bullets and sections. Never put multiple bullets on the same line.
+
 [SECTION 1: EMOTIONAL HOOK - 2 paragraphs]
 Open with a question about their pain point.
 Acknowledge their struggle with empathy ("It's not your fault").
@@ -60,15 +62,21 @@ Position the product as the solution designed specifically for them.
 
 [SECTION 2: WHY YOU'LL LOVE THIS - 5 bullets with checkmarks]
 𝗪𝗵𝘆 𝗬𝗼𝘂'𝗹𝗹 𝗟𝗼𝘃𝗲 𝗧𝗵𝗶𝘀 [Product Name]:
-✓ Outcome-focused benefit statements
-✓ Start with transformation, not features
-✓ Use action verbs: Turn, Stop, Get, Start, Finally
+✓ Benefit 1
+✓ Benefit 2
+✓ Benefit 3
+✓ Benefit 4
+✓ Benefit 5
 
 [SECTION 3: WHAT'S INSIDE - 6-8 bullets with checkmarks]
 𝗪𝗵𝗮𝘁'𝘀 𝗜𝗻𝘀𝗶𝗱𝗲:
-✓ Specific feature with brief explanation
-✓ Include page count or content volume
-✓ End with "Instant digital download"
+✓ Feature 1
+✓ Feature 2
+✓ Feature 3
+✓ Feature 4
+✓ Feature 5
+✓ Feature 6
+✓ Instant digital download
 
 [SECTION 4: WHO THIS IS FOR - 1 paragraph]
 𝗣𝗲𝗿𝗳𝗲𝗰𝘁 𝗳𝗼𝗿 [audience description with specific situations].
