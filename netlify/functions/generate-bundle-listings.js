@@ -38,10 +38,17 @@ Do not include any English unless the user's language is English.
 // Bundle Listing System Prompt - Manifestable-proven Etsy SEO patterns
 const BUNDLE_SYSTEM_PROMPT = `You are an expert at creating irresistible bundle offers for digital products.
 
-## TITLE FORMULA (140 chars max)
-[Bundle Name] | Digital Download | [Format] Bundle | Save $[Amount]
+## TITLE FORMAT (MAX 140 characters)
+[Bundle Name] | [Platform Keyword] | [Format] Bundle
 
-CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
+PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after bundle name):
+Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+
+FORMAT: Match bundle content (Checklist Bundle, Worksheet Bundle, Template Bundle, etc.)
+
+EXAMPLE: "The Complete Marketing Bundle | Digital Download | Checklist Bundle"
+
+If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
 
 ## BUNDLE DESCRIPTION - MANIFESTABLE FRAMEWORK
 
@@ -80,13 +87,22 @@ TERMS OF SERVICE: Due to the digital nature of this product, all sales are final
 This product is for PERSONAL USE ONLY.
 Copyright 2026. All rights reserved.
 
-## TAGS (EXACTLY 13, each MAX 20 chars)
-Tag Framework:
-- 2 bundle tags: bundle, digital bundle
-- 3 format tags: checklist bundle, worksheet pack, template bundle
-- 3 niche tags: online business, entrepreneur, marketing
-- 3 benefit tags: lead generation, sales funnel, business growth
-- 2 audience tags: coach, consultant
+## TAGS (EXACTLY 13 tags, each MAX 20 characters)
+
+MANDATORY STRUCTURE:
+1. "digital download" (REQUIRED - always include this exact tag)
+2. "instant pdf" OR "pdf template" OR "printable" (REQUIRED - pick one)
+3-4. Two BUNDLE tags (bundle, digital bundle)
+5-7. Three FORMAT tags (checklist bundle, worksheet pack, template bundle, etc.)
+8-10. Three NICHE tags (online business, marketing, entrepreneur, etc.)
+11-13. Three BENEFIT/AUDIENCE tags (lead generation, coach, consultant, etc.)
+
+EXAMPLE: ["digital download", "instant pdf", "bundle", "digital bundle", "checklist bundle", "worksheet pack", "template bundle", "online business", "entrepreneur", "marketing", "lead generation", "coach", "consultant"]
+
+CRITICAL:
+- Tag #1 MUST be "digital download"
+- Tag #2 MUST be a platform tag (instant pdf, pdf template, or printable)
+- All 13 slots filled, each ≤20 chars, no duplicates
 
 Return ONLY valid JSON.`;
 
@@ -200,24 +216,32 @@ TARGET AUDIENCE: ${audience?.name || 'General'}
 
 Return JSON:
 {
-  "title": "Bundle title using formula: [Bundle Name] | Digital Download | [Format] Bundle | Save $${savings} (MAX 140 chars - use only 2 keywords if 3 exceeds limit)",
-  "etsy_description": "Etsy description (500-800 chars) with: Emotional hook question, What's in the bundle with values, Total savings emphasized, Legal/terms",
-  "normal_description": "Gumroad description (1500-2500 chars) with: Emotional hook (2 paragraphs), Why You'll Love This Bundle (5 checkmark bullets), What's Inside listing each product with value, Who This Is For, What You'll Receive with pricing breakdown, Legal/Terms",
-  "tags": "tag1, tag2, tag3, tag4, tag5, tag6, tag7, tag8, tag9, tag10, tag11, tag12, tag13"
+  "title": "Bundle title (MAX 140 chars)",
+  "etsy_description": "Etsy description (500-800 chars) with proper newlines between bullets",
+  "normal_description": "Gumroad description (1500-2500 chars) with proper newlines between bullets",
+  "tags": "digital download, instant pdf, [11 more tags following framework]"
 }
 
-TAG FRAMEWORK (fill all 13 slots):
-- 2 bundle tags: bundle, digital bundle
-- 3 format tags: checklist bundle, worksheet pack, template bundle
-- 3 niche tags: online business, entrepreneur, marketing
-- 3 benefit tags: lead generation, sales funnel, business growth
-- 2 audience tags: coach, consultant
+TITLE REQUIREMENTS:
+- Formula: [Bundle Name] | [Platform Keyword] | [Format] Bundle
+- Platform Keyword (REQUIRED, must be FIRST after name): "Digital Download", "Instant PDF", "Printable", or "PDF Template"
+- Format: Match bundle content (Checklist Bundle, Worksheet Bundle, etc.)
+- MAX 140 characters. If exceeds, keep Platform Keyword, drop Format.
+- Platform keyword is NEVER optional.
+
+TAG REQUIREMENTS (EXACTLY 13 tags):
+1. "digital download" (REQUIRED - always this exact tag first)
+2. "instant pdf" OR "pdf template" OR "printable" (REQUIRED - pick one)
+3-4. Two BUNDLE tags (bundle, digital bundle)
+5-7. Three FORMAT tags (checklist bundle, worksheet pack, etc.)
+8-10. Three NICHE tags (online business, marketing, etc.)
+11-13. Three BENEFIT/AUDIENCE tags (lead generation, coach, etc.)
 
 CRITICAL:
-- Title MUST be under 140 characters (use 2 keywords if 3 exceeds limit)
-- Tags MUST be exactly 13, each under 20 characters
-- No duplicate tags
-- Include specific dollar amounts for savings and total value
+- Tag #1 MUST be "digital download"
+- Tag #2 MUST be a platform tag
+- All 13 tags required, each ≤20 chars, no duplicates
+- Include specific dollar amounts for savings in descriptions
 ${getLanguagePromptSuffix(language)}`;
 
     console.log('🔄 [BUNDLE] Calling Claude API for bundle listing generation...');

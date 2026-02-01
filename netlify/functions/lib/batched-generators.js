@@ -34,22 +34,46 @@ const SECTION_SEPARATOR = '===SECTION_BREAK===';
 // MUST use Unicode bold characters for Etsy/Gumroad compatibility (no markdown)
 const MARKETPLACE_SYSTEM = `You are an expert Etsy and Gumroad marketplace copywriter specializing in digital products.
 
-## TITLE FORMAT (MAX 140 chars)
-Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
+## TITLE FORMAT (MAX 140 characters)
+[Original Product Name] | [Platform Keyword] | [Format Keyword]
 
-Platform Keywords (pick 1): Digital Download, Instant PDF, Printable, PDF Template
-Format Keywords (based on format): Marketing Checklist, Business Worksheet, Strategy Blueprint, Quick Guide, Business Planner, Swipe File
-Benefit Keywords (based on niche): Lead Generation, Sales Funnel, Email Marketing, Content Strategy, Social Media, Online Business
+PLATFORM KEYWORD (REQUIRED - must be the FIRST keyword after product name):
+Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
 
-CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords.
+FORMAT KEYWORD (REQUIRED - must match product format):
+- Checklist → "Marketing Checklist", "Business Checklist", "Action Checklist"
+- Worksheet → "Worksheet Template", "Business Worksheet"
+- Blueprint → "Business Blueprint", "Strategy Blueprint"
+- Cheat Sheet → "Quick Reference", "Cheat Sheet"
+- Planner → "Business Planner", "Strategy Planner"
+- Swipe File → "Templates", "Swipe File"
 
-## TAG FRAMEWORK (EXACTLY 13 tags, each MAX 20 chars)
-Fill all 13 slots:
-- 3 format tags: checklist, worksheet, template, etc.
-- 3 niche tags: online business, entrepreneur, marketing
-- 3 benefit tags: lead generation, sales funnel, email list
-- 2 platform tags: digital download, instant pdf
-- 2 audience tags: coach, consultant, course creator
+EXAMPLE:
+Product: "The Complete FB Group Lead Machine" (Checklist format)
+Title: "The Complete FB Group Lead Machine | Digital Download | Marketing Checklist"
+
+If adding 2 keywords exceeds 140 characters, use only the Platform Keyword.
+Platform keyword is NEVER optional. Always include it.
+
+## TAGS (EXACTLY 13 tags, each MAX 20 characters)
+
+MANDATORY STRUCTURE:
+1. "digital download" (REQUIRED - always include this exact tag)
+2. "instant pdf" OR "pdf template" OR "printable" (REQUIRED - pick one)
+3-5. Three FORMAT tags based on product type (checklist, worksheet, template, guide, planner, etc.)
+6-8. Three NICHE tags based on product topic (online business, marketing, social media, etc.)
+9-11. Three BENEFIT tags based on product outcome (lead generation, passive income, etc.)
+12-13. Two AUDIENCE tags based on target customer (coach, consultant, entrepreneur, etc.)
+
+EXAMPLE for a Marketing Checklist:
+["digital download", "instant pdf", "marketing checklist", "business checklist", "checklist template", "online business", "entrepreneur", "small business", "lead generation", "sales funnel", "marketing tips", "coach", "consultant"]
+
+CRITICAL:
+- Tag #1 MUST be "digital download" (exactly 16 characters)
+- Tag #2 MUST be a platform tag (instant pdf, pdf template, or printable)
+- All 13 slots MUST be filled
+- Each tag MUST be 20 characters or less
+- No duplicate tags
 
 ## INDIVIDUAL PRODUCT DESCRIPTION - MANIFESTABLE FRAMEWORK:
 
@@ -1521,25 +1545,41 @@ Copyright 2026. All rights reserved.
 
 == OUTPUT FORMAT ==
 
-marketplace_title: SEO title (MAX 140 chars)
-Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
-- Platform Keywords: Digital Download, Instant PDF, Printable, PDF Template
-- Format Keywords: Marketing Checklist, Business Worksheet, Strategy Blueprint, Quick Guide
-- Benefit Keywords: Lead Generation, Sales Funnel, Email Marketing, Content Strategy
-- CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords
+marketplace_title: SEO title (MAX 140 characters)
+Formula: [Original Product Name] | [Platform Keyword] | [Format Keyword]
+
+PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after product name):
+Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+
+FORMAT KEYWORD (must match product format):
+- Checklist → "Marketing Checklist", "Business Checklist"
+- Worksheet → "Business Worksheet", "Worksheet Template"
+- Blueprint → "Strategy Blueprint", "Business Blueprint"
+
+EXAMPLE: "The Complete FB Group Lead Machine | Digital Download | Marketing Checklist"
+
+If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
 
 marketplace_bullets: Array of 4-6 short items for display card
 - Format: ["Deliverable 1", "Deliverable 2", ...]
 - No benefits here, just scannable items
 
-marketplace_tags: Array of EXACTLY 13 SEO tags (each MAX 20 chars)
-Tag Framework (fill all 13 slots):
-- 3 format tags: checklist, worksheet, template, etc.
-- 3 niche tags: online business, entrepreneur, marketing
-- 3 benefit tags: lead generation, sales funnel, email list
-- 2 platform tags: digital download, instant pdf
-- 2 audience tags: coach, consultant, course creator
-CRITICAL: Each tag must be 20 characters or less. No duplicate tags.
+marketplace_tags: Array of EXACTLY 13 tags (each MAX 20 chars)
+
+MANDATORY TAG STRUCTURE:
+1. "digital download" (REQUIRED - always include this exact tag)
+2. "instant pdf" OR "pdf template" OR "printable" (REQUIRED - pick one)
+3-5. Three FORMAT tags (checklist, worksheet, template, guide, etc.)
+6-8. Three NICHE tags (online business, marketing, social media, etc.)
+9-11. Three BENEFIT tags (lead generation, passive income, etc.)
+12-13. Two AUDIENCE tags (coach, consultant, entrepreneur, etc.)
+
+EXAMPLE: ["digital download", "instant pdf", "marketing checklist", "business checklist", "checklist template", "online business", "entrepreneur", "small business", "lead generation", "sales funnel", "marketing tips", "coach", "consultant"]
+
+CRITICAL:
+- Tag #1 MUST be "digital download"
+- Tag #2 MUST be a platform tag
+- All 13 slots filled, each ≤20 chars, no duplicates
 
 Output 3 JSON objects separated by ${SECTION_SEPARATOR}:
 {"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
@@ -1709,27 +1749,42 @@ Copyright 2026. All rights reserved.
 
 == OUTPUT FORMAT ==
 
-marketplace_title: SEO title (MAX 140 chars)
-Formula: [Product Name] | [Platform Keyword] | [Format Keyword] | [Benefit Keyword]
-- Platform Keywords: Digital Download, Instant PDF, Printable, PDF Template
-- Format Keywords: Complete System, Business Blueprint, Strategy Guide, Master Class
-- Benefit Keywords: Business Growth, Revenue System, Content Strategy, Marketing System
-- Emphasize comprehensive/premium value
-- CRITICAL: If 3 keywords exceed 140 chars, use only 2 keywords
+marketplace_title: SEO title (MAX 140 characters)
+Formula: [Original Product Name] | [Platform Keyword] | [Format Keyword]
+
+PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after product name):
+Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+
+FORMAT KEYWORD (for premium products):
+- Complete System → "Complete System", "Business System"
+- Blueprint → "Strategy Blueprint", "Business Blueprint"
+- Master Guide → "Master Guide", "Complete Guide"
+
+EXAMPLE: "The Ultimate 5-Week Content System | Digital Download | Complete System"
+
+If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
 
 marketplace_bullets: Array of 4-6 short items for display card
 - Format: ["Deliverable 1", "Deliverable 2", ...]
 - Emphasize completeness and premium value
 - No benefits here, just scannable items
 
-marketplace_tags: Array of EXACTLY 13 SEO tags (each MAX 20 chars)
-Tag Framework (fill all 13 slots):
-- 3 format tags: complete system, blueprint, master guide, etc.
-- 3 niche tags: online business, entrepreneur, marketing
-- 3 benefit tags: business growth, revenue system, content strategy
-- 2 platform tags: digital download, instant pdf
-- 2 audience tags: coach, consultant, course creator
-CRITICAL: Each tag must be 20 characters or less. No duplicate tags.
+marketplace_tags: Array of EXACTLY 13 tags (each MAX 20 chars)
+
+MANDATORY TAG STRUCTURE:
+1. "digital download" (REQUIRED - always include this exact tag)
+2. "instant pdf" OR "pdf template" OR "printable" (REQUIRED - pick one)
+3-5. Three FORMAT tags (complete system, blueprint, master guide, etc.)
+6-8. Three NICHE tags (online business, marketing, social media, etc.)
+9-11. Three BENEFIT tags (business growth, revenue system, etc.)
+12-13. Two AUDIENCE tags (coach, consultant, entrepreneur, etc.)
+
+EXAMPLE: ["digital download", "instant pdf", "complete system", "business blueprint", "strategy guide", "online business", "entrepreneur", "marketing", "business growth", "revenue system", "passive income", "coach", "consultant"]
+
+CRITICAL:
+- Tag #1 MUST be "digital download"
+- Tag #2 MUST be a platform tag
+- All 13 slots filled, each ≤20 chars, no duplicates
 
 Output 2 JSON objects separated by ${SECTION_SEPARATOR}:
 {"marketplace_title":"...","marketplace_description":"...","marketplace_bullets":[...],"marketplace_tags":[...]}
