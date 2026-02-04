@@ -2,6 +2,94 @@
 
 > This file is mirrored across CLAUDE.md, AGENTS.md, and GEMINI.md so the same instructions load in any AI environment.
 
+---
+
+## 🔑 AUTONOMOUS ACCESS - READ THIS FIRST
+
+**YOU HAVE FULL CLI ACCESS. DO NOT ASK USER FOR CREDENTIALS OR MANUAL STEPS.**
+
+### Netlify CLI (Already Logged In)
+- Status: **AUTHENTICATED** as Martin Ebongue
+- Project: **launchpad-pro-app**
+- Commands you can run:
+  ```bash
+  netlify deploy --prod                    # Deploy to production
+  netlify env:get VARIABLE_NAME            # Get any environment variable
+  netlify functions:list                   # List all functions
+  netlify status                           # Check project status
+  ```
+
+### Supabase CLI (Already Linked)
+- Status: **INSTALLED & LINKED**
+- Project ref: **psfgnelrxzdckucvytzj**
+- Commands you can run:
+  ```bash
+  # Run migrations yourself
+  SUPABASE_ACCESS_TOKEN=$(netlify env:get SUPABASE_ACCESS_TOKEN) supabase db push
+
+  # List projects
+  SUPABASE_ACCESS_TOKEN=$(netlify env:get SUPABASE_ACCESS_TOKEN) supabase projects list
+
+  # Any other supabase CLI command
+  SUPABASE_ACCESS_TOKEN=$(netlify env:get SUPABASE_ACCESS_TOKEN) supabase [command]
+  ```
+
+### Supabase API (Direct Database Access)
+- You can query/modify database directly via REST API:
+  ```bash
+  SUPABASE_URL=$(netlify env:get SUPABASE_URL)
+  SUPABASE_KEY=$(netlify env:get SUPABASE_SERVICE_ROLE_KEY)
+
+  # Query any table
+  curl "${SUPABASE_URL}/rest/v1/table_name" \
+    -H "apikey: ${SUPABASE_KEY}" \
+    -H "Authorization: Bearer ${SUPABASE_KEY}"
+
+  # Insert/update/delete - you have FULL access
+  ```
+
+### All Environment Variables
+- Location: **Netlify environment variables**
+- Access via: `netlify env:get VARIABLE_NAME`
+- Available variables:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `SUPABASE_ACCESS_TOKEN`
+  - `ANTHROPIC_API_KEY`
+  - `OPENAI_API_KEY`
+  - `VITE_SUPABASE_URL`
+  - `VITE_SUPABASE_ANON_KEY`
+  - And others...
+
+### GitHub CLI
+- You have access to GitHub CLI for git operations
+
+### Project Paths
+- Working directory: `/Users/martinebongue/Desktop/claude code project 1/launchpad-pro`
+- Migrations: `supabase/migrations/`
+- Functions: `netlify/functions/`
+- Environment: `.env` (local only, use Netlify env for production)
+
+### ❌ NEVER ASK USER TO:
+- Go to Netlify dashboard to check deployments
+- Go to Supabase dashboard to run migrations
+- Manually get environment variables
+- Check database manually
+- Deploy manually
+- Run any CLI command you can run yourself
+
+### ✅ ALWAYS DO YOURSELF:
+- Deploy with `netlify deploy --prod`
+- Run migrations with Supabase CLI
+- Query database with Supabase API
+- Get env vars with `netlify env:get`
+- Check deployment status with Netlify CLI
+- Only ask user as ABSOLUTE LAST RESORT if CLI genuinely cannot do it
+
+---
+
+## 3-Layer Architecture
+
 You operate within a 3-layer architecture that separates concerns to maximize reliability. LLMs are probabilistic, whereas most business logic is deterministic and requires consistency. This system fixes that mismatch.
 
 ---
