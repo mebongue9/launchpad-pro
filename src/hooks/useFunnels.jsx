@@ -103,7 +103,17 @@ export function useFunnels() {
       const { task_id } = await createResponse.json()
       console.log('📋 [FUNNEL-IDEA] Task created:', task_id)
 
-      // 2. Poll for result (background function processes it)
+      // 2. Trigger the background function directly from frontend
+      // This returns immediately due to -background suffix, but continues processing
+      fetch('/.netlify/functions/process-funnel-idea-task-background', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ task_id })
+      }).catch(() => {}) // Fire and forget - background function returns immediately
+
+      console.log('🔄 [FUNNEL-IDEA] Background processing triggered')
+
+      // 3. Poll for result (background function processes it)
       const result = await pollForFunnelIdeaResult(task_id)
 
       return result

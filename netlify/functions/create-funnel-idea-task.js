@@ -71,18 +71,8 @@ export async function handler(event) {
 
     console.log(`${LOG_TAG} Task created with ID: ${task.id}`);
 
-    // Trigger background function (fire-and-forget)
-    const backgroundUrl = `${process.env.URL || 'http://localhost:8888'}/.netlify/functions/process-funnel-idea-task-background`;
-
-    console.log(`${LOG_TAG} Triggering background function at: ${backgroundUrl}`);
-
-    fetch(backgroundUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task_id: task.id })
-    }).catch(err => {
-      console.error(`${LOG_TAG} Failed to trigger background task (non-blocking):`, err.message);
-    });
+    // Note: Background function is triggered directly by the frontend
+    // This avoids issues with function-to-function calls in Netlify
 
     // Return immediately with task ID (< 1 second response)
     return {
