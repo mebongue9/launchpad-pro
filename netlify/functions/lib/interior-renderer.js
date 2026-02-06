@@ -2,7 +2,7 @@
 // Renders interior pages with proper CSS, typography hierarchy, and profile data
 // RELEVANT FILES: visual-builder-generate.js, content-parser.js
 
-import { parseChapterContent } from './content-parser.js'
+import { parseChapterContent, parseMarkdown } from './content-parser.js'
 
 // Placeholder image for missing profile photos (1x1 transparent pixel as data URI)
 const PLACEHOLDER_PHOTO = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23ddd"/%3E%3Ccircle cx="50" cy="40" r="18" fill="%23999"/%3E%3Cellipse cx="50" cy="85" rx="30" ry="25" fill="%23999"/%3E%3C/svg%3E'
@@ -134,10 +134,9 @@ html, body {
 
 .page {
   width: 210mm;
-  height: 297mm;
+  min-height: 297mm;
   box-sizing: border-box;
   position: relative;
-  overflow: hidden;
   page-break-after: always;
   background: var(--background);
   /* SAFE ZONES - INCREASED BOTTOM FOR FOOTER */
@@ -168,8 +167,6 @@ html, body {
    ============================================ */
 .page-content {
   max-width: 7in;
-  max-height: 9.1in;
-  overflow: hidden;
 }
 
 /* ============================================
@@ -282,6 +279,18 @@ html, body {
   line-height: 1.6;
   color: #333;
   margin-bottom: 12px;
+}
+
+/* ============================================
+   LINKS - Clickable, visible in PDF
+   ============================================ */
+.page-content a,
+.body-text a,
+.step-text a,
+p a {
+  color: var(--primary-color);
+  text-decoration: underline;
+  font-weight: 500;
 }
 
 /* ============================================
@@ -1122,7 +1131,7 @@ function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
         <div class="step-content">
           <div class="step-title">${escapeHtml(step.title || `Step ${i + 1}`)}</div>
           <div class="step-text">
-            <p>${escapeHtml(step.text)}</p>
+            <p>${parseMarkdown(step.text)}</p>
           </div>
         </div>
       </div>`).join('')}
@@ -1163,7 +1172,7 @@ function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
           <div class="cheat-section-title">${escapeHtml(section.title || 'Key Points')}</div>
           <div class="cheat-section-content">
             <ul>
-              ${section.items.map(item => `<li>${escapeHtml(item)}</li>`).join('')}
+              ${section.items.map(item => `<li>${parseMarkdown(item)}</li>`).join('')}
             </ul>
           </div>
         </div>`).join('')}
@@ -1207,7 +1216,7 @@ function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
             <div class="task-time">${task.time || `${7 + i}:00 AM`}</div>
             <div class="task-title">${escapeHtml(task.title || `Task ${i + 1}`)}</div>
             <div class="task-details">
-              <p>${escapeHtml(task.text)}</p>
+              <p>${parseMarkdown(task.text)}</p>
             </div>
           </div>
         </div>`).join('')}
@@ -1409,7 +1418,7 @@ function parseContentToWorksheet(content) {
     } else if (line.endsWith(':')) {
       html += `<div class="exercise-prompt">${escapeHtml(line)}</div>`
     } else {
-      html += `<p class="exercise-description">${escapeHtml(line)}</p>`
+      html += `<p class="exercise-description">${parseMarkdown(line)}</p>`
     }
   }
 
@@ -1520,7 +1529,8 @@ function formatSwipeContent(content) {
 
   return paragraphs.map(p => {
     // Replace [blank] or ___ or similar patterns with fill-blank spans
-    let formatted = escapeHtml(p)
+    let formatted = parseMarkdown(p)
+    // Convert remaining [text] (not already converted to links) to fill-blanks
     formatted = formatted.replace(/\[([^\]]*)\]/g, '<span class="fill-blank"></span>')
     formatted = formatted.replace(/_{3,}/g, '<span class="fill-blank"></span>')
     return `<p>${formatted}</p>`
