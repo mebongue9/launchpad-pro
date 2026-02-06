@@ -106,7 +106,7 @@ export async function handler(event) {
       const { data: funnel } = await withTimeout(
         supabase
           .from('funnels')
-          .select('front_end, bump, upsell_1, upsell_2')
+          .select('front_end, bump, upsell_1, upsell_2, user_id')
           .eq('id', funnelId)
           .single(),
         3000,
@@ -120,12 +120,39 @@ export async function handler(event) {
           console.log(`📄 ${LOG_TAG} Found ${productType} content with ${productData.chapters?.length || 0} chapters`)
         }
       }
+
+      // Safety net: ensure paid products have a clickable cross-promo link
+      if (content?.chapters?.length > 0 && productType !== 'lead_magnet') {
+        const lastChapter = content.chapters[content.chapters.length - 1]
+        const hasLink = /\[.*?\]\(https?:\/\/.*?\)/.test(lastChapter.content || '')
+        if (!hasLink && funnel?.user_id) {
+          // Fetch main product URL from existing_products
+          const { data: mainProduct } = await withTimeout(
+            supabase
+              .from('existing_products')
+              .select('name, url')
+              .eq('user_id', funnel.user_id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single(),
+            2000,
+            'Main product URL query'
+          )
+          if (mainProduct?.url) {
+            const linkText = mainProduct.name
+              ? `\n\n[Learn more about ${mainProduct.name}](${mainProduct.url})`
+              : `\n\n[Learn more](${mainProduct.url})`
+            lastChapter.content = (lastChapter.content || '') + linkText
+            console.log(`🔗 ${LOG_TAG} Injected main product URL into ${productType} cross-promo: ${mainProduct.url}`)
+          }
+        }
+      }
     } else if (leadMagnetId) {
       // Lead magnet content is stored in 'content' column as JSON string
       const { data: leadMagnet } = await withTimeout(
         supabase
           .from('lead_magnets')
-          .select('content')
+          .select('content, funnel_id')
           .eq('id', leadMagnetId)
           .single(),
         3000,
@@ -140,6 +167,37 @@ export async function handler(event) {
           console.log(`📄 ${LOG_TAG} Found lead magnet content with ${content.chapters?.length || 0} chapters`)
         } catch (parseError) {
           console.error(`❌ ${LOG_TAG} Failed to parse lead magnet content:`, parseError)
+        }
+      }
+
+      // Ensure lead magnet bridge section has a clickable link to Front-End product
+      // The front_end_link is stored on the funnel record, not the lead magnet
+      if (content?.chapters?.length > 0) {
+        const lastChapter = content.chapters[content.chapters.length - 1]
+        const hasLink = /\[.*?\]\(https?:\/\/.*?\)/.test(lastChapter.content || '')
+        if (!hasLink) {
+          // Fetch front_end_link and front-end product name from the funnel
+          const lmFunnelId = leadMagnet?.funnel_id || funnelId
+          if (lmFunnelId) {
+            const { data: lmFunnel } = await withTimeout(
+              supabase
+                .from('funnels')
+                .select('front_end_link, front_end')
+                .eq('id', lmFunnelId)
+                .single(),
+              2000,
+              'Lead magnet funnel link query'
+            )
+            const feLink = lmFunnel?.front_end_link
+            const feName = lmFunnel?.front_end?.name
+            if (feLink) {
+              const linkText = feName
+                ? `\n\n[Learn more about ${feName}](${feLink})`
+                : `\n\n[Get started here](${feLink})`
+              lastChapter.content = (lastChapter.content || '') + linkText
+              console.log(`🔗 ${LOG_TAG} Injected front_end_link into lead magnet bridge: ${feLink}`)
+            }
+          }
         }
       }
     }

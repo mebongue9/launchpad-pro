@@ -9,6 +9,8 @@
 function simpleMarkdownParse(text) {
   if (!text) return ''
   return text
+    // Links: [text](url)
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     // Bold: **text** or __text__
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
     .replace(/__([^_]+)__/g, '<strong>$1</strong>')

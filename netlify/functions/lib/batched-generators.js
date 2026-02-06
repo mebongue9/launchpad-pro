@@ -597,9 +597,13 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
 
-  // Ensure cross-promo is embedded in chapter 5 content if AI didn't include it
-  if (chapter5.content && !chapter5.content.toLowerCase().includes(frontend.name.toLowerCase())) {
-    chapter5.content += crossPromo;
+  // Ensure cross-promo WITH URL is embedded in chapter 5 content
+  // Check for markdown link presence, not just product name (AI may mention name without URL)
+  if (chapter5.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter5.content);
+    if (!hasMarkdownLink) {
+      chapter5.content += crossPromo;
+    }
   }
 
   // Combine Part 1 + Part 2 and save complete content
@@ -832,9 +836,13 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
 
-  // Ensure cross-promo is embedded if AI didn't include it
-  if (chapter6.content && main_product && !chapter6.content.toLowerCase().includes(main_product.name.toLowerCase())) {
-    chapter6.content += crossPromo;
+  // Ensure cross-promo WITH URL is embedded in last chapter
+  // Check for markdown link presence, not just product name (AI may mention name without URL)
+  if (chapter6.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter6.content);
+    if (!hasMarkdownLink) {
+      chapter6.content += crossPromo;
+    }
   }
 
   const allChapters = [...previousChapters, chapter4, chapter5, chapter6];
@@ -944,9 +952,13 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITIC
   const chapter1 = parseClaudeJSON(sections[1]);
   const chapter2 = parseClaudeJSON(sections[2]);
 
-  // Ensure cross-promo is embedded if AI didn't include it
-  if (chapter2.content && main_product && !chapter2.content.toLowerCase().includes(main_product.name.toLowerCase())) {
-    chapter2.content += crossPromo;
+  // Ensure cross-promo WITH URL is embedded in last chapter
+  // Check for markdown link presence, not just product name (AI may mention name without URL)
+  if (chapter2.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter2.content);
+    if (!hasMarkdownLink) {
+      chapter2.content += crossPromo;
+    }
   }
 
   // Store content in funnel's JSONB column (bump is JSONB, not a separate table)
@@ -1119,9 +1131,13 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffi
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
 
-  // Ensure cross-promo is embedded if AI didn't include it
-  if (chapter6.content && main_product && !chapter6.content.toLowerCase().includes(main_product.name.toLowerCase())) {
-    chapter6.content += crossPromo;
+  // Ensure cross-promo WITH URL is embedded in last chapter
+  // Check for markdown link presence, not just product name (AI may mention name without URL)
+  if (chapter6.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter6.content);
+    if (!hasMarkdownLink) {
+      chapter6.content += crossPromo;
+    }
   }
 
   // Store content in funnel's JSONB column (upsell_1 is JSONB, not a separate table)
@@ -1302,9 +1318,13 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffi
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
 
-  // Ensure cross-promo is embedded if AI didn't include it
-  if (chapter6.content && main_product && !chapter6.content.toLowerCase().includes(main_product.name.toLowerCase())) {
-    chapter6.content += crossPromo;
+  // Ensure cross-promo WITH URL is embedded in last chapter
+  // Check for markdown link presence, not just product name (AI may mention name without URL)
+  if (chapter6.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter6.content);
+    if (!hasMarkdownLink) {
+      chapter6.content += crossPromo;
+    }
   }
 
   // Store content in funnel's JSONB column (upsell_2 is JSONB, not a separate table)
