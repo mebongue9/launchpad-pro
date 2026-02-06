@@ -35,25 +35,31 @@ const SECTION_SEPARATOR = '===SECTION_BREAK===';
 const MARKETPLACE_SYSTEM = `You are an expert Etsy and Gumroad marketplace copywriter specializing in digital products.
 
 ## TITLE FORMAT (MAX 140 characters)
-[Original Product Name] | [Platform Keyword] | [Format Keyword]
+[Keyword 1] | [Keyword 2] | [Keyword 3] | [Keyword 4] | [Keyword 5] | [Keyword 6]
 
-PLATFORM KEYWORD (REQUIRED - must be the FIRST keyword after product name):
-Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+Fill ALL 140 characters with searchable keyword phrases separated by |
 
-FORMAT KEYWORD (REQUIRED - must match product format):
-- Checklist → "Marketing Checklist", "Business Checklist", "Action Checklist"
-- Worksheet → "Worksheet Template", "Business Worksheet"
-- Blueprint → "Business Blueprint", "Strategy Blueprint"
-- Cheat Sheet → "Quick Reference", "Cheat Sheet"
-- Planner → "Business Planner", "Strategy Planner"
-- Swipe File → "Templates", "Swipe File"
+KEYWORD STRATEGY:
+1. Lead with the product's core topic as a searchable phrase
+2. Add synonyms and variations (different ways people search for this topic)
+3. Add format-adjacent search terms (Guide, Planner, Template, Tracker, Workbook)
+4. Add audience/niche keywords (Small Business, Entrepreneur, Coach, Creator)
+5. Fill remaining characters with related search terms
 
-EXAMPLE:
-Product: "The Complete FB Group Lead Machine" (Checklist format)
-Title: "The Complete FB Group Lead Machine | Digital Download | Marketing Checklist"
+RULES:
+- NEVER use "Digital Download" in the title
+- NEVER use generic standalone labels like "Checklist", "Swipe File", "Cheat Sheet"
+- Every phrase must be something a buyer would type into Etsy search
+- Use | as separator between keyword phrases
+- Each keyword phrase should be 2-4 words
+- Maximize unique searchable terms for discoverability
 
-If adding 2 keywords exceeds 140 characters, use only the Platform Keyword.
-Platform keyword is NEVER optional. Always include it.
+EXAMPLES:
+Product: "The Complete FB Group Lead Machine" (Checklist)
+Title: "Facebook Group Marketing | Lead Generation Guide | FB Group Growth | Social Media Strategy | Online Business | Community Building Tips"
+
+Product: "The 3-Minute Content Creation Swipe File" (Swipe File)
+Title: "Content Creation Templates | Social Media Captions | Instagram Post Ideas | Content Strategy | Marketing Templates | Engagement Hooks"
 
 ## TAGS (EXACTLY 13 tags, each MAX 20 characters)
 
@@ -1545,20 +1551,21 @@ Copyright 2026. All rights reserved.
 
 == OUTPUT FORMAT ==
 
-marketplace_title: SEO title (MAX 140 characters)
-Formula: [Original Product Name] | [Platform Keyword] | [Format Keyword]
+marketplace_title: SEO keyword-stuffed title (MAX 140 characters)
+Fill ALL 140 characters with searchable keyword phrases separated by |
 
-PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after product name):
-Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+KEYWORD STRATEGY:
+1. Lead with the product's core topic as a searchable phrase
+2. Add synonyms and topic variations people search for
+3. Add format-adjacent search terms (Guide, Planner, Template, Tracker)
+4. Add audience/niche keywords (Small Business, Entrepreneur, Coach)
 
-FORMAT KEYWORD (must match product format):
-- Checklist → "Marketing Checklist", "Business Checklist"
-- Worksheet → "Business Worksheet", "Worksheet Template"
-- Blueprint → "Strategy Blueprint", "Business Blueprint"
+RULES:
+- NEVER use "Digital Download"
+- NEVER use generic labels like "Checklist" or "Swipe File" alone
+- Every phrase must be something a buyer would search on Etsy
 
-EXAMPLE: "The Complete FB Group Lead Machine | Digital Download | Marketing Checklist"
-
-If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
+EXAMPLE: "Facebook Group Marketing | Lead Generation Guide | FB Group Growth | Social Media Strategy | Online Business | Community Building Tips"
 
 marketplace_bullets: Array of 4-6 short items for display card
 - Format: ["Deliverable 1", "Deliverable 2", ...]
@@ -1749,20 +1756,21 @@ Copyright 2026. All rights reserved.
 
 == OUTPUT FORMAT ==
 
-marketplace_title: SEO title (MAX 140 characters)
-Formula: [Original Product Name] | [Platform Keyword] | [Format Keyword]
+marketplace_title: SEO keyword-stuffed title (MAX 140 characters)
+Fill ALL 140 characters with searchable keyword phrases separated by |
 
-PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after product name):
-Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+KEYWORD STRATEGY (for premium/upsell products):
+1. Lead with the product's core topic as a searchable phrase
+2. Add synonyms and topic variations people search for
+3. Add premium format terms (Complete Guide, Strategy System, Master Class, Toolkit)
+4. Add audience/niche keywords (Small Business, Entrepreneur, Coach)
 
-FORMAT KEYWORD (for premium products):
-- Complete System → "Complete System", "Business System"
-- Blueprint → "Strategy Blueprint", "Business Blueprint"
-- Master Guide → "Master Guide", "Complete Guide"
+RULES:
+- NEVER use "Digital Download"
+- NEVER use generic labels alone
+- Every phrase must be something a buyer would search on Etsy
 
-EXAMPLE: "The Ultimate 5-Week Content System | Digital Download | Complete System"
-
-If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
+EXAMPLE: "Content Marketing System | Social Media Strategy Guide | Business Growth Toolkit | Entrepreneur Resources | Online Marketing | Sales Funnel"
 
 marketplace_bullets: Array of 4-6 short items for display card
 - Format: ["Deliverable 1", "Deliverable 2", ...]

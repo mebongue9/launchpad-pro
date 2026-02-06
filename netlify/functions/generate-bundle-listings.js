@@ -39,16 +39,26 @@ Do not include any English unless the user's language is English.
 const BUNDLE_SYSTEM_PROMPT = `You are an expert at creating irresistible bundle offers for digital products.
 
 ## TITLE FORMAT (MAX 140 characters)
-[Bundle Name] | [Platform Keyword] | [Format] Bundle
+[Keyword 1] | [Keyword 2] | [Keyword 3] | [Keyword 4] | [Keyword 5] | [Keyword 6]
 
-PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after bundle name):
-Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+Fill ALL 140 characters with searchable keyword phrases separated by |
 
-FORMAT: Match bundle content (Checklist Bundle, Worksheet Bundle, Template Bundle, etc.)
+KEYWORD STRATEGY:
+1. Lead with the bundle's core topic as a searchable phrase (include "Bundle" naturally)
+2. Add synonyms and topic variations people search for
+3. Add format-adjacent search terms (Template Pack, Toolkit, Resource Kit, Starter Kit)
+4. Add audience/niche keywords (Small Business, Entrepreneur, Coach, Creator)
+5. Fill remaining characters with related search terms
 
-EXAMPLE: "The Complete Marketing Bundle | Digital Download | Checklist Bundle"
+RULES:
+- NEVER use "Digital Download" in the title
+- NEVER use generic standalone labels
+- Every phrase must be something a buyer would type into Etsy search
+- Use | as separator between keyword phrases
+- Each keyword phrase should be 2-4 words
+- Maximize unique searchable terms for discoverability
 
-If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
+EXAMPLE: "Marketing Template Bundle | Social Media Toolkit | Content Strategy Kit | Small Business Resources | Entrepreneur Starter Pack | Coach Tools"
 
 ## BUNDLE DESCRIPTION - MANIFESTABLE FRAMEWORK
 
@@ -223,11 +233,13 @@ Return JSON:
 }
 
 TITLE REQUIREMENTS:
-- Formula: [Bundle Name] | [Platform Keyword] | [Format] Bundle
-- Platform Keyword (REQUIRED, must be FIRST after name): "Digital Download", "Instant PDF", "Printable", or "PDF Template"
-- Format: Match bundle content (Checklist Bundle, Worksheet Bundle, etc.)
-- MAX 140 characters. If exceeds, keep Platform Keyword, drop Format.
-- Platform keyword is NEVER optional.
+- Fill ALL 140 characters with searchable keyword phrases separated by |
+- Lead with the core topic + "Bundle", then add synonyms, format terms, and audience keywords
+- NEVER use "Digital Download" - waste of characters
+- NEVER use generic labels alone
+- Every phrase must be something a buyer would search for on Etsy
+- Each keyword phrase should be 2-4 words
+- Example: "Marketing Template Bundle | Social Media Toolkit | Content Strategy Kit | Small Business Resources | Entrepreneur Starter Pack"
 
 TAG REQUIREMENTS (EXACTLY 13 tags):
 1. "digital download" (REQUIRED - always this exact tag first)

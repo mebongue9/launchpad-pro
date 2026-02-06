@@ -39,20 +39,31 @@ Do not include any English unless the user's language is English.
 const MARKETPLACE_SYSTEM_PROMPT = `You are an expert Etsy and Gumroad marketplace listing copywriter specializing in digital products.
 
 ## TITLE FORMAT (MAX 140 characters)
-[Original Product Name] | [Platform Keyword] | [Format Keyword]
+[Keyword 1] | [Keyword 2] | [Keyword 3] | [Keyword 4] | [Keyword 5] | [Keyword 6]
 
-PLATFORM KEYWORD (REQUIRED - must be FIRST keyword after product name):
-Choose ONE: "Digital Download", "Instant PDF", "Printable", "PDF Template"
+Fill ALL 140 characters with searchable keyword phrases separated by |
 
-FORMAT KEYWORD (must match product format):
-- Checklist → "Marketing Checklist", "Business Checklist"
-- Worksheet → "Business Worksheet", "Worksheet Template"
-- Blueprint → "Strategy Blueprint", "Business Blueprint"
-- Swipe File → "Swipe File", "Templates"
+KEYWORD STRATEGY:
+1. Lead with the product's core topic as a searchable phrase
+2. Add synonyms and variations (different ways people search for this topic)
+3. Add format-adjacent search terms (Guide, Planner, Template, Tracker, Workbook)
+4. Add audience/niche keywords (Small Business, Entrepreneur, Coach, Creator)
+5. Fill remaining characters with related search terms
 
-EXAMPLE: "The Complete FB Group Lead Machine | Digital Download | Marketing Checklist"
+RULES:
+- NEVER use "Digital Download" in the title
+- NEVER use generic standalone labels like "Checklist", "Swipe File", "Cheat Sheet"
+- Every phrase must be something a buyer would type into Etsy search
+- Use | as separator between keyword phrases
+- Each keyword phrase should be 2-4 words
+- Maximize unique searchable terms for discoverability
 
-If 2 keywords exceed 140 chars, use only Platform Keyword. Platform keyword is NEVER optional.
+EXAMPLES:
+Product: "9 Quick Posts That Turn 50 Views Into Your First $300" (Checklist)
+Title: "Social Media Post Templates | Instagram Content Strategy | Small Business Marketing | Content Creator Guide | Engagement Tips | Reel Ideas"
+
+Product: "The Complete FB Group Lead Machine" (Checklist)
+Title: "Facebook Group Marketing | Lead Generation Guide | FB Group Growth | Social Media Strategy | Online Business | Community Building Tips"
 
 ## DESCRIPTION - MANIFESTABLE FRAMEWORK (800-1200 chars)
 
@@ -132,17 +143,19 @@ Pain Points: ${(audience?.pain_points || []).join(', ') || 'Not specified'}
 
 Return JSON:
 {
-  "marketplace_title": "Title using formula: [Product Name] | [Platform Keyword] | [Format Keyword]",
+  "marketplace_title": "SEO keyword-stuffed title using all 140 chars: [Keyword] | [Keyword] | [Keyword] | ...",
   "marketplace_description": "Manifestable-style description with proper newlines between bullets",
   "marketplace_tags": "digital download, instant pdf, [11 more tags following framework]"
 }
 
 TITLE REQUIREMENTS:
-- Formula: [Original Product Name] | [Platform Keyword] | [Format Keyword]
-- Platform Keyword (REQUIRED, must be FIRST after name): "Digital Download", "Instant PDF", "Printable", or "PDF Template"
-- Format Keyword: Match product format (Marketing Checklist, Business Worksheet, etc.)
-- MAX 140 characters. If exceeds, keep Platform Keyword, drop Format Keyword.
-- Platform keyword is NEVER optional.
+- Fill ALL 140 characters with searchable keyword phrases separated by |
+- Lead with the core topic, then add synonyms, format terms, and audience keywords
+- NEVER use "Digital Download" - waste of characters
+- NEVER use generic labels like "Checklist" or "Swipe File" alone
+- Every phrase must be something a buyer would search for on Etsy
+- Each keyword phrase should be 2-4 words
+- Example: "Social Media Post Templates | Instagram Content Strategy | Small Business Marketing | Content Creator Guide | Engagement Tips"
 
 TAG REQUIREMENTS (EXACTLY 13 tags):
 1. "digital download" (REQUIRED - always this exact tag first)
@@ -180,9 +193,12 @@ ${getLanguagePromptSuffix(language)}`;
     }
     console.log('📋 [MARKETPLACE] Title length:', listing.marketplace_title?.length, 'chars');
 
-    // Ensure exactly 13 tags
+    // Ensure exactly 13 tags (handle both string and array formats from LLM)
     if (listing.marketplace_tags) {
-      const tags = listing.marketplace_tags.split(',').map(t => t.trim()).slice(0, 13);
+      const tags = (Array.isArray(listing.marketplace_tags)
+        ? listing.marketplace_tags
+        : listing.marketplace_tags.split(',').map(t => t.trim())
+      ).slice(0, 13);
       const originalCount = tags.length;
       while (tags.length < 13) {
         tags.push('digital download');
@@ -280,9 +296,10 @@ export async function handler(event) {
 
       const listing = await generateProductListing(product, profile, audience, language, level);
 
-      // Map to database columns (single description for both Etsy/Gumroad)
+      // Map to database columns
       updates[`${level}_marketplace_title`] = listing.marketplace_title;
-      updates[`${level}_marketplace_description`] = listing.marketplace_description;
+      updates[`${level}_etsy_description`] = listing.marketplace_description;
+      updates[`${level}_normal_description`] = listing.marketplace_description;
       updates[`${level}_marketplace_tags`] = listing.marketplace_tags;
 
       results[level] = listing;
