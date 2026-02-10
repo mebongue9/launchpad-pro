@@ -24,11 +24,12 @@ export function renderInterior(template, data, profile) {
   const photoUrl = profile?.photo_url || PLACEHOLDER_PHOTO
   const tagline = profile?.tagline || ''
   const niche = profile?.niche || ''
+  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
 
-  // Construct bio from name + niche
+  // Display niche as standalone paragraph — user wrote it to be read as-is
   const bio = niche
-    ? `${author} is an expert in ${niche}, helping clients achieve exceptional results.`
-    : `${author} is an expert in their field, helping clients achieve exceptional results.`
+    ? niche
+    : `${author} is passionate about helping clients achieve exceptional results.`
 
   // Calculate header gradient
   const headerGradient = is_gradient
@@ -41,37 +42,37 @@ export function renderInterior(template, data, profile) {
   // Get complete CSS
   const css = getInteriorCSS(template, headerGradient, lightBg)
 
-  // Build pages from content
-  const pages = []
-  let pageNumber = 2 // Start at 2 (cover is page 1)
+  // Build chapter sections (continuous flow — no forced page breaks between chapters)
+  const chapterSections = []
 
   if (content && content.chapters && content.chapters.length > 0) {
     content.chapters.forEach((chapter, index) => {
-      pages.push(renderChapterPage(
+      chapterSections.push(renderChapterPage(
         chapter,
         index + 1,
-        pageNumber,
+        index + 2,
         { handle, photoUrl, primaryColor: primary_color },
         format
       ))
-      pageNumber++
     })
   } else {
     // Default sample chapter if no content
     console.log('[INTERIOR-RENDERER] No chapters found in content, using sample')
-    pages.push(renderSampleChapter(pageNumber, { handle, photoUrl, primaryColor: primary_color }))
-    pageNumber++
+    chapterSections.push(renderSampleChapter(2, { handle, photoUrl, primaryColor: primary_color }))
   }
 
-  // Add About the Author page at the end
-  pages.push(renderAboutPage({
+  // About the Author page (standalone, page-break-before: always via .page class)
+  const aboutPage = renderAboutPage({
     author,
     handle,
     photoUrl,
     tagline,
     bio,
-    primaryColor: primary_color
-  }))
+    primaryColor: primary_color,
+    promoImageUrl: profile?.promo_image_url || '',
+    promoImageLink: profile?.promo_image_link || '',
+    promoImageCta: profile?.promo_image_cta || ''
+  })
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -84,7 +85,10 @@ ${css}
   </style>
 </head>
 <body>
-${pages.join('\n')}
+<div class="content-area">
+  ${chapterSections.join('\n')}
+</div>
+${aboutPage}
 </body>
 </html>`
 }
@@ -98,7 +102,7 @@ function getInteriorCSS(template, headerGradient, lightBg) {
   return `
 /* ============================================
    LAUNCHPAD PRO PDF INTERIOR STYLES
-   A4 size (210mm x 297mm)
+   A4 size (210mm x 297mm) — DocRaptor/PrinceXML
    ============================================ */
 
 /* CSS Variables */
@@ -126,40 +130,87 @@ html, body {
   print-color-adjust: exact;
 }
 
-/* Page Dimensions - A4 (must match cover) */
+/* ============================================
+   CSS PAGED MEDIA — PAGE SETUP, HEADER & FOOTER
+   (DocRaptor/PrinceXML native support)
+   ============================================ */
+
+/* Running header and footer flows */
+.running-header {
+  flow: static(header-flow);
+}
+
+.running-footer {
+  flow: static(footer-flow);
+}
+
+/* Page number in running footer */
+.page-num::after {
+  content: counter(page);
+}
+
+/* Default page rules */
 @page {
   size: A4;
+  margin: 12mm 0.75in 22mm 0.75in;
+
+  @top {
+    content: flow(header-flow);
+  }
+
+  @bottom {
+    content: flow(footer-flow);
+  }
+}
+
+/* Cover page — no header, no footer, full bleed */
+@page cover-page {
   margin: 0;
+  @top { content: none; }
+  @bottom { content: none; }
 }
 
-.page {
-  width: 210mm;
-  min-height: 297mm;
-  box-sizing: border-box;
-  position: relative;
-  page-break-after: always;
-  background: var(--background);
-  /* SAFE ZONES - INCREASED BOTTOM FOR FOOTER */
-  padding-top: 0.6in;
-  padding-bottom: 1.1in;
-  padding-left: 0.75in;
-  padding-right: 0.75in;
+/* About the Author page — no footer */
+@page author-page {
+  @bottom { content: none; }
 }
 
-.page:last-child {
-  page-break-after: avoid;
+/* Named page assignments */
+.cover-page {
+  page: cover-page;
 }
 
-/* ============================================
-   HEADER BAR - Top accent strip
-   ============================================ */
-.header-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 6px;
-  background: var(--header-gradient);
+/* Reset page counter after cover — page 1 = first content page */
+.content-start {
+  counter-reset: page 1;
+}
+
+/* About the Author page — standalone page, vertically centered, no footer */
+.about-author-page {
+  page: author-page;
+  break-before: page;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 220mm;
+}
+
+/* Continuous content area — chapters flow without forced breaks */
+.content-area {
+  padding: 12px 0 20px 0;
+}
+
+/* Chapter section — visual separation between chapters */
+.chapter-section {
+  margin-top: 60px;
+  padding-top: 30px;
+  border-top: 2px solid var(--primary-color);
+}
+
+.chapter-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 /* ============================================
@@ -174,7 +225,7 @@ html, body {
    ============================================ */
 .chapter-label {
   font-family: '${font_family}', sans-serif;
-  font-size: 10px;
+  font-size: 11pt;
   font-weight: 600;
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -187,7 +238,7 @@ html, body {
    ============================================ */
 .chapter-title {
   font-family: '${font_family}', sans-serif;
-  font-size: 24px;
+  font-size: 28pt;
   font-weight: 700;
   color: #1a1a1a;
   line-height: 1.2;
@@ -209,7 +260,7 @@ html, body {
    ============================================ */
 .phase-header {
   font-family: '${font_family}', sans-serif;
-  font-size: 11px;
+  font-size: 20pt;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -230,7 +281,7 @@ html, body {
 }
 
 .step-title {
-  font-size: 11px;
+  font-size: 16pt;
   font-weight: 700;
   color: #1a1a1a;
   margin-bottom: 6px;
@@ -240,8 +291,8 @@ html, body {
    BULLET POINTS (arrows)
    ============================================ */
 .step-bullet {
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #333;
   padding-left: 16px;
   position: relative;
@@ -259,7 +310,7 @@ html, body {
    STEP META (What you need / Expected outcome)
    ============================================ */
 .step-meta {
-  font-size: 9px;
+  font-size: 11pt;
   color: #666;
   margin-top: 8px;
   padding: 8px 10px;
@@ -275,7 +326,7 @@ html, body {
    BODY TEXT
    ============================================ */
 .body-text {
-  font-size: 10px;
+  font-size: 12pt;
   line-height: 1.6;
   color: #333;
   margin-bottom: 12px;
@@ -305,7 +356,7 @@ p a {
 
 .callout-title {
   font-family: '${font_family}', sans-serif;
-  font-size: 10px;
+  font-size: 12pt;
   font-weight: 600;
   color: var(--primary-color);
   text-transform: uppercase;
@@ -314,65 +365,19 @@ p a {
 }
 
 .callout-text {
-  font-size: 10px;
-  line-height: 1.5;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #333;
 }
 
-/* ============================================
-   FOOTER - FIXED WITH PROPER SPACING
-   ============================================ */
-.footer-line {
-  position: absolute;
-  bottom: 0.85in;
-  left: 0.75in;
-  right: 0.75in;
-  height: 1px;
-  background: var(--primary-color);
-  opacity: 0.3;
-}
-
-.page-footer {
-  position: absolute;
-  bottom: 0.5in;
-  left: 0.75in;
-  right: 0.75in;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.footer-left {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.footer-photo {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid var(--primary-color);
-}
-
-.footer-handle {
-  font-size: 10px;
-  color: #666;
-}
-
-.footer-page-number {
-  font-size: 10px;
-  color: #666;
-  font-weight: 600;
-}
+/* Footer is rendered via CSS Paged Media running footer — see visual-builder-generate.js */
 
 /* ============================================
    ABOUT THE AUTHOR PAGE
    ============================================ */
 .about-section {
   text-align: center;
-  padding-top: 30mm;
+  padding-top: 0;
 }
 
 .about-photo {
@@ -387,32 +392,53 @@ p a {
 
 .about-name {
   font-family: '${font_family}', sans-serif;
-  font-size: 22px;
+  font-size: 24pt;
   font-weight: 700;
   color: #1a1a1a;
   margin-bottom: 8px;
 }
 
 .about-tagline {
-  font-size: 13px;
+  font-size: 14pt;
   color: var(--primary-color);
   font-weight: 500;
   margin-bottom: 6px;
 }
 
 .about-handle {
-  font-size: 12px;
+  font-size: 12pt;
   color: #666;
   margin-bottom: 20px;
 }
 
 .about-bio {
-  font-size: 11px;
-  line-height: 1.7;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #444;
   text-align: left;
   max-width: 140mm;
   margin: 0 auto;
+}
+
+.promo-section {
+  margin-top: 30px;
+  text-align: center;
+  max-width: 140mm;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.promo-cta {
+  color: var(--primary-color);
+  font-size: 14pt;
+  margin-bottom: 15px;
+}
+
+.promo-section img {
+  max-width: 100%;
+  max-height: 350px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 /* ============================================
@@ -421,28 +447,44 @@ p a {
 .phase-header,
 .step-item,
 .step-meta,
-.callout {
+.callout,
+.cross-promo-wrapper {
   page-break-inside: avoid;
   break-inside: avoid;
 }
 
+/* Chapter heading block — never separate heading from body content */
+.chapter-heading {
+  break-after: avoid;
+  break-inside: avoid;
+}
+
+h1, h2, h3, h4, h5, h6,
+.chapter-label,
+.chapter-title,
+.divider,
 .phase-header,
 .step-title,
-.chapter-title {
+.day-header,
+.cheat-card-title,
+.swipe-card-title,
+.exercise-prompt,
+.reflection-title,
+.field-label {
   page-break-after: avoid;
   break-after: avoid;
 }
 
-p, .step-bullet {
-  orphans: 2;
-  widows: 2;
+p, li, .body-text, .step-text, .step-bullet {
+  orphans: 3;
+  widows: 3;
 }
 
 /* ============================================
    BLUEPRINT FORMAT
    ============================================ */
 .phase-header {
-  font-size: 12px;
+  font-size: 20pt;
   font-weight: 700;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -454,7 +496,7 @@ p, .step-bullet {
 }
 
 .meta-box {
-  font-size: 14px;
+  font-size: 12pt;
   color: #444;
   margin-bottom: 20px;
   padding: 12px 16px;
@@ -496,15 +538,15 @@ p, .step-bullet {
 }
 
 .step-title {
-  font-size: 16px;
+  font-size: 16pt;
   font-weight: 700;
   color: #000;
   margin-bottom: 8px;
 }
 
 .step-text {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #333;
 }
 
@@ -525,7 +567,7 @@ p, .step-bullet {
 }
 
 .bullet-list li {
-  font-size: 15px;
+  font-size: 12pt;
   line-height: 1.6;
   color: #333;
   padding-left: 20px;
@@ -555,7 +597,7 @@ p, .step-bullet {
 }
 
 .cheat-card-title {
-  font-size: 16px;
+  font-size: 16pt;
   font-weight: 700;
   color: #000;
   margin-bottom: 16px;
@@ -572,7 +614,7 @@ p, .step-bullet {
 }
 
 .cheat-section-title {
-  font-size: 12px;
+  font-size: 14pt;
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: 6px;
@@ -581,7 +623,7 @@ p, .step-bullet {
 }
 
 .cheat-section-content {
-  font-size: 15px;
+  font-size: 12pt;
   line-height: 1.6;
   color: #333;
 }
@@ -625,8 +667,8 @@ p, .step-bullet {
   border: 1px solid #ddd;
   padding: 12px 14px;
   margin-top: 8px;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #444;
   font-style: italic;
 }
@@ -635,7 +677,7 @@ p, .step-bullet {
    PLANNER FORMAT
    ============================================ */
 .day-header {
-  font-size: 14px;
+  font-size: 20pt;
   font-weight: 700;
   color: var(--primary-color);
   margin-top: 24px;
@@ -676,22 +718,22 @@ p, .step-bullet {
 }
 
 .task-time {
-  font-size: 11px;
+  font-size: 11pt;
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: 4px;
 }
 
 .task-title {
-  font-size: 15px;
+  font-size: 16pt;
   font-weight: 700;
   color: #000;
   margin-bottom: 6px;
 }
 
 .task-details {
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #444;
 }
 
@@ -713,14 +755,14 @@ p, .step-bullet {
 }
 
 .info-box-title {
-  font-size: 13px;
+  font-size: 14pt;
   font-weight: 700;
   color: #000;
   margin-bottom: 10px;
 }
 
 .info-box-content {
-  font-size: 14px;
+  font-size: 12pt;
   line-height: 1.6;
   color: #444;
 }
@@ -739,7 +781,7 @@ p, .step-bullet {
 }
 
 .tracking-title {
-  font-size: 12px;
+  font-size: 14pt;
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: 10px;
@@ -757,7 +799,7 @@ p, .step-bullet {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12pt;
   color: #444;
 }
 
@@ -782,7 +824,7 @@ p, .step-bullet {
 }
 
 .swipe-card-title {
-  font-size: 16px;
+  font-size: 16pt;
   font-weight: 700;
   color: #000;
   margin-bottom: 14px;
@@ -791,8 +833,8 @@ p, .step-bullet {
 }
 
 .swipe-content {
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #333;
 }
 
@@ -826,7 +868,7 @@ p, .step-bullet {
 }
 
 .exercise-prompt {
-  font-size: 16px;
+  font-size: 16pt;
   font-weight: 700;
   color: #000;
   margin-bottom: 10px;
@@ -834,7 +876,7 @@ p, .step-bullet {
 }
 
 .exercise-description {
-  font-size: 14px;
+  font-size: 12pt;
   color: #444;
   margin-bottom: 14px;
   line-height: 1.6;
@@ -854,7 +896,7 @@ p, .step-bullet {
 }
 
 .field-label {
-  font-size: 12px;
+  font-size: 12pt;
   font-weight: 600;
   color: var(--primary-color);
   margin-bottom: 6px;
@@ -900,7 +942,7 @@ p, .step-bullet {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 12pt;
   font-weight: 700;
   color: white;
 }
@@ -922,7 +964,7 @@ p, .step-bullet {
 }
 
 .reflection-title {
-  font-size: 13px;
+  font-size: 14pt;
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: 8px;
@@ -931,7 +973,7 @@ p, .step-bullet {
 }
 
 .reflection-prompt {
-  font-size: 14px;
+  font-size: 12pt;
   line-height: 1.6;
   color: #333;
   font-style: italic;
@@ -960,8 +1002,8 @@ p, .step-bullet {
 }
 
 .worksheet-checkbox-text {
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: 12pt;
+  line-height: 1.6;
   color: #333;
   flex: 1;
 }
@@ -981,7 +1023,7 @@ p, .step-bullet {
 }
 
 .column-title {
-  font-size: 12px;
+  font-size: 12pt;
   font-weight: 700;
   color: var(--primary-color);
   margin-bottom: 10px;
@@ -997,7 +1039,7 @@ p, .step-bullet {
 
 .scale-label-left,
 .scale-label-right {
-  font-size: 11px;
+  font-size: 11pt;
   color: #666;
 }
 
@@ -1017,7 +1059,7 @@ p, .step-bullet {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: 12pt;
   font-weight: 600;
   color: var(--primary-color);
 }
@@ -1039,9 +1081,44 @@ p, .step-bullet {
 .reflection-box,
 .rating-scale,
 .numbered-inputs,
-.two-column {
+.two-column,
+.cross-promo-wrapper {
   page-break-inside: avoid !important;
   break-inside: avoid !important;
+}
+
+/* ============================================
+   CROSS-PROMO CALLOUT - Visually distinct CTA block
+   ============================================ */
+.cross-promo-wrapper {
+  background: var(--light-bg);
+  border: 1px solid var(--primary-color);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-top: 30px;
+}
+
+/* Hide the "---" separator inside cross-promo (it's just a marker) */
+.cross-promo-wrapper > p:first-child {
+  display: none;
+}
+
+.cross-promo-wrapper p {
+  font-size: 12pt;
+  line-height: 1.6;
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.cross-promo-wrapper p:last-child {
+  margin-bottom: 0;
+}
+
+.cross-promo-wrapper a {
+  color: var(--primary-color);
+  font-weight: 700;
+  text-decoration: underline;
+  font-size: 12pt;
 }
 
 .phase-header,
@@ -1056,6 +1133,66 @@ p, .step-bullet {
   break-after: avoid !important;
 }
 `
+}
+
+/**
+ * Wrap cross-promo section in a container div for page-break-inside:avoid.
+ * Cross-promo content is at the END of chapter content and contains an <a href=...> link.
+ *
+ * Strategy 1 (preferred): Find the "---" separator added by buildCrossPromoParagraph().
+ *   In rendered HTML this appears as <p ...>---</p> or <p>---</p>.
+ *   Everything from that separator to the end is wrapped.
+ *
+ * Strategy 2 (fallback): If no separator found, find the last <p> with an <a href> link
+ *   and wrap the last 5 <p> tags to keep the link with its surrounding context.
+ *
+ * If the content has no <a href> link at all (e.g. lead magnets without bridge),
+ * the function returns the HTML unchanged.
+ */
+function wrapCrossPromo(html) {
+  if (!html.includes('<a href=')) return html
+
+  // Strategy 1: Look for the "---" separator that marks cross-promo start
+  const separatorRegex = /<p[^>]*>\s*-{3,}\s*<\/p>/g
+  let lastSeparatorMatch = null
+  let match
+  while ((match = separatorRegex.exec(html)) !== null) {
+    lastSeparatorMatch = match
+  }
+
+  if (lastSeparatorMatch) {
+    const wrapPosition = lastSeparatorMatch.index
+    return html.substring(0, wrapPosition) +
+      '<div class="cross-promo-wrapper">' +
+      html.substring(wrapPosition) +
+      '</div>'
+  }
+
+  // Strategy 2: Fallback — find last <p> with link, wrap last 5 paragraphs
+  const regex = /<p[\s>]/g
+  const positions = []
+  let m
+  while ((m = regex.exec(html)) !== null) {
+    positions.push(m.index)
+  }
+
+  if (positions.length === 0) return html
+
+  const lastPPos = positions[positions.length - 1]
+  const lastPEnd = html.indexOf('</p>', lastPPos)
+  if (lastPEnd === -1) return html
+  const lastPContent = html.substring(lastPPos, lastPEnd)
+
+  if (!lastPContent.includes('<a href=')) return html
+
+  // Wrap last 5 paragraphs (cross-promo can be 4-6 paragraphs)
+  const startIdx = Math.max(0, positions.length - 5)
+  const wrapPosition = positions[startIdx]
+
+  return html.substring(0, wrapPosition) +
+    '<div class="cross-promo-wrapper">' +
+    html.substring(wrapPosition) +
+    '</div>'
 }
 
 /**
@@ -1085,23 +1222,16 @@ function renderChapterPage(chapter, chapterNum, pageNum, profile, format = '') {
       return renderWorksheetPage(chapter, chapterNum, pageNum, profile)
     default:
       // Default: use existing content parser
-      const parsedContent = parseChapterContent(content)
+      const parsedContent = wrapCrossPromo(parseChapterContent(content))
       return `
-  <div class="page">
-    <div class="header-bar"></div>
+  <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-label">Chapter ${chapterNum}</div>
-      <h1 class="chapter-title">${escapeHtml(title)}</h1>
-      <div class="divider"></div>
-      ${parsedContent}
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
+      <div class="chapter-heading">
+        <div class="chapter-label">Chapter ${chapterNum}</div>
+        <h1 class="chapter-title">${escapeHtml(title)}</h1>
+        <div class="divider"></div>
       </div>
-      <span class="footer-page-number">${pageNum}</span>
+      ${parsedContent}
     </div>
   </div>`
   }
@@ -1118,14 +1248,7 @@ function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
   // Parse content into steps (simple split by numbered patterns or paragraphs)
   const steps = parseContentToSteps(content)
 
-  return `
-  <div class="page">
-    <div class="header-bar"></div>
-    <div class="page-content">
-      <div class="chapter-label">CHAPTER ${chapterNum}</div>
-      <h1 class="chapter-title">${escapeHtml(title)}</h1>
-
-      ${steps.map((step, i) => `
+  const stepsHtml = wrapCrossPromo(steps.map((step, i) => `
       <div class="blueprint-step">
         <div class="step-number">${i + 1}</div>
         <div class="step-content">
@@ -1134,15 +1257,16 @@ function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
             <p>${parseMarkdown(step.text)}</p>
           </div>
         </div>
-      </div>`).join('')}
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
+      </div>`).join(''))
+
+  return `
+  <div class="chapter-section">
+    <div class="page-content">
+      <div class="chapter-heading">
+        <div class="chapter-label">CHAPTER ${chapterNum}</div>
+        <h1 class="chapter-title">${escapeHtml(title)}</h1>
       </div>
-      <span class="footer-page-number">${pageNum}</span>
+      ${stepsHtml}
     </div>
   </div>`
 }
@@ -1158,16 +1282,7 @@ function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
   // Parse content into sections
   const sections = parseContentToSections(content)
 
-  return `
-  <div class="page">
-    <div class="header-bar"></div>
-    <div class="page-content">
-      <div class="chapter-label">CHAPTER ${chapterNum}</div>
-      <h1 class="chapter-title">${escapeHtml(title)}</h1>
-
-      <div class="cheat-card">
-        <div class="cheat-card-title">${escapeHtml(title)}</div>
-        ${sections.map(section => `
+  const sectionsHtml = wrapCrossPromo(sections.map(section => `
         <div class="cheat-section">
           <div class="cheat-section-title">${escapeHtml(section.title || 'Key Points')}</div>
           <div class="cheat-section-content">
@@ -1175,16 +1290,19 @@ function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
               ${section.items.map(item => `<li>${parseMarkdown(item)}</li>`).join('')}
             </ul>
           </div>
-        </div>`).join('')}
+        </div>`).join(''))
+
+  return `
+  <div class="chapter-section">
+    <div class="page-content">
+      <div class="chapter-heading">
+        <div class="chapter-label">CHAPTER ${chapterNum}</div>
+        <h1 class="chapter-title">${escapeHtml(title)}</h1>
       </div>
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
+      <div class="cheat-card">
+        <div class="cheat-card-title">${escapeHtml(title)}</div>
+        ${sectionsHtml}
       </div>
-      <span class="footer-page-number">${pageNum}</span>
     </div>
   </div>`
 }
@@ -1201,15 +1319,15 @@ function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
   const tasks = parseContentToTasks(content)
 
   return `
-  <div class="page">
-    <div class="header-bar"></div>
+  <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-label">WEEK ${chapterNum}</div>
-      <h1 class="chapter-title">${escapeHtml(title)}</h1>
-
+      <div class="chapter-heading">
+        <div class="chapter-label">WEEK ${chapterNum}</div>
+        <h1 class="chapter-title">${escapeHtml(title)}</h1>
+      </div>
       <div class="day-block">
         <div class="day-header">DAY ${chapterNum}</div>
-        ${tasks.map((task, i) => `
+        ${wrapCrossPromo(tasks.map((task, i) => `
         <div class="task-item">
           <div class="task-checkbox"></div>
           <div class="task-content">
@@ -1219,16 +1337,8 @@ function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
               <p>${parseMarkdown(task.text)}</p>
             </div>
           </div>
-        </div>`).join('')}
+        </div>`).join(''))}
       </div>
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
-      </div>
-      <span class="footer-page-number">${pageNum}</span>
     </div>
   </div>`
 }
@@ -1245,26 +1355,18 @@ function renderSwipeFilePage(chapter, chapterNum, pageNum, profile) {
   const templateContent = content || ''
 
   return `
-  <div class="page">
-    <div class="header-bar"></div>
+  <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-label">CHAPTER ${chapterNum}</div>
-      <h1 class="chapter-title">${escapeHtml(title)}</h1>
-
+      <div class="chapter-heading">
+        <div class="chapter-label">CHAPTER ${chapterNum}</div>
+        <h1 class="chapter-title">${escapeHtml(title)}</h1>
+      </div>
       <div class="swipe-card">
         <div class="swipe-card-title">Template #${chapterNum}: ${escapeHtml(title)}</div>
         <div class="swipe-content">
-          ${formatSwipeContent(templateContent)}
+          ${wrapCrossPromo(formatSwipeContent(templateContent))}
         </div>
       </div>
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
-      </div>
-      <span class="footer-page-number">${pageNum}</span>
     </div>
   </div>`
 }
@@ -1281,21 +1383,13 @@ function renderWorksheetPage(chapter, chapterNum, pageNum, profile) {
   const worksheetContent = parseContentToWorksheet(content)
 
   return `
-  <div class="page">
-    <div class="header-bar"></div>
+  <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-label">EXERCISE ${chapterNum}</div>
-      <h1 class="chapter-title">${escapeHtml(title)}</h1>
-
-      ${worksheetContent}
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
+      <div class="chapter-heading">
+        <div class="chapter-label">EXERCISE ${chapterNum}</div>
+        <h1 class="chapter-title">${escapeHtml(title)}</h1>
       </div>
-      <span class="footer-page-number">${pageNum}</span>
+      ${wrapCrossPromo(worksheetContent)}
     </div>
   </div>`
 }
@@ -1541,12 +1635,8 @@ function formatSwipeContent(content) {
  * Render sample chapter (when no content)
  */
 function renderSampleChapter(pageNum, profile) {
-  const { handle, photoUrl } = profile
-  const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
-
   return `
-  <div class="page">
-    <div class="header-bar"></div>
+  <div class="chapter-section">
     <div class="page-content">
       <div class="chapter-label">Chapter 1</div>
       <h1 class="chapter-title">Getting Started</h1>
@@ -1557,14 +1647,6 @@ function renderSampleChapter(pageNum, profile) {
         <div class="callout-text">Your content is automatically styled to match your cover, creating a cohesive professional look throughout your document.</div>
       </div>
     </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
-      </div>
-      <span class="footer-page-number">${pageNum}</span>
-    </div>
   </div>`
 }
 
@@ -1572,12 +1654,21 @@ function renderSampleChapter(pageNum, profile) {
  * Render About the Author page
  */
 function renderAboutPage(profile) {
-  const { author, handle, photoUrl, tagline, bio, primaryColor } = profile
+  const { author, handle, photoUrl, tagline, bio, primaryColor, promoImageUrl, promoImageLink, promoImageCta } = profile
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
 
+  // Conditional promo section: only render when all 3 fields are populated
+  const promoSection = (promoImageUrl && promoImageLink && promoImageCta)
+    ? `<div class="promo-section">
+        <p class="promo-cta">${escapeHtml(promoImageCta)}</p>
+        <a href="${escapeHtml(promoImageLink)}">
+          <img src="${escapeHtml(promoImageUrl)}" style="max-width: 100%; max-height: 350px; object-fit: contain; border-radius: 8px;" alt="${escapeHtml(promoImageCta)}" />
+        </a>
+      </div>`
+    : ''
+
   return `
-  <div class="page">
-    <div class="header-bar"></div>
+  <div class="about-author-page">
     <div class="page-content">
       <div class="about-section">
         <img src="${photoUrl}" class="about-photo" alt="${escapeHtml(author)}">
@@ -1587,14 +1678,7 @@ function renderAboutPage(profile) {
       </div>
       <div class="divider" style="margin: 20px auto;"></div>
       <p class="about-bio">${escapeHtml(bio)}</p>
-    </div>
-    <div class="footer-line"></div>
-    <div class="page-footer">
-      <div class="footer-left">
-        <img src="${photoUrl}" class="footer-photo" alt="">
-        <span class="footer-handle">${handleDisplay}</span>
-      </div>
-      <span class="footer-page-number">About</span>
+      ${promoSection}
     </div>
   </div>`
 }

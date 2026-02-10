@@ -1,4 +1,4 @@
-// Generate HTML preview WITHOUT calling PDFShift
+// Generate HTML preview WITHOUT calling DocRaptor
 // Run: node generate-html-preview.js
 // Then open: preview-output.html in browser
 

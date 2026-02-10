@@ -20,9 +20,20 @@ export function AuthProvider({ children }) {
     })
 
     // Listen for auth changes
+    // Only update user state if user ID actually changes (not just token refresh)
+    // This prevents re-renders when switching browser tabs
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null)
+      (event, session) => {
+        const newUserId = session?.user?.id ?? null
+        setUser(currentUser => {
+          const currentUserId = currentUser?.id ?? null
+          // Only update if user ID changed (sign in/out), not token refresh
+          if (currentUserId !== newUserId) {
+            return session?.user ?? null
+          }
+          // Token refresh with same user - don't update to avoid re-renders
+          return currentUser
+        })
       }
     )
 

@@ -191,7 +191,7 @@ export default function VisualBuilder() {
         throw new Error(data.error || 'Failed to generate PDF')
       }
 
-      // PDFShift returns pdfUrl directly
+      // DocRaptor returns pdfUrl directly
       if (data.pdfUrl) {
         setGeneratedPdf({
           pdfUrl: data.pdfUrl,

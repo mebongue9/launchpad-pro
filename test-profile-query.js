@@ -1,4 +1,4 @@
-// Test script to verify profile query WITHOUT using PDFShift API
+// Test script to verify profile query WITHOUT using DocRaptor API
 // Run with: node test-profile-query.js
 
 import { createClient } from '@supabase/supabase-js'

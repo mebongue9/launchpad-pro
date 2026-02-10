@@ -15,11 +15,14 @@ import {
   Check,
   Loader2,
   Pin,
-  AlertCircle
+  AlertCircle,
+  Video,
+  Image
 } from 'lucide-react'
 import { Button } from '../ui/Button'
 import { PdfUploader } from './PdfUploader'
 import { StyleRatioSlider } from './StyleRatioSlider'
+import { useAuth } from '../../hooks/useAuth'
 
 const STEPS = [
   { id: 1, label: 'Upload PDF', icon: Upload },
@@ -47,6 +50,10 @@ const FORMAT_OPTIONS = [
   { value: 'cheat sheet', label: 'Cheat Sheet' }
 ]
 
+// Cost constants (kie.ai pricing)
+const COST_PER_IMAGE = 0.02
+const COST_PER_VIDEO = 0.10
+
 export function NewProjectModal({
   isOpen,
   onClose,
@@ -55,6 +62,7 @@ export function NewProjectModal({
   uploadPdf,
   submitting = false
 }) {
+  const { user } = useAuth()
   const [step, setStep] = useState(1)
   const [errors, setErrors] = useState({})
 
@@ -67,7 +75,40 @@ export function NewProjectModal({
   const [selectedFunnel, setSelectedFunnel] = useState('')
   const [productType, setProductType] = useState('')
   const [pinterestEnabled, setPinterestEnabled] = useState(true)
+  const [pinterestPinCount, setPinterestPinCount] = useState(32)
   const [manifestableRatio, setManifestableRatio] = useState(0.70)
+  const [videoEnabled, setVideoEnabled] = useState(false)  // NEW: default OFF
+  const [testMode, setTestMode] = useState(false)  // Test mode: 1 Etsy + 1 Pinterest
+  const [slide10TemplateId, setSlide10TemplateId] = useState(null)  // Slide 10 template
+  const [overlayCount, setOverlayCount] = useState(4)  // Overlay count (2-6)
+  const [templates, setTemplates] = useState([])  // Available templates
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+
+  // Fetch templates when modal opens
+  useEffect(() => {
+    if (isOpen && user?.id) {
+      fetchTemplates()
+    }
+  }, [isOpen, user?.id])
+
+  const fetchTemplates = async () => {
+    if (!user?.id) {
+      setTemplates([])
+      return
+    }
+    try {
+      setLoadingTemplates(true)
+      const response = await fetch(`/.netlify/functions/etsy-empire-templates?user_id=${user.id}`)
+      const data = await response.json()
+      if (response.ok) {
+        setTemplates(data.templates || [])
+      }
+    } catch (err) {
+      console.error('Failed to fetch templates:', err)
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -81,14 +122,33 @@ export function NewProjectModal({
       setSelectedFunnel('')
       setProductType('')
       setPinterestEnabled(true)
+      setPinterestPinCount(32)
       setManifestableRatio(0.70)
+      setVideoEnabled(false)  // NEW: reset video toggle
+      setTestMode(false)  // Reset test mode
+      setSlide10TemplateId(null)  // Reset template selection
+      setOverlayCount(4)  // Reset overlay count
       setErrors({})
     }
   }, [isOpen])
 
   // Calculate estimated cost
-  const totalImages = pinterestEnabled ? 42 : 10
-  const estimatedCost = (totalImages * 0.03).toFixed(2)
+  let etsyImageCount, etsyVideoCost, pinterestImageCount
+  if (testMode) {
+    // Test mode: 1 Etsy + 1 Pinterest = $0.04
+    etsyImageCount = 1
+    etsyVideoCost = 0
+    pinterestImageCount = pinterestEnabled ? 1 : 0
+  } else {
+    etsyImageCount = videoEnabled ? 9 : 10
+    etsyVideoCost = videoEnabled ? COST_PER_VIDEO : 0
+    pinterestImageCount = pinterestEnabled ? pinterestPinCount : 0
+  }
+  const etsyImageCost = etsyImageCount * COST_PER_IMAGE
+  const pinterestCost = pinterestImageCount * COST_PER_IMAGE
+  const totalCost = etsyImageCost + etsyVideoCost + pinterestCost
+  const totalImages = etsyImageCount + pinterestImageCount
+  const estimatedCost = totalCost.toFixed(2)
 
   // Validate current step
   const validateStep = () => {
@@ -146,7 +206,12 @@ export function NewProjectModal({
       funnel_id: selectedFunnel || null,
       product_type: selectedFunnel ? productType : null,
       pinterest_enabled: pinterestEnabled,
-      manifestable_ratio: manifestableRatio
+      pinterest_pin_count: pinterestPinCount,
+      manifestable_ratio: manifestableRatio,
+      video_enabled: testMode ? false : videoEnabled,  // Disable video in test mode
+      test_mode: testMode,  // Test mode flag
+      slide10_template_id: testMode ? null : (slide10TemplateId || null),  // No template in test mode
+      overlay_count: slide10TemplateId ? overlayCount : 4  // Overlay count
     }
 
     await onSubmit(data)
@@ -395,22 +460,46 @@ export function NewProjectModal({
                 </p>
               </div>
 
-              {/* Pinterest Toggle */}
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              {/* Test Mode Toggle */}
+              <div className="flex items-center justify-between p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <div className="flex items-center gap-3">
-                  <Pin className={`w-5 h-5 ${pinterestEnabled ? 'text-pink-600' : 'text-gray-400'}`} />
+                  <AlertCircle className={`w-5 h-5 ${testMode ? 'text-amber-600' : 'text-gray-400'}`} />
                   <div>
-                    <p className="font-medium text-gray-900">Pinterest Pins</p>
+                    <p className="font-medium text-gray-900">Test Mode</p>
                     <p className="text-sm text-gray-500">
-                      Generate 32 additional Pinterest-optimized pins
+                      Generate only 1 Etsy + 1 Pinterest image ($0.04)
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setPinterestEnabled(!pinterestEnabled)}
+                  onClick={() => setTestMode(!testMode)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    testMode ? 'bg-amber-500' : 'bg-gray-300'
+                  }`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    testMode ? 'left-7' : 'left-1'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Pinterest Toggle */}
+              <div className={`flex items-center justify-between p-4 bg-gray-50 rounded-lg ${testMode ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-3">
+                  <Pin className={`w-5 h-5 ${pinterestEnabled && !testMode ? 'text-pink-600' : 'text-gray-400'}`} />
+                  <div>
+                    <p className="font-medium text-gray-900">Pinterest Pins</p>
+                    <p className="text-sm text-gray-500">
+                      {testMode ? '1 pin (test mode)' : `Generate ${pinterestPinCount} additional Pinterest-optimized pins`}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !testMode && setPinterestEnabled(!pinterestEnabled)}
+                  disabled={testMode}
                   className={`relative w-12 h-6 rounded-full transition-colors ${
                     pinterestEnabled ? 'bg-pink-500' : 'bg-gray-300'
-                  }`}
+                  } ${testMode ? 'cursor-not-allowed' : ''}`}
                 >
                   <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
                     pinterestEnabled ? 'left-7' : 'left-1'
@@ -418,10 +507,103 @@ export function NewProjectModal({
                 </button>
               </div>
 
+              {/* Pinterest Pin Count Dropdown */}
+              {pinterestEnabled && (
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Number of Pins
+                  </label>
+                  <select
+                    value={pinterestPinCount}
+                    onChange={(e) => setPinterestPinCount(parseInt(e.target.value))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value={8}>8 pins</option>
+                    <option value={16}>16 pins</option>
+                    <option value={32}>32 pins</option>
+                  </select>
+                </div>
+              )}
+
+              {/* Video Toggle - NEW */}
+              <div className={`flex items-center justify-between p-4 bg-gray-50 rounded-lg ${testMode ? 'opacity-50' : ''}`}>
+                <div className="flex items-center gap-3">
+                  <Video className={`w-5 h-5 ${videoEnabled && !testMode ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <div>
+                    <p className="font-medium text-gray-900">Add Video Slide</p>
+                    <p className="text-sm text-gray-500">
+                      {testMode ? 'Disabled in test mode' : 'Slide 2 becomes a 6-second video (+$0.10)'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !testMode && setVideoEnabled(!videoEnabled)}
+                  disabled={testMode}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    videoEnabled && !testMode ? 'bg-purple-500' : 'bg-gray-300'
+                  } ${testMode ? 'cursor-not-allowed' : ''}`}
+                >
+                  <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${
+                    videoEnabled && !testMode ? 'left-7' : 'left-1'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Slide 10 Template - NEW */}
+              <div className="p-4 bg-gray-50 rounded-lg space-y-3">
+                <div className="flex items-center gap-3">
+                  <Image className={`w-5 h-5 ${slide10TemplateId ? 'text-purple-600' : 'text-gray-400'}`} />
+                  <div>
+                    <p className="font-medium text-gray-900">Slide 10 Template (Optional)</p>
+                    <p className="text-sm text-gray-500">
+                      Use your branding template with product overlays
+                    </p>
+                  </div>
+                </div>
+
+                <select
+                  value={slide10TemplateId || ''}
+                  onChange={(e) => setSlide10TemplateId(e.target.value || null)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  disabled={loadingTemplates}
+                >
+                  <option value="">None (AI generates)</option>
+                  {templates.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+
+                {slide10TemplateId && (
+                  <div className="pt-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Product Overlay Count: {overlayCount}
+                    </label>
+                    <input
+                      type="range"
+                      min="2"
+                      max="6"
+                      value={overlayCount}
+                      onChange={(e) => setOverlayCount(parseInt(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>2</span>
+                      <span>6</span>
+                    </div>
+                  </div>
+                )}
+
+                {templates.length === 0 && !loadingTemplates && (
+                  <p className="text-xs text-gray-500">
+                    No templates uploaded yet. Visit the Templates tab to create one.
+                  </p>
+                )}
+              </div>
+
               {/* Style Ratio Slider */}
               {pinterestEnabled && (
                 <div className="p-4 bg-purple-50 rounded-lg">
-                  <h4 className="font-medium text-gray-900 mb-4">Style Balance</h4>
+                  <h4 className="font-medium text-gray-900 mb-4">Manifestable Style Ratio</h4>
                   <StyleRatioSlider
                     value={manifestableRatio}
                     onChange={setManifestableRatio}
@@ -434,7 +616,7 @@ export function NewProjectModal({
                 <div>
                   <p className="font-medium text-gray-900">Estimated Cost</p>
                   <p className="text-sm text-gray-500">
-                    {totalImages} images @ ~$0.03/image
+                    {totalImages} images @ $0.02/image{videoEnabled ? ' + 1 video @ $0.10' : ''}
                   </p>
                 </div>
                 <span className="text-2xl font-bold text-blue-600">${estimatedCost}</span>
@@ -481,9 +663,29 @@ export function NewProjectModal({
                   </span>
                 </div>
                 <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Test Mode</span>
+                  <span className={`font-medium ${testMode ? 'text-amber-600' : 'text-gray-400'}`}>
+                    {testMode ? 'Enabled (1 Etsy + 1 Pinterest)' : 'Disabled'}
+                  </span>
+                </div>
+                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
                   <span className="text-gray-600">Pinterest Pins</span>
                   <span className={`font-medium ${pinterestEnabled ? 'text-green-600' : 'text-gray-400'}`}>
-                    {pinterestEnabled ? 'Enabled' : 'Disabled'}
+                    {testMode ? '1 (test mode)' : (pinterestEnabled ? `Enabled (${pinterestPinCount})` : 'Disabled')}
+                  </span>
+                </div>
+                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Video Slide</span>
+                  <span className={`font-medium ${videoEnabled && !testMode ? 'text-purple-600' : 'text-gray-400'}`}>
+                    {testMode ? 'Disabled (test mode)' : (videoEnabled ? 'Enabled' : 'Disabled')}
+                  </span>
+                </div>
+                <div className="flex justify-between p-3 bg-gray-50 rounded-lg">
+                  <span className="text-gray-600">Slide 10 Template</span>
+                  <span className={`font-medium ${slide10TemplateId ? 'text-purple-600' : 'text-gray-400'}`}>
+                    {slide10TemplateId
+                      ? `${templates.find(t => t.id === slide10TemplateId)?.name || 'Selected'} (${overlayCount} overlays)`
+                      : 'None (AI generates)'}
                   </span>
                 </div>
                 <div className="flex justify-between p-3 bg-gray-50 rounded-lg">

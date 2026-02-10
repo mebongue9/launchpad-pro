@@ -12,11 +12,6 @@ export function StyleRatioSlider({ value, onChange, disabled = false }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-amber-600 font-medium">Manifestable</span>
-        <span className="text-pink-600 font-medium">Pinterest</span>
-      </div>
-
       <div className="relative">
         <input
           type="range"
@@ -49,16 +44,11 @@ export function StyleRatioSlider({ value, onChange, disabled = false }) {
 
       <div className="flex items-center justify-between text-xs text-gray-500">
         <span>50%</span>
-        <span className="text-sm font-medium text-purple-600">{percentage}%</span>
         <span>90%</span>
       </div>
 
-      <p className="text-xs text-gray-500 text-center">
-        {percentage <= 60
-          ? 'More earthy, spiritual aesthetic'
-          : percentage >= 80
-            ? 'More trendy, Pinterest-style aesthetic'
-            : 'Balanced aesthetic mix'}
+      <p className="text-sm font-medium text-purple-600 text-center">
+        {percentage}% Manifestable ({100 - percentage}% Pinterest)
       </p>
     </div>
   )

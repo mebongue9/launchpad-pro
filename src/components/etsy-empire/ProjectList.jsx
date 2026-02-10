@@ -110,7 +110,7 @@ export function ProjectList({
                             {project.product_title}
                           </p>
                           {project.tldr_text && (
-                            <p className="text-sm text-gray-500 truncate mt-0.5">
+                            <p className="text-sm text-gray-500 line-clamp-1 mt-0.5">
                               {project.tldr_text}
                             </p>
                           )}

@@ -1,5 +1,5 @@
 // netlify/functions/visual-builder-generate.js
-// Generates high-quality PDF using PDFShift API
+// Generates high-quality PDF using DocRaptor API (PrinceXML engine)
 // POST /api/visual-builder-generate
 // RELEVANT FILES: lib/cover-renderer.js, lib/interior-renderer.js
 
@@ -17,8 +17,6 @@ function getSupabase() {
   )
 }
 
-const PDFSHIFT_API_URL = 'https://api.pdfshift.io/v3/convert/pdf'
-
 // Timeout helper - Netlify free tier has 10s limit, we use 9s to return graceful error
 const FUNCTION_TIMEOUT = 9000
 
@@ -33,7 +31,7 @@ function withTimeout(promise, ms, operation) {
 
 export async function handler(event) {
   const startTime = Date.now()
-  console.log(`🎨 ${LOG_TAG} Function invoked at ${new Date().toISOString()}`)
+  console.log(`${LOG_TAG} Function invoked at ${new Date().toISOString()}`)
 
   if (event.httpMethod !== 'POST') {
     return {
@@ -62,8 +60,8 @@ export async function handler(event) {
       handleSize = 100
     } = body
 
-    console.log(`📥 ${LOG_TAG} Request:`, { funnelId, leadMagnetId, productType, coverTemplateId })
-    console.log(`⏱️ ${LOG_TAG} Parse complete at +${Date.now() - startTime}ms`)
+    console.log(`${LOG_TAG} Request:`, { funnelId, leadMagnetId, productType, coverTemplateId })
+    console.log(`${LOG_TAG} Parse complete at +${Date.now() - startTime}ms`)
 
     // Validate required fields
     if (!coverTemplateId) {
@@ -78,10 +76,10 @@ export async function handler(event) {
 
     // Get supabase client (lazy initialization)
     const supabase = getSupabase()
-    console.log(`⏱️ ${LOG_TAG} Supabase client created at +${Date.now() - startTime}ms`)
+    console.log(`${LOG_TAG} Supabase client created at +${Date.now() - startTime}ms`)
 
     // 1. Load cover template
-    console.log(`📚 ${LOG_TAG} Loading cover template...`)
+    console.log(`${LOG_TAG} Loading cover template...`)
     const { data: template, error: templateError } = await withTimeout(
       supabase
         .from('cover_templates')
@@ -91,15 +89,15 @@ export async function handler(event) {
       3000,
       'Template query'
     )
-    console.log(`⏱️ ${LOG_TAG} Template loaded at +${Date.now() - startTime}ms`)
+    console.log(`${LOG_TAG} Template loaded at +${Date.now() - startTime}ms`)
 
     if (templateError || !template) {
-      console.error(`❌ ${LOG_TAG} Template error:`, templateError)
+      console.error(`${LOG_TAG} Template error:`, templateError)
       return errorResponse(404, 'Cover template not found')
     }
 
     // 2. Load content based on product type
-    console.log(`📄 ${LOG_TAG} Loading content...`)
+    console.log(`${LOG_TAG} Loading content...`)
     let content = null
     if (funnelId) {
       // Funnel products are stored in JSONB columns: front_end, bump, upsell_1, upsell_2
@@ -117,7 +115,7 @@ export async function handler(event) {
         const productData = funnel[productType]
         if (productData) {
           content = productData // Already an object with chapters array
-          console.log(`📄 ${LOG_TAG} Found ${productType} content with ${productData.chapters?.length || 0} chapters`)
+          console.log(`${LOG_TAG} Found ${productType} content with ${productData.chapters?.length || 0} chapters`)
         }
       }
 
@@ -143,7 +141,7 @@ export async function handler(event) {
               ? `\n\n[Learn more about ${mainProduct.name}](${mainProduct.url})`
               : `\n\n[Learn more](${mainProduct.url})`
             lastChapter.content = (lastChapter.content || '') + linkText
-            console.log(`🔗 ${LOG_TAG} Injected main product URL into ${productType} cross-promo: ${mainProduct.url}`)
+            console.log(`${LOG_TAG} Injected main product URL into ${productType} cross-promo: ${mainProduct.url}`)
           }
         }
       }
@@ -164,9 +162,9 @@ export async function handler(event) {
           content = typeof leadMagnet.content === 'string'
             ? JSON.parse(leadMagnet.content)
             : leadMagnet.content
-          console.log(`📄 ${LOG_TAG} Found lead magnet content with ${content.chapters?.length || 0} chapters`)
+          console.log(`${LOG_TAG} Found lead magnet content with ${content.chapters?.length || 0} chapters`)
         } catch (parseError) {
-          console.error(`❌ ${LOG_TAG} Failed to parse lead magnet content:`, parseError)
+          console.error(`${LOG_TAG} Failed to parse lead magnet content:`, parseError)
         }
       }
 
@@ -195,33 +193,33 @@ export async function handler(event) {
                 ? `\n\n[Learn more about ${feName}](${feLink})`
                 : `\n\n[Get started here](${feLink})`
               lastChapter.content = (lastChapter.content || '') + linkText
-              console.log(`🔗 ${LOG_TAG} Injected front_end_link into lead magnet bridge: ${feLink}`)
+              console.log(`${LOG_TAG} Injected front_end_link into lead magnet bridge: ${feLink}`)
             }
           }
         }
       }
     }
-    console.log(`⏱️ ${LOG_TAG} Content loaded at +${Date.now() - startTime}ms`)
+    console.log(`${LOG_TAG} Content loaded at +${Date.now() - startTime}ms`)
 
     // 3. Load user profile for interior pages
     // Schema: profiles.id = profile UUID, profiles.user_id = auth user UUID
     // If profileId provided: query by profiles.id
     // If only userId provided: query by profiles.user_id
-    console.log(`👤 ${LOG_TAG} Loading profile for profileId: ${profileId}, userId: ${userId}`)
+    console.log(`${LOG_TAG} Loading profile for profileId: ${profileId}, userId: ${userId}`)
     let profile = null
     if (profileId) {
       // Query by profile's primary key
       const { data: profileData, error: profileError } = await withTimeout(
         supabase
           .from('profiles')
-          .select('name, social_handle, photo_url, logo_url, tagline, niche')
+          .select('name, social_handle, photo_url, logo_url, tagline, niche, promo_image_url, promo_image_link, promo_image_cta')
           .eq('id', profileId)
           .single(),
         2000,
         'Profile query by id'
       )
       if (profileError) {
-        console.error(`⚠️ ${LOG_TAG} Profile query by id error:`, profileError)
+        console.error(`${LOG_TAG} Profile query by id error:`, profileError)
       }
       profile = profileData
     } else if (userId) {
@@ -229,7 +227,7 @@ export async function handler(event) {
       const { data: profileData, error: profileError } = await withTimeout(
         supabase
           .from('profiles')
-          .select('name, social_handle, photo_url, logo_url, tagline, niche')
+          .select('name, social_handle, photo_url, logo_url, tagline, niche, promo_image_url, promo_image_link, promo_image_cta')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -238,15 +236,15 @@ export async function handler(event) {
         'Profile query by user_id'
       )
       if (profileError) {
-        console.error(`⚠️ ${LOG_TAG} Profile query by user_id error:`, profileError)
+        console.error(`${LOG_TAG} Profile query by user_id error:`, profileError)
       }
       profile = profileData
     } else {
-      console.warn(`⚠️ ${LOG_TAG} No profileId or userId provided - profile data will use defaults`)
+      console.warn(`${LOG_TAG} No profileId or userId provided - profile data will use defaults`)
     }
 
     if (profile) {
-      console.log(`👤 ${LOG_TAG} Profile loaded:`, JSON.stringify({
+      console.log(`${LOG_TAG} Profile loaded:`, JSON.stringify({
         name: profile.name || '(not set)',
         social_handle: profile.social_handle || '(not set)',
         photo_url: profile.photo_url ? '(set)' : '(not set)',
@@ -254,16 +252,16 @@ export async function handler(event) {
         niche: profile.niche || '(not set)'
       }))
     } else {
-      console.warn(`⚠️ ${LOG_TAG} No profile found`)
+      console.warn(`${LOG_TAG} No profile found`)
     }
-    console.log(`⏱️ ${LOG_TAG} Profile loaded at +${Date.now() - startTime}ms`)
+    console.log(`${LOG_TAG} Profile loaded at +${Date.now() - startTime}ms`)
 
     // 4. Render HTML
-    console.log(`🎨 ${LOG_TAG} Rendering HTML...`)
-    console.log(`📋 ${LOG_TAG} Content structure: ${content?.chapters?.length || 0} chapters`)
+    console.log(`${LOG_TAG} Rendering HTML...`)
+    console.log(`${LOG_TAG} Content structure: ${content?.chapters?.length || 0} chapters`)
     if (content?.chapters?.[0]) {
-      console.log(`📋 ${LOG_TAG} First chapter title: ${content.chapters[0].title || '(no title)'}`)
-      console.log(`📋 ${LOG_TAG} First chapter content length: ${content.chapters[0].content?.length || 0} chars`)
+      console.log(`${LOG_TAG} First chapter title: ${content.chapters[0].title || '(no title)'}`)
+      console.log(`${LOG_TAG} First chapter content length: ${content.chapters[0].content?.length || 0} chars`)
     }
     const coverData = {
       title,
@@ -277,61 +275,33 @@ export async function handler(event) {
     const coverHtml = renderCover(template, coverData, coverOptions)
     const interiorHtml = renderInterior(template, { title, content, format: productType }, profile)
 
-    // Combine cover and interior into single document
-    const combinedHtml = combineDocuments(coverHtml, interiorHtml)
-    console.log(`⏱️ ${LOG_TAG} HTML rendered at +${Date.now() - startTime}ms (${combinedHtml.length} chars)`)
+    // Build running header and footer HTML for DocRaptor/PrinceXML
+    const runningHeaderHtml = buildRunningHeader(template)
+    const runningFooterHtml = buildRunningFooter(template, profile)
 
-    // Check remaining time before calling PDFShift
+    // Combine cover and interior into single document
+    const combinedHtml = combineDocuments(coverHtml, interiorHtml, runningHeaderHtml, runningFooterHtml)
+    console.log(`${LOG_TAG} HTML rendered at +${Date.now() - startTime}ms (${combinedHtml.length} chars)`)
+
+    // Check remaining time before calling DocRaptor
     const elapsed = Date.now() - startTime
     if (elapsed > 7000) {
-      console.error(`❌ ${LOG_TAG} Not enough time for PDFShift, elapsed: ${elapsed}ms`)
+      console.error(`${LOG_TAG} Not enough time for DocRaptor, elapsed: ${elapsed}ms`)
       return errorResponse(504, `Function timeout - data loading took ${elapsed}ms. Try again.`)
     }
 
-    // 5. Call PDFShift API
-    console.log(`📄 ${LOG_TAG} Calling PDFShift API...`)
-
-    // ========== PDFSHIFT DEBUG LOGGING ==========
-    console.log('========== PDFSHIFT DEBUG START ==========')
-    console.log('Timestamp:', new Date().toISOString())
-
-    // Log the full HTML (first 8000 chars to see cover structure)
-    const htmlToLog = combinedHtml.length > 8000
-      ? combinedHtml.substring(0, 8000) + '\n... [TRUNCATED at 8000 chars, total: ' + combinedHtml.length + ']'
-      : combinedHtml
-    console.log('HTML PAYLOAD:')
-    console.log(htmlToLog)
-
-    // Log the CSS specifically
-    console.log('COVER CSS IN PAYLOAD:')
-    const coverCssMatch = combinedHtml.match(/<style[^>]*>([\s\S]*?)<\/style>/)
-    if (coverCssMatch) {
-      console.log(coverCssMatch[1])
-    } else {
-      console.log('NO STYLE TAG FOUND')
-    }
-
-    // Log PDFShift options that will be sent
-    console.log('PDFSHIFT OPTIONS:', JSON.stringify({
-      format: 'A4',
-      margin: '0',
-      sandbox: false,
-      use_print: true
-    }, null, 2))
-
-    console.log('========== PDFSHIFT DEBUG END ==========')
-    // ========== END DEBUG LOGGING ==========
-
-    const pdfBuffer = await generatePdfWithPdfShift(combinedHtml, startTime)
+    // 5. Call DocRaptor API
+    console.log(`${LOG_TAG} Calling DocRaptor API...`)
+    const pdfBuffer = await generatePdfWithDocRaptor(combinedHtml, startTime)
 
     if (!pdfBuffer) {
       return errorResponse(500, 'Failed to generate PDF')
     }
 
-    console.log(`✅ ${LOG_TAG} PDF generated at +${Date.now() - startTime}ms, size: ${pdfBuffer.length} bytes`)
+    console.log(`${LOG_TAG} PDF generated at +${Date.now() - startTime}ms, size: ${pdfBuffer.length} bytes`)
 
     // 6. Upload to Supabase Storage
-    console.log(`📤 ${LOG_TAG} Uploading to storage...`)
+    console.log(`${LOG_TAG} Uploading to storage...`)
     const fileName = `visual-builder/${funnelId || leadMagnetId}/${Date.now()}-styled.pdf`
 
     const { error: uploadError } = await withTimeout(
@@ -346,7 +316,7 @@ export async function handler(event) {
     )
 
     if (uploadError) {
-      console.error(`❌ ${LOG_TAG} Upload error:`, uploadError)
+      console.error(`${LOG_TAG} Upload error:`, uploadError)
       return errorResponse(500, `Failed to upload PDF: ${uploadError.message}`)
     }
 
@@ -356,7 +326,7 @@ export async function handler(event) {
       .getPublicUrl(fileName)
 
     const pdfUrl = urlData.publicUrl
-    console.log(`✅ ${LOG_TAG} PDF uploaded at +${Date.now() - startTime}ms:`, pdfUrl)
+    console.log(`${LOG_TAG} PDF uploaded at +${Date.now() - startTime}ms:`, pdfUrl)
 
     // 7. Create/update styled_products record (non-blocking, don't wait)
     const styledProductData = {
@@ -378,12 +348,12 @@ export async function handler(event) {
       .insert(styledProductData)
       .then(({ error: insertError }) => {
         if (insertError) {
-          console.error(`⚠️ ${LOG_TAG} styled_products insert error (non-fatal):`, insertError)
+          console.error(`${LOG_TAG} styled_products insert error (non-fatal):`, insertError)
         }
       })
 
     // 8. Return success with PDF URL
-    console.log(`✅ ${LOG_TAG} Complete at +${Date.now() - startTime}ms!`)
+    console.log(`${LOG_TAG} Complete at +${Date.now() - startTime}ms!`)
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -395,7 +365,7 @@ export async function handler(event) {
     }
 
   } catch (error) {
-    console.error(`❌ ${LOG_TAG} Error at +${Date.now() - startTime}ms:`, error)
+    console.error(`${LOG_TAG} Error at +${Date.now() - startTime}ms:`, error)
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -405,9 +375,45 @@ export async function handler(event) {
 }
 
 /**
- * Combine cover and interior HTML into single multi-page document
+ * Build running header HTML for PrinceXML (accent color bar at top of every page)
+ * Placed at top of <body>, flow: static(header-flow) pulls it into @page @top margin box
  */
-function combineDocuments(coverHtml, interiorHtml) {
+function buildRunningHeader(template) {
+  const headerGradient = template.is_gradient
+    ? `linear-gradient(90deg, ${template.secondary_color} 0%, ${template.primary_color} 50%, ${template.tertiary_color} 100%)`
+    : template.primary_color
+
+  return `<div class="running-header">
+  <div style="height: 6px; background: ${headerGradient}; -webkit-print-color-adjust: exact; print-color-adjust: exact;"></div>
+</div>`
+}
+
+/**
+ * Build running footer HTML for PrinceXML (accent line + photo + handle)
+ * Placed at top of <body>, flow: static(footer-flow) pulls it into @page @bottom margin box
+ * Page number is handled separately via @bottom-right { content: counter(page) } in CSS
+ */
+function buildRunningFooter(template, profile) {
+  const primaryColor = template.primary_color || '#333'
+  const photoUrl = profile?.photo_url || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23ddd"/%3E%3C/svg%3E'
+  const handle = profile?.social_handle ? `@${profile.social_handle}` : ''
+
+  return `<div class="running-footer">
+  <div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px; border-top: 2px solid ${primaryColor}; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <img src="${photoUrl}" style="width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 1.5px solid ${primaryColor};" alt="" />
+      <span style="font-family: 'Inter', sans-serif; font-size: 8pt; color: #888;">${handle}</span>
+    </div>
+    <span class="page-num" style="font-family: 'Inter', sans-serif; font-size: 9pt; color: #666; font-weight: 600;"></span>
+  </div>
+</div>`
+}
+
+/**
+ * Combine cover and interior HTML into single multi-page document for DocRaptor
+ * Running header/footer HTML placed at top of body (PrinceXML requirement)
+ */
+function combineDocuments(coverHtml, interiorHtml, runningHeaderHtml, runningFooterHtml) {
   // Extract body content from interior HTML
   const interiorBodyMatch = interiorHtml.match(/<body>([\s\S]*)<\/body>/)
   const interiorBody = interiorBodyMatch ? interiorBodyMatch[1] : ''
@@ -424,18 +430,24 @@ function combineDocuments(coverHtml, interiorHtml) {
   const coverStyleMatch = coverHtml.match(/<style>([\s\S]*?)<\/style>/)
   const coverStyles = coverStyleMatch ? coverStyleMatch[1] : ''
 
-  // Extract font link from cover
-  const fontLinkMatch = coverHtml.match(/<link href="([^"]+)" rel="stylesheet">/)
-  const fontLink = fontLinkMatch ? `<link href="${fontLinkMatch[1]}" rel="stylesheet">` : ''
+  // Extract font links from both cover and interior
+  const coverFontMatch = coverHtml.match(/<link href="([^"]+)" rel="stylesheet">/)
+  const coverFontLink = coverFontMatch ? coverFontMatch[1] : ''
+  const interiorFontMatch = interiorHtml.match(/<link href="([^"]+)" rel="stylesheet">/)
+  const interiorFontLink = interiorFontMatch ? interiorFontMatch[1] : ''
+
+  // Build font link tags (deduplicate if same)
+  let fontLinks = ''
+  if (coverFontLink) fontLinks += `<link href="${coverFontLink}" rel="stylesheet">\n  `
+  if (interiorFontLink && interiorFontLink !== coverFontLink) fontLinks += `<link href="${interiorFontLink}" rel="stylesheet">\n  `
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  ${fontLink}
+  ${fontLinks}
   <style>
-    @page { size: A4; margin: 0; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body {
       font-family: 'Inter', -apple-system, sans-serif;
@@ -443,13 +455,14 @@ function combineDocuments(coverHtml, interiorHtml) {
       print-color-adjust: exact;
     }
     .cover-page {
+      page: cover-page;
       width: 210mm;
       height: 297mm;
       max-height: 297mm;
       overflow: hidden;
-      page-break-after: always;
-      break-after: page;
       box-sizing: border-box;
+      position: relative;
+      background: white;
     }
     /* Force inner template container to also clip content */
     .cover-page > .cover {
@@ -462,58 +475,72 @@ function combineDocuments(coverHtml, interiorHtml) {
   </style>
 </head>
 <body>
+  ${runningHeaderHtml}
+  ${runningFooterHtml}
   <div class="cover-page">
     ${coverBody}
   </div>
-  ${interiorBody}
+  <div class="content-start">
+    ${interiorBody}
+  </div>
 </body>
 </html>`
 }
 
 /**
- * Generate PDF using PDFShift API
+ * Generate PDF using DocRaptor API (PrinceXML engine)
  */
-async function generatePdfWithPdfShift(html, startTime) {
-  const apiKey = process.env.PDFSHIFT_API_KEY
+async function generatePdfWithDocRaptor(html, startTime) {
+  const apiKey = process.env.DOCRAPTOR_API_KEY
 
   if (!apiKey) {
-    console.error(`❌ ${LOG_TAG} PDFSHIFT_API_KEY not configured`)
-    console.error(`❌ ${LOG_TAG} Available env vars:`, Object.keys(process.env).filter(k => !k.includes('SECRET') && !k.includes('KEY')).join(', '))
-    throw new Error('PDFSHIFT_API_KEY environment variable not set')
+    console.error(`${LOG_TAG} DOCRAPTOR_API_KEY not configured`)
+    throw new Error('DOCRAPTOR_API_KEY environment variable not set')
   }
 
-  console.log(`📄 ${LOG_TAG} PDFShift API key found, length: ${apiKey.length}`)
+  const isProduction = process.env.DOCRAPTOR_PRODUCTION === 'true'
 
-  const authHeader = 'Basic ' + Buffer.from(`api:${apiKey}`).toString('base64')
+  console.log(`${LOG_TAG} DocRaptor API key found, test mode: ${!isProduction}`)
+  console.log(`${LOG_TAG} Sending ${html.length} chars to DocRaptor at +${Date.now() - startTime}ms`)
 
-  console.log(`📄 ${LOG_TAG} Sending ${html.length} chars to PDFShift at +${Date.now() - startTime}ms`)
-
-  const response = await fetch(PDFSHIFT_API_URL, {
+  const response = await fetch('https://api.docraptor.com/docs', {
     method: 'POST',
     headers: {
-      'Authorization': authHeader,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      source: html,
-      format: 'A4',
-      margin: '0',
-      sandbox: false,
-      use_print: true
-    })
+      user_credentials: apiKey,
+      doc: {
+        test: !isProduction,
+        document_type: 'pdf',
+        document_content: html,
+        javascript: false,
+        prince_options: {
+          media: 'print',
+        },
+      },
+    }),
   })
 
-  console.log(`📄 ${LOG_TAG} PDFShift response status: ${response.status} at +${Date.now() - startTime}ms`)
+  console.log(`${LOG_TAG} DocRaptor response status: ${response.status} at +${Date.now() - startTime}ms`)
 
   if (!response.ok) {
     const errorText = await response.text()
-    console.error(`❌ ${LOG_TAG} PDFShift error:`, response.status, errorText)
-    throw new Error(`PDFShift API error: ${response.status} - ${errorText}`)
+    console.error(`${LOG_TAG} DocRaptor error:`, response.status, errorText)
+
+    if (response.status === 422) {
+      throw new Error(`PDF generation failed: Invalid HTML/CSS. Details: ${errorText}`)
+    } else if (response.status === 401) {
+      throw new Error('PDF generation failed: Invalid API key')
+    } else if (response.status === 429) {
+      throw new Error('PDF generation failed: Rate limited. Try again shortly.')
+    }
+    throw new Error(`DocRaptor API error: ${response.status} - ${errorText}`)
   }
 
-  // PDFShift returns the PDF as binary
   const arrayBuffer = await response.arrayBuffer()
-  console.log(`📄 ${LOG_TAG} PDFShift returned ${arrayBuffer.byteLength} bytes at +${Date.now() - startTime}ms`)
+  const pageCount = response.headers.get('X-DocRaptor-Num-Pages')
+  console.log(`${LOG_TAG} DocRaptor returned ${arrayBuffer.byteLength} bytes, ${pageCount || '?'} pages at +${Date.now() - startTime}ms`)
   return Buffer.from(arrayBuffer)
 }
 

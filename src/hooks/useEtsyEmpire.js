@@ -131,7 +131,9 @@ export function useEtsyEmpire() {
 
         if (data.status === 'completed') {
           console.log('[useEtsyEmpire] Generation complete!')
-          await fetchProjects() // Refresh list
+          // Don't await fetchProjects during poll callback - let it run in background
+          // The onUpdate callback already has the complete data with assets
+          fetchProjects().catch(err => console.error('[useEtsyEmpire] Background refresh error:', err))
           return data
         }
 

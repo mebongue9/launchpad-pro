@@ -11,12 +11,16 @@ import { useFunnels } from '../hooks/useFunnels'
 import { useToast } from '../components/ui/Toast'
 import { ProjectList } from '../components/etsy-empire/ProjectList'
 import { NewProjectModal } from '../components/etsy-empire/NewProjectModal'
+import { TemplatesTab } from '../components/etsy-empire/TemplatesTab'
 import {
   Crown,
   Plus,
   Filter,
   Loader2,
-  Trash2
+  Trash2,
+  Image,
+  FolderKanban,
+  DollarSign
 } from 'lucide-react'
 
 // Filter options
@@ -49,6 +53,9 @@ export default function EtsyEmpire() {
   } = useEtsyEmpire()
   const { funnels } = useFunnels()
   const { addToast } = useToast()
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState('projects')
 
   // Modal state
   const [showNewModal, setShowNewModal] = useState(false)
@@ -125,6 +132,13 @@ export default function EtsyEmpire() {
     return result
   }, [projects, funnelFilter, statusFilter, dateFilter])
 
+  // Calculate total cost from completed projects
+  const totalCost = useMemo(() => {
+    return projects
+      .filter(p => p.status === 'completed')
+      .reduce((sum, p) => sum + (p.actual_cost || 0), 0)
+  }, [projects])
+
   // Handle project expansion
   const handleExpand = useCallback(async (projectId) => {
     if (!projectId) {
@@ -134,7 +148,8 @@ export default function EtsyEmpire() {
     }
 
     setExpandedProject(projectId)
-    setProjectDetails(null)
+    // Don't clear projectDetails - this causes flash/vanishing when re-expanding
+    // The new data will immediately replace it when fetched
 
     try {
       const details = await getProject(projectId)
@@ -234,13 +249,62 @@ export default function EtsyEmpire() {
             Generate Etsy listing mockups and Pinterest pins from your PDF products
           </p>
         </div>
-        <Button onClick={() => setShowNewModal(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          New Generation
-        </Button>
+        <div className="flex items-center gap-4">
+          {/* Total Cost Display */}
+          {totalCost > 0 && (
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg">
+              <DollarSign className="w-4 h-4 text-blue-600" />
+              <span className="text-sm font-medium text-blue-700">
+                ${totalCost.toFixed(2)} total
+              </span>
+            </div>
+          )}
+          {activeTab === 'projects' && (
+            <Button onClick={() => setShowNewModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              New Generation
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Filters */}
+      {/* Tab Navigation */}
+      <div className="flex gap-1 p-1 bg-gray-100 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('projects')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'projects'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <FolderKanban className="w-4 h-4" />
+          Projects
+        </button>
+        <button
+          onClick={() => setActiveTab('templates')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'templates'
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          <Image className="w-4 h-4" />
+          Templates
+        </button>
+      </div>
+
+      {/* Templates Tab Content */}
+      {activeTab === 'templates' && (
+        <Card>
+          <TemplatesTab />
+        </Card>
+      )}
+
+      {/* Projects Tab Content */}
+      {activeTab === 'projects' && (
+        <>
+          {/* Filters */}
       <Card className="!p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Filter className="w-4 h-4 text-gray-400" />
@@ -322,24 +386,26 @@ export default function EtsyEmpire() {
         />
       </Card>
 
-      {/* Empty State */}
-      {!loading && projects.length === 0 && (
-        <Card className="text-center py-12">
-          <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Crown className="w-8 h-8 text-purple-600" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No Generations Yet
-          </h3>
-          <p className="text-gray-500 max-w-md mx-auto mb-4">
-            Start your first generation to create beautiful
-            listing mockups and Pinterest pins from your PDF products.
-          </p>
-          <Button onClick={() => setShowNewModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Start First Generation
-          </Button>
-        </Card>
+          {/* Empty State */}
+          {!loading && projects.length === 0 && (
+            <Card className="text-center py-12">
+              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="w-8 h-8 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Generations Yet
+              </h3>
+              <p className="text-gray-500 max-w-md mx-auto mb-4">
+                Start your first generation to create beautiful
+                listing mockups and Pinterest pins from your PDF products.
+              </p>
+              <Button onClick={() => setShowNewModal(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Start First Generation
+              </Button>
+            </Card>
+          )}
+        </>
       )}
 
       {/* New Project Modal */}

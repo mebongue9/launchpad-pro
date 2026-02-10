@@ -146,7 +146,7 @@ export function DownloadPanel({ project, assets = [], spintax = null }) {
           {spintax.master_description && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg">
               <p className="text-xs text-gray-500 uppercase mb-1">Master Description</p>
-              <p className="text-sm text-gray-700">{spintax.master_description}</p>
+              <p className="text-sm text-gray-700 line-clamp-3">{spintax.master_description}</p>
             </div>
           )}
         </div>

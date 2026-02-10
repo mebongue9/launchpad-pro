@@ -19,58 +19,88 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-// System prompt for cover analysis
-const COVER_ANALYST_PROMPT = `You are an expert CSS/HTML designer who analyzes book cover designs to determine if they can be reproduced using pure CSS/HTML.
+// System prompt for cover analysis - EXPLICIT LEFT/RIGHT EDGE COLORS
+const COVER_ANALYST_PROMPT = `You are analyzing a book cover design. Extract PRECISE spatial details.
 
-Your job is to:
-1. Evaluate if the design can be recreated with CSS/HTML (no images, no photos, no complex illustrations)
-2. Extract the 3 most prominent colors from the design
-3. Identify the layout type
-4. Suggest Google Fonts that match the typography style
+CRITICAL: Pay attention to which side of the image each color appears on.
 
 ## WHAT CSS/HTML CAN RECREATE:
-- Solid color backgrounds
-- Gradient backgrounds (linear, radial)
-- Geometric shapes (rectangles, circles, triangles via CSS)
-- Text effects (shadows, glows, outlines via text-shadow and CSS filters)
-- Borders, lines, dividers
-- Simple patterns (stripes, dots via CSS gradients or pseudo-elements)
-- Any typography style (fonts can be matched with Google Fonts)
+- Solid color backgrounds, gradient backgrounds
+- Geometric shapes, text effects, borders, lines
+- Any typography style with Google Fonts
 
 ## WHAT CSS/HTML CANNOT RECREATE:
-- Photographs or photos
-- Complex illustrations or drawings
-- 3D rendered objects
-- AI-generated imagery
-- Text behind subject (text masking with photos)
-- Complex textures (wood, marble, fabric)
-- Hand-drawn elements
-- Stock images integrated into design
+- Photographs, complex illustrations, 3D objects, AI-generated imagery
+- Text behind photos, complex textures, hand-drawn elements
 
 ## VERDICT RULES:
-- "doable": ALL elements can be CSS/HTML (solid colors, gradients, shapes, text)
-- "partially_doable": MOST elements can be done, some will be simplified (e.g., complex pattern → simple pattern)
-- "not_doable": Contains photos, 3D objects, complex illustrations, or AI-generated imagery
+- "doable": ALL elements can be CSS/HTML
+- "partially_doable": MOST elements can be done, some simplified
+- "not_doable": Contains photos, 3D objects, complex illustrations
 
 ## OUTPUT FORMAT (JSON ONLY):
 {
   "verdict": "doable" | "partially_doable" | "not_doable",
-  "explanation": "Brief explanation of what you see and why you gave this verdict",
-  "warnings": ["List of any elements that may not match exactly", "Empty array if none"],
-  "extractedColors": {
-    "primary": "#XXXXXX",
-    "secondary": "#XXXXXX",
-    "tertiary": "#XXXXXX"
+  "verdict_reason": "Why this verdict",
+
+  "colors": {
+    "primary": "#HEX - the main accent/brand color",
+    "secondary": "#HEX - second color",
+    "tertiary": "#HEX - third color or white/light for text"
   },
-  "suggestedFonts": ["Font Name 1", "Font Name 2"],
-  "layoutType": "centered" | "left-aligned" | "right-aligned" | "split"
+
+  "background": {
+    "type": "gradient" | "solid" | "split",
+
+    "left_side_color": "#HEX - what color is on the LEFT edge of the image",
+    "right_side_color": "#HEX - what color is on the RIGHT edge of the image",
+    "left_side_brightness": "dark" | "light",
+    "right_side_brightness": "dark" | "light",
+
+    "gradient_direction": "left-to-right" | "right-to-left" | "top-to-bottom" | "diagonal-tlbr" | "diagonal-trbl",
+    "gradient_css": "linear-gradient(90deg, #LEFT_COLOR 0%, #RIGHT_COLOR 100%)"
+  },
+
+  "text_placement": {
+    "horizontal_position": "left" | "center" | "right",
+    "vertical_position": "top" | "middle" | "bottom",
+    "sits_over_brightness": "dark" | "light",
+    "text_alignment": "left" | "center" | "right"
+  },
+
+  "typography": {
+    "headline_color": "#HEX",
+    "subtitle_color": "#HEX",
+    "author_color": "#HEX"
+  },
+
+  "fonts": {
+    "suggested": "Font Name",
+    "fallback": "sans-serif"
+  },
+
+  "decorative_elements": [
+    {"type": "logo-circle", "position": "top-right"},
+    {"type": "year-badge", "position": "top-left"}
+  ],
+
+  "css_reconstruction": "Write the EXACT CSS gradient needed. Example: background: linear-gradient(90deg, #1a1a1a 0%, #9AC032 100%);"
 }
 
-IMPORTANT:
-- Return ONLY valid JSON, no other text
-- Colors must be in hex format (#XXXXXX)
-- Suggest 2-3 Google Fonts that match the style
-- Layout type describes where the title is positioned`;
+## CRITICAL INSTRUCTIONS:
+1. Look at the LEFT EDGE of the image - what color is there? That's left_side_color.
+2. Look at the RIGHT EDGE of the image - what color is there? That's right_side_color.
+3. Is the LEFT side dark or light? Is the RIGHT side dark or light?
+4. Where is the text positioned? LEFT side, CENTER, or RIGHT side?
+5. Does the text sit over a DARK area or LIGHT area?
+6. Write the actual CSS gradient that would recreate this background.
+
+For the css_reconstruction field, write working CSS like:
+- "background: linear-gradient(90deg, #000000 0%, #9AC032 100%);" for dark-left to green-right
+- "background: linear-gradient(270deg, #000000 0%, #9AC032 100%);" for green-left to dark-right
+- "background: linear-gradient(135deg, #000000 0%, #9AC032 100%);" for diagonal top-left to bottom-right
+
+Output ONLY valid JSON. No markdown, no explanation.`;
 
 // Parse Claude's JSON response
 function parseJSON(text) {
@@ -173,7 +203,7 @@ export async function handler(event) {
               },
               {
                 type: 'text',
-                text: 'Analyze this book cover design. Determine if it can be reproduced with CSS/HTML, extract the colors, suggest matching fonts, and identify the layout type. Return ONLY valid JSON.'
+                text: 'Analyze this book cover design. Extract PRECISE spatial details:\n\n1. What color is on the LEFT EDGE of the image?\n2. What color is on the RIGHT EDGE of the image?\n3. Is the LEFT side dark or light?\n4. Is the RIGHT side dark or light?\n5. Where is the text? LEFT side, CENTER, or RIGHT side?\n6. Does the text sit over a DARK or LIGHT area?\n7. Write the EXACT CSS gradient to recreate this background.\n\nReturn ONLY valid JSON matching the format in your instructions.'
               }
             ]
           }

@@ -24,6 +24,9 @@ export function ProfileForm({ profile, onClose, onSuccess }) {
     social_handle: '',
     logo_url: '',
     photo_url: '',
+    promo_image_url: '',
+    promo_image_link: '',
+    promo_image_cta: '',
   })
 
   useEffect(() => {
@@ -38,6 +41,9 @@ export function ProfileForm({ profile, onClose, onSuccess }) {
         social_handle: profile.social_handle || '',
         logo_url: profile.logo_url || '',
         photo_url: profile.photo_url || '',
+        promo_image_url: profile.promo_image_url || '',
+        promo_image_link: profile.promo_image_link || '',
+        promo_image_cta: profile.promo_image_cta || '',
       })
     }
   }, [profile])
@@ -208,6 +214,54 @@ export function ProfileForm({ profile, onClose, onSuccess }) {
               type="file"
               accept="image/jpeg,image/png,image/webp"
               onChange={(e) => handleFileUpload(e, 'logo_url', 'logos')}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t pt-4 mt-2">
+        <p className="text-sm font-medium text-gray-700 mb-1">About Page Promotion (Optional)</p>
+        <p className="text-xs text-gray-500 mb-3">This image appears below your bio on the last page of every PDF.</p>
+
+        <Input
+          label="CTA Text"
+          name="promo_image_cta"
+          value={formData.promo_image_cta}
+          onChange={handleChange}
+          placeholder="Want more? Check out our full collection below"
+        />
+
+        <div className="mt-3">
+          <Input
+            label="Image Link URL"
+            name="promo_image_link"
+            value={formData.promo_image_link}
+            onChange={handleChange}
+            placeholder="https://www.etsy.com/shop/YourShop"
+          />
+        </div>
+
+        <div className="mt-3">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Promotional Image
+          </label>
+          <div className="relative">
+            {formData.promo_image_url ? (
+              <img
+                src={formData.promo_image_url}
+                alt="Promo"
+                className="w-full h-32 object-contain rounded-lg bg-gray-50"
+              />
+            ) : (
+              <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                <Upload className="w-6 h-6 text-gray-400" />
+              </div>
+            )}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={(e) => handleFileUpload(e, 'promo_image_url', 'photos')}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
           </div>

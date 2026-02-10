@@ -10,68 +10,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const LOG_TAG = '[PROCESS-COVER-GENERATION-BG]';
 
-// System prompt for generating CSS cover variations
-const COVER_GENERATOR_PROMPT = `You are an expert CSS/HTML designer who creates book cover templates.
-
-Your task is to generate 4 unique HTML/CSS variations of a book cover design based on a design analysis.
-
-## COVER SPECIFICATIONS:
-- Size: 8.5 inches wide x 11 inches tall (Letter size)
-- Must work at 150 DPI for PDF generation
-- All styling must be pure CSS (no external images)
-- Use the exact colors provided in the analysis
-
-## TEMPLATE PLACEHOLDERS (REQUIRED):
-The HTML must include these exact placeholders:
-- {{title}} - Main product title
-- {{subtitle}} - Product subtitle
-- {{author}} - Author name
-- {{handle}} - Social media handle (e.g., @username)
-- {{year}} - Current year
-
-## THE 4 VARIATIONS:
-1. **Exact Match**: Faithful reproduction of the described design
-2. **Typography Variation**: Same colors/layout, different font weight or text styling
-3. **Layout Variation**: Same colors/fonts, different element positioning
-4. **Effect Variation**: Same core design, different shadows/glows/gradient angles
-
-## CSS REQUIREMENTS:
-- Use Google Fonts (include @import in css_styles)
-- Use flexbox or grid for layout
-- Background can be solid, gradient, or pattern (CSS only)
-- Text effects via text-shadow, CSS filters, or transforms
-
-## HTML STRUCTURE:
-\`\`\`html
-<div class="cover">
-  <div class="cover-content">
-    <h1 class="title">{{title}}</h1>
-    <h2 class="subtitle">{{subtitle}}</h2>
-    <div class="author">{{author}}</div>
-    <div class="handle">{{handle}}</div>
-    <div class="year">{{year}}</div>
-  </div>
-</div>
-\`\`\`
-
-## OUTPUT FORMAT (JSON ONLY):
-[
-  {
-    "name": "Exact Match",
-    "description": "Brief description",
-    "html_template": "<div class=\\"cover\\">...</div>",
-    "css_styles": ".cover { ... }",
-    "is_gradient": true
-  }
-]
-
-## IMPORTANT RULES:
-1. Return ONLY valid JSON array, no other text
-2. All 4 variations must be complete and functional
-3. HTML must be properly escaped for JSON
-4. CSS must include the Google Font @import at the top
-5. Each variation should be noticeably different
-6. Preserve the overall aesthetic feel described`;
+// System prompt removed - now using detailed prompt in generateVariationsWithDetailedPrompt
 
 export async function handler(event) {
   console.log(`${LOG_TAG} Background function invoked`);
@@ -125,7 +64,7 @@ export async function handler(event) {
 
     // Generate variations
     console.log(`${LOG_TAG} Calling Claude API...`);
-    const variations = await generateVariations(anthropic, analysisResult);
+    const variations = await generateVariationsWithDetailedPrompt(anthropic, analysisResult);
     console.log(`${LOG_TAG} Generated ${variations.length} variations`);
 
     // Save results
@@ -157,76 +96,166 @@ export async function handler(event) {
   return { statusCode: 200 };
 }
 
-async function generateVariations(anthropic, analysisResult) {
-  const { extractedColors, suggestedFonts, layoutType, explanation, elements } = analysisResult;
+// EXPLICIT LEFT/RIGHT EDGE VERSION - Prevents gradient reversal
+async function generateVariationsWithDetailedPrompt(anthropic, analysisResult) {
+  // Extract fields from the new v3 analysis format
+  const { colors, background, text_placement, typography, fonts, decorative_elements, css_reconstruction } = analysisResult;
 
-  // Build colors object from analysis
-  const colors = extractedColors || {};
-  const fonts = {
-    suggested: suggestedFonts?.[0] || 'Inter',
-    fallback: suggestedFonts?.[1] || 'system-ui, sans-serif'
-  };
+  // Build the EXPLICIT prompt with left/right edge colors
+  const prompt = `You are an expert CSS developer. Create book cover templates that EXACTLY match the specifications.
 
-  const prompt = `Based on this analysis of a cover design, generate 4 HTML/CSS variations.
+## BACKGROUND SPECIFICATION (CRITICAL - DO NOT REVERSE)
 
-DESIGN ANALYSIS:
-- Layout Description: ${explanation || 'Modern cover design'}
-- Layout Type: ${layoutType || 'centered'}
-- Primary Color: ${colors.primary || '#000000'}
-- Secondary Color: ${colors.secondary || '#666666'}
-- Tertiary Color: ${colors.tertiary || '#CCCCCC'}
-- Font: ${fonts.suggested} (fallback: ${fonts.fallback})
-- Design Elements: ${elements?.join(', ') || 'clean typography, modern layout'}
+The background has these EXACT colors on each side:
+- LEFT EDGE of cover: ${background?.left_side_color || '#1a1a1a'} (${background?.left_side_brightness || 'dark'})
+- RIGHT EDGE of cover: ${background?.right_side_color || '#9AC032'} (${background?.right_side_brightness || 'light'})
 
-REQUIREMENTS:
-1. Variation 1 (Exact Match): Reproduce the described design as closely as possible
-2. Variation 2 (Typography): Same layout, different font weights or letter-spacing
-3. Variation 3 (Layout): Same colors, different element positioning
-4. Variation 4 (Effects): Add or modify shadows, glows, or gradient angles
+Gradient direction: ${background?.gradient_direction || 'left-to-right'}
 
-Each variation must:
-- Use the exact colors above as CSS values
-- Include all placeholders: {{title}}, {{subtitle}}, {{author}}, {{handle}}, {{year}}
-- Be complete, standalone HTML/CSS
-- Use CSS gradients (no images)
+USE THIS EXACT CSS FOR THE BACKGROUND:
+${css_reconstruction || background?.gradient_css || `background: linear-gradient(90deg, ${background?.left_side_color || '#1a1a1a'} 0%, ${background?.right_side_color || '#9AC032'} 100%);`}
 
-OUTPUT: Return ONLY a JSON array with 4 objects. No markdown, no explanation, no code blocks.`;
+⚠️ DO NOT REVERSE THE GRADIENT ⚠️
+The LEFT side must be ${background?.left_side_brightness || 'dark'} and the RIGHT side must be ${background?.right_side_brightness || 'light'}.
+
+## TEXT PLACEMENT (CRITICAL)
+
+- Text is positioned on the ${text_placement?.horizontal_position || 'left'} side of the cover
+- Text is ${text_placement?.text_alignment || 'left'}-aligned
+- Text sits over the ${text_placement?.sits_over_brightness || 'dark'} area
+- Vertical position: ${text_placement?.vertical_position || 'middle'}
+
+## COLORS
+
+- Primary/Brand: ${colors?.primary || '#9AC032'}
+- Secondary: ${colors?.secondary || '#1a1a1a'}
+- Tertiary: ${colors?.tertiary || '#FFFFFF'}
+
+## TYPOGRAPHY
+
+- Headline: ${typography?.headline_color || '#FFFFFF'}
+- Subtitle: ${typography?.subtitle_color || '#FFD700'}
+- Author: ${typography?.author_color || '#FFFFFF'}
+- Font: ${fonts?.suggested || 'Montserrat'}
+
+## DECORATIVE ELEMENTS
+
+${decorative_elements?.map(el => `- ${el.type} at ${el.position}`).join('\n') || '- Year badge at top-left\n- Logo circle at top-right'}
+
+## YOUR TASK
+
+Create 4 cover variations as a JSON array:
+
+1. **Exact Match**: Use the EXACT CSS background provided. Do not modify the gradient direction.
+2. **Typography Variation**: Same background, different font weight/spacing
+3. **Layout Variation**: Same background, slightly adjusted text positions
+4. **Effects Variation**: Same background, add subtle shadows/effects
+
+## CRITICAL CSS RULES
+
+Cover dimensions: 600px width × 800px height
+
+For the background, copy this EXACTLY:
+${css_reconstruction || background?.gradient_css || `background: linear-gradient(90deg, ${background?.left_side_color || '#1a1a1a'} 0%, ${background?.right_side_color || '#9AC032'} 100%);`}
+
+Text positioning for LEFT side placement:
+.text-container {
+  position: absolute;
+  left: 40px;           /* LEFT side */
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: left;
+  max-width: 45%;
+}
+
+Text positioning for RIGHT side placement:
+.text-container {
+  position: absolute;
+  right: 40px;          /* RIGHT side */
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: left;
+  max-width: 45%;
+}
+
+Use placeholders: {{title}}, {{subtitle}}, {{author}}, {{handle}}, {{year}}
+
+## OUTPUT FORMAT
+
+Return ONLY a JSON array with 4 objects:
+[
+  {
+    "name": "Exact Match",
+    "description": "Faithful reproduction with ${background?.left_side_brightness || 'dark'} left side and ${background?.right_side_brightness || 'light'} right side",
+    "html_template": "<div class=\\"cover\\">...</div>",
+    "css_styles": ".cover { width: 600px; height: 800px; ${css_reconstruction || background?.gradient_css || 'background: linear-gradient(90deg, #1a1a1a 0%, #9AC032 100%);'} ... }",
+    "is_gradient": true
+  },
+  ...
+]
+
+CRITICAL:
+- First character must be [
+- Last character must be ]
+- No markdown, no explanation
+- LEFT side of cover must be ${background?.left_side_brightness || 'dark'}
+- RIGHT side of cover must be ${background?.right_side_brightness || 'light'}
+- ⚠️ DO NOT REVERSE THE GRADIENT ⚠️`;
+
+  console.log(`${LOG_TAG} Calling Claude with detailed prompt...`);
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
-    max_tokens: 8000,
-    system: COVER_GENERATOR_PROMPT,
+    max_tokens: 16000, // Plenty of room for 4 detailed variations
     messages: [{ role: 'user', content: prompt }]
   });
 
   const content = response.content[0].text;
   console.log(`${LOG_TAG} Claude response length: ${content.length} chars`);
 
-  // Parse JSON (handle potential markdown code blocks)
-  let jsonStr = content;
-  if (content.includes('```json')) {
-    jsonStr = content.split('```json')[1].split('```')[0];
-  } else if (content.includes('```')) {
-    jsonStr = content.split('```')[1].split('```')[0];
+  // Parse JSON - handle potential markdown wrapping
+  let jsonStr = content.trim();
+
+  // Remove markdown code blocks if present
+  if (jsonStr.startsWith('```')) {
+    jsonStr = jsonStr.replace(/^```json?\n?/, '').replace(/\n?```$/, '');
   }
 
-  const variations = JSON.parse(jsonStr.trim());
+  // Find the JSON array boundaries
+  const startIndex = jsonStr.indexOf('[');
+  const endIndex = jsonStr.lastIndexOf(']');
 
-  // Validate we got variations
-  if (!Array.isArray(variations) || variations.length < 1) {
-    throw new Error('Did not receive valid variations array');
+  if (startIndex === -1 || endIndex === -1) {
+    console.error(`${LOG_TAG} Could not find JSON array in response:`, content.substring(0, 500));
+    throw new Error('Could not find JSON array in response');
   }
 
-  // Add colors and font to each variation for reference
+  jsonStr = jsonStr.substring(startIndex, endIndex + 1);
+
+  const variations = JSON.parse(jsonStr);
+
+  if (!Array.isArray(variations)) {
+    throw new Error('Response is not an array');
+  }
+
+  if (variations.length < 4) {
+    console.warn(`${LOG_TAG} Expected 4 variations, got ${variations.length}`);
+  }
+
+  // Ensure all required fields are present and add colors/fonts
   return variations.map((v, i) => ({
     id: i + 1,
-    ...v,
+    name: v.name || `Variation ${i + 1}`,
+    description: v.description || '',
+    html_template: v.html_template || '',
+    css_styles: v.css_styles || '',
+    is_gradient: v.is_gradient ?? true,
     colors: {
-      primary: colors.primary,
-      secondary: colors.secondary,
-      tertiary: colors.tertiary
+      primary: colors?.primary || '#9AC032',
+      secondary: colors?.secondary || '#1a1a1a',
+      tertiary: colors?.tertiary || '#FFFFFF'
     },
-    font_family: fonts.suggested,
-    font_family_url: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts.suggested)}:wght@400;700;900&display=swap`
+    font_family: fonts?.suggested || 'Montserrat',
+    font_family_url: `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fonts?.suggested || 'Montserrat')}:wght@400;700;900&display=swap`
   }));
 }

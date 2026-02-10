@@ -280,6 +280,11 @@ Generate 3 lead magnet ideas now. Remember:
 - Each idea bridges to the target product
 `;
 
+    // Validate that all formats are from the 6 approved formats
+    const approvedFormats = [
+      'Checklist', 'Worksheet', 'Planner', 'Swipe File', 'Blueprint', 'Cheat Sheet'
+    ];
+
     console.log(`🔄 ${LOG_TAG} Calling Claude API to generate ideas...`);
     console.log(`🔄 ${LOG_TAG} Using model: claude-sonnet-4-20250514`);
 
@@ -300,11 +305,7 @@ Generate 3 lead magnet ideas now. Remember:
     const ideas = parseClaudeJSON(response.content[0].text);
     console.log(`✅ ${LOG_TAG} JSON parsed successfully, got ${ideas.ideas?.length || 0} ideas`);
 
-    // Validate that all formats are from the 6 approved formats
-    const approvedFormats = [
-      'Checklist', 'Worksheet', 'Planner', 'Swipe File', 'Blueprint', 'Cheat Sheet'
-    ];
-
+    // Format validation
     if (ideas.ideas) {
       console.log(`🔄 ${LOG_TAG} Validating formats for ${ideas.ideas.length} ideas...`);
       ideas.ideas = ideas.ideas.map((idea, index) => {

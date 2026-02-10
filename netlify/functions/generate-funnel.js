@@ -249,6 +249,7 @@ Generate the funnel architecture now. Remember:
 - Ground product ideas in the knowledge context above when available
 `;
 
+    // Call Claude API
     console.log(LOG_TAG + ' Calling Claude API (claude-sonnet-4-20250514)...');
     const response = await anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',

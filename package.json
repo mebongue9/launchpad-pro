@@ -16,6 +16,7 @@
     "@sparticuz/chromium": "^131.0.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tinymce/tinymce-react": "^6.3.0",
+    "busboy": "^1.6.0",
     "google-auth-library": "^10.5.0",
     "lucide-react": "^0.562.0",
     "marked": "^12.0.0",
