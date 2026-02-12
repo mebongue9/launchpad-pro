@@ -27,7 +27,8 @@ import {
   Sparkles,
   Edit2,
   Save,
-  X
+  X,
+  RefreshCw
 } from 'lucide-react'
 
 // Safe JSON parse helper - prevents crashes from invalid JSON
@@ -148,6 +149,10 @@ export default function LeadMagnetDetails() {
   const [editedContent, setEditedContent] = useState(null)
   const [saving, setSaving] = useState(false)
 
+  // Ninja Pin sync state
+  const [syncing, setSyncing] = useState(false)
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false)
+
   // Fetch lead magnet with all fields
   const fetchLeadMagnetDetails = useCallback(async () => {
     if (!user || !id) return
@@ -156,7 +161,7 @@ export default function LeadMagnetDetails() {
     try {
       const { data, error } = await supabase
         .from('lead_magnets')
-        .select('*, profiles(name, business_name), funnels(name)')
+        .select('*, profiles(name, business_name), funnels(name, status)')
         .eq('id', id)
         .eq('user_id', user.id)
         .single()
@@ -224,6 +229,34 @@ export default function LeadMagnetDetails() {
       addToast('Failed to save content', 'error')
     } finally {
       setSaving(false)
+    }
+  }
+
+  // Sync to Ninja Pin handler
+  const handleSyncToNinjaPin = async () => {
+    setShowSyncConfirm(false)
+    setSyncing(true)
+    try {
+      const response = await fetch('/.netlify/functions/sync-to-ninja-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead_magnet_id: id })
+      })
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Sync failed')
+      }
+      if (data.failed_count === 0) {
+        addToast(`Synced ${data.synced_count}/6 products to Ninja Pin`, 'success')
+        fetchLeadMagnetDetails()
+      } else {
+        const failed = data.results.filter(r => !r.success).map(r => r.product).join(', ')
+        addToast(`Synced ${data.synced_count}/6 products. Failed: ${failed}`, 'error')
+      }
+    } catch (err) {
+      addToast(err.message || 'Failed to sync to Ninja Pin', 'error')
+    } finally {
+      setSyncing(false)
     }
   }
 
@@ -300,6 +333,19 @@ export default function LeadMagnetDetails() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {leadMagnet.funnels?.status === 'ready' && (
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => setShowSyncConfirm(true)}
+              disabled={syncing}
+            >
+              {syncing
+                ? <><Loader2 className="w-4 h-4 mr-1 animate-spin" />Syncing...</>
+                : <><RefreshCw className="w-4 h-4 mr-1" />Sync to Ninja Pin</>
+              }
+            </Button>
+          )}
           <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">{leadMagnet.keyword}</span>
           <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">{leadMagnet.format}</span>
         </div>
@@ -752,6 +798,27 @@ export default function LeadMagnetDetails() {
           </Card>
         )}
       </div>
+
+      {/* Ninja Pin Sync Confirmation Modal */}
+      {showSyncConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Sync to Ninja Pin?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              This will sync all 6 products (Lead Magnet + Front-End + Bump + Upsell 1 + Upsell 2 + Bundle) to Ninja Pin.
+            </p>
+            {leadMagnet.ninja_pin_synced_at && (
+              <p className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                This funnel was already synced to Ninja Pin on {new Date(leadMagnet.ninja_pin_synced_at).toLocaleDateString()}. Syncing again will create duplicate tasks. Are you sure?
+              </p>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button variant="secondary" onClick={() => setShowSyncConfirm(false)}>Cancel</Button>
+              <Button variant="primary" onClick={handleSyncToNinjaPin}>Sync</Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
