@@ -195,22 +195,19 @@ html, body {
   min-height: 220mm;
 }
 
-/* Continuous content area — chapters flow without forced breaks */
+/* Content area — chapters start on new pages (professional book layout) */
 .content-area {
-  padding: 12px 0 20px 0;
+  padding: 0;
 }
 
-/* Chapter section — visual separation between chapters */
+/* Chapter section — each chapter starts on a new page */
 .chapter-section {
-  margin-top: 60px;
-  padding-top: 30px;
-  border-top: 2px solid var(--primary-color);
+  break-before: page;
 }
 
+/* First chapter does NOT force a page break (starts right after cover) */
 .chapter-section:first-child {
-  margin-top: 0;
-  padding-top: 0;
-  border-top: none;
+  break-before: auto;
 }
 
 /* ============================================
@@ -423,9 +420,13 @@ p a {
 .promo-section {
   margin-top: 30px;
   text-align: center;
-  max-width: 140mm;
+  max-width: 160mm;
   margin-left: auto;
   margin-right: auto;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .promo-cta {
@@ -436,7 +437,8 @@ p a {
 
 .promo-section img {
   max-width: 100%;
-  max-height: 350px;
+  max-height: 500px;
+  width: 100%;
   object-fit: contain;
   border-radius: 8px;
 }
@@ -450,6 +452,11 @@ p a {
 .callout,
 .cross-promo-wrapper {
   page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+/* Chapter intro block — keeps heading + first content block together on same page */
+.chapter-intro {
   break-inside: avoid;
 }
 
@@ -1092,10 +1099,25 @@ p, li, .body-text, .step-text, .step-bullet {
    ============================================ */
 .cross-promo-wrapper {
   background: var(--light-bg);
-  border: 1px solid var(--primary-color);
+  border: 2px solid var(--primary-color);
   border-radius: 8px;
-  padding: 20px 24px;
-  margin-top: 30px;
+  padding: 24px 28px 20px 28px;
+  margin-top: 36px;
+  position: relative;
+}
+
+/* "WHAT'S NEXT" header badge */
+.cross-promo-wrapper::before {
+  content: "WHAT'S NEXT";
+  display: block;
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--primary-color);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--primary-color);
 }
 
 /* Hide the "---" separator inside cross-promo (it's just a marker) */
@@ -1114,11 +1136,19 @@ p, li, .body-text, .step-text, .step-bullet {
   margin-bottom: 0;
 }
 
+/* Button-like CTA link styling */
 .cross-promo-wrapper a {
-  color: var(--primary-color);
+  display: inline-block;
+  color: white;
+  background: var(--primary-color);
   font-weight: 700;
-  text-decoration: underline;
+  text-decoration: none;
   font-size: 12pt;
+  padding: 10px 24px;
+  border-radius: 6px;
+  margin-top: 8px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .phase-header,
@@ -1133,6 +1163,35 @@ p, li, .body-text, .step-text, .step-bullet {
   break-after: avoid !important;
 }
 `
+}
+
+/**
+ * Split HTML at the first block-level element boundary.
+ * Returns { first, rest } where 'first' is the first block element
+ * and 'rest' is everything after it.
+ * Used to group the first content block with the chapter heading
+ * inside .chapter-intro to prevent orphaned chapter titles.
+ */
+function splitFirstBlock(html) {
+  if (!html || !html.trim()) return { first: '', rest: '' }
+
+  const trimmed = html.trim()
+
+  // Find the first block-level closing tag
+  // Matches </p>, </div>, </ul>, </ol>, </table>, </blockquote>
+  const blockEndRegex = /<\/(p|div|ul|ol|table|blockquote)>/
+  const match = blockEndRegex.exec(trimmed)
+
+  if (!match) {
+    // No block element found, return everything as first
+    return { first: trimmed, rest: '' }
+  }
+
+  const splitPos = match.index + match[0].length
+  return {
+    first: trimmed.substring(0, splitPos),
+    rest: trimmed.substring(splitPos)
+  }
 }
 
 /**
@@ -1223,15 +1282,19 @@ function renderChapterPage(chapter, chapterNum, pageNum, profile, format = '') {
     default:
       // Default: use existing content parser
       const parsedContent = wrapCrossPromo(parseChapterContent(content))
+      const { first: firstBlock, rest: restBlocks } = splitFirstBlock(parsedContent)
       return `
   <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-heading">
-        <div class="chapter-label">Chapter ${chapterNum}</div>
-        <h1 class="chapter-title">${escapeHtml(title)}</h1>
-        <div class="divider"></div>
+      <div class="chapter-intro">
+        <div class="chapter-heading">
+          <div class="chapter-label">Chapter ${chapterNum}</div>
+          <h1 class="chapter-title">${escapeHtml(title)}</h1>
+          <div class="divider"></div>
+        </div>
+        ${firstBlock}
       </div>
-      ${parsedContent}
+      ${restBlocks}
     </div>
   </div>`
   }
@@ -1259,14 +1322,18 @@ function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
         </div>
       </div>`).join(''))
 
+  const { first: firstStep, rest: restSteps } = splitFirstBlock(stepsHtml)
   return `
   <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-heading">
-        <div class="chapter-label">CHAPTER ${chapterNum}</div>
-        <h1 class="chapter-title">${escapeHtml(title)}</h1>
+      <div class="chapter-intro">
+        <div class="chapter-heading">
+          <div class="chapter-label">CHAPTER ${chapterNum}</div>
+          <h1 class="chapter-title">${escapeHtml(title)}</h1>
+        </div>
+        ${firstStep}
       </div>
-      ${stepsHtml}
+      ${restSteps}
     </div>
   </div>`
 }
@@ -1295,13 +1362,15 @@ function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
   return `
   <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-heading">
-        <div class="chapter-label">CHAPTER ${chapterNum}</div>
-        <h1 class="chapter-title">${escapeHtml(title)}</h1>
-      </div>
-      <div class="cheat-card">
-        <div class="cheat-card-title">${escapeHtml(title)}</div>
-        ${sectionsHtml}
+      <div class="chapter-intro">
+        <div class="chapter-heading">
+          <div class="chapter-label">CHAPTER ${chapterNum}</div>
+          <h1 class="chapter-title">${escapeHtml(title)}</h1>
+        </div>
+        <div class="cheat-card">
+          <div class="cheat-card-title">${escapeHtml(title)}</div>
+          ${sectionsHtml}
+        </div>
       </div>
     </div>
   </div>`
@@ -1321,23 +1390,25 @@ function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
   return `
   <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-heading">
-        <div class="chapter-label">WEEK ${chapterNum}</div>
-        <h1 class="chapter-title">${escapeHtml(title)}</h1>
-      </div>
-      <div class="day-block">
-        <div class="day-header">DAY ${chapterNum}</div>
-        ${wrapCrossPromo(tasks.map((task, i) => `
-        <div class="task-item">
-          <div class="task-checkbox"></div>
-          <div class="task-content">
-            <div class="task-time">${task.time || `${7 + i}:00 AM`}</div>
-            <div class="task-title">${escapeHtml(task.title || `Task ${i + 1}`)}</div>
-            <div class="task-details">
-              <p>${parseMarkdown(task.text)}</p>
+      <div class="chapter-intro">
+        <div class="chapter-heading">
+          <div class="chapter-label">WEEK ${chapterNum}</div>
+          <h1 class="chapter-title">${escapeHtml(title)}</h1>
+        </div>
+        <div class="day-block">
+          <div class="day-header">DAY ${chapterNum}</div>
+          ${wrapCrossPromo(tasks.map((task, i) => `
+          <div class="task-item">
+            <div class="task-checkbox"></div>
+            <div class="task-content">
+              <div class="task-time">${task.time || `${7 + i}:00 AM`}</div>
+              <div class="task-title">${escapeHtml(task.title || `Task ${i + 1}`)}</div>
+              <div class="task-details">
+                <p>${parseMarkdown(task.text)}</p>
+              </div>
             </div>
-          </div>
-        </div>`).join(''))}
+          </div>`).join(''))}
+        </div>
       </div>
     </div>
   </div>`
@@ -1357,14 +1428,16 @@ function renderSwipeFilePage(chapter, chapterNum, pageNum, profile) {
   return `
   <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-heading">
-        <div class="chapter-label">CHAPTER ${chapterNum}</div>
-        <h1 class="chapter-title">${escapeHtml(title)}</h1>
-      </div>
-      <div class="swipe-card">
-        <div class="swipe-card-title">Template #${chapterNum}: ${escapeHtml(title)}</div>
-        <div class="swipe-content">
-          ${wrapCrossPromo(formatSwipeContent(templateContent))}
+      <div class="chapter-intro">
+        <div class="chapter-heading">
+          <div class="chapter-label">CHAPTER ${chapterNum}</div>
+          <h1 class="chapter-title">${escapeHtml(title)}</h1>
+        </div>
+        <div class="swipe-card">
+          <div class="swipe-card-title">Template #${chapterNum}: ${escapeHtml(title)}</div>
+          <div class="swipe-content">
+            ${wrapCrossPromo(formatSwipeContent(templateContent))}
+          </div>
         </div>
       </div>
     </div>
@@ -1382,14 +1455,19 @@ function renderWorksheetPage(chapter, chapterNum, pageNum, profile) {
   // Parse content into worksheet elements
   const worksheetContent = parseContentToWorksheet(content)
 
+  const wrappedContent = wrapCrossPromo(worksheetContent)
+  const { first: firstExercise, rest: restExercises } = splitFirstBlock(wrappedContent)
   return `
   <div class="chapter-section">
     <div class="page-content">
-      <div class="chapter-heading">
-        <div class="chapter-label">EXERCISE ${chapterNum}</div>
-        <h1 class="chapter-title">${escapeHtml(title)}</h1>
+      <div class="chapter-intro">
+        <div class="chapter-heading">
+          <div class="chapter-label">EXERCISE ${chapterNum}</div>
+          <h1 class="chapter-title">${escapeHtml(title)}</h1>
+        </div>
+        ${firstExercise}
       </div>
-      ${wrapCrossPromo(worksheetContent)}
+      ${restExercises}
     </div>
   </div>`
 }
@@ -1662,7 +1740,7 @@ function renderAboutPage(profile) {
     ? `<div class="promo-section">
         <p class="promo-cta">${escapeHtml(promoImageCta)}</p>
         <a href="${escapeHtml(promoImageLink)}">
-          <img src="${escapeHtml(promoImageUrl)}" style="max-width: 100%; max-height: 350px; object-fit: contain; border-radius: 8px;" alt="${escapeHtml(promoImageCta)}" />
+          <img src="${escapeHtml(promoImageUrl)}" style="max-width: 100%; max-height: 500px; width: 100%; object-fit: contain; border-radius: 8px;" alt="${escapeHtml(promoImageCta)}" />
         </a>
       </div>`
     : ''

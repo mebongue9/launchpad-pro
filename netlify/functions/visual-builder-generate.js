@@ -138,8 +138,8 @@ export async function handler(event) {
           )
           if (mainProduct?.url) {
             const linkText = mainProduct.name
-              ? `\n\n[Learn more about ${mainProduct.name}](${mainProduct.url})`
-              : `\n\n[Learn more](${mainProduct.url})`
+              ? `\n\n---\n\nIf you enjoyed this guide, you'll love what comes next.\n\n[Learn more about ${mainProduct.name}](${mainProduct.url})`
+              : `\n\n---\n\nReady for the next step?\n\n[Learn more](${mainProduct.url})`
             lastChapter.content = (lastChapter.content || '') + linkText
             console.log(`${LOG_TAG} Injected main product URL into ${productType} cross-promo: ${mainProduct.url}`)
           }
@@ -190,8 +190,8 @@ export async function handler(event) {
             const feName = lmFunnel?.front_end?.name
             if (feLink) {
               const linkText = feName
-                ? `\n\n[Learn more about ${feName}](${feLink})`
-                : `\n\n[Get started here](${feLink})`
+                ? `\n\n---\n\nIf you enjoyed this guide, you'll love what comes next.\n\n[Learn more about ${feName}](${feLink})`
+                : `\n\n---\n\nReady for the next step?\n\n[Get started here](${feLink})`
               lastChapter.content = (lastChapter.content || '') + linkText
               console.log(`${LOG_TAG} Injected front_end_link into lead magnet bridge: ${feLink}`)
             }
@@ -498,9 +498,8 @@ async function generatePdfWithDocRaptor(html, startTime) {
     throw new Error('DOCRAPTOR_API_KEY environment variable not set')
   }
 
-  const isProduction = process.env.DOCRAPTOR_PRODUCTION === 'true'
-
-  console.log(`${LOG_TAG} DocRaptor API key found, test mode: ${!isProduction}`)
+  // Always use production mode — test mode adds an unusable "TEST DOCUMENT" watermark
+  console.log(`${LOG_TAG} DocRaptor API key found, production mode`)
   console.log(`${LOG_TAG} Sending ${html.length} chars to DocRaptor at +${Date.now() - startTime}ms`)
 
   const response = await fetch('https://api.docraptor.com/docs', {
@@ -511,7 +510,7 @@ async function generatePdfWithDocRaptor(html, startTime) {
     body: JSON.stringify({
       user_credentials: apiKey,
       doc: {
-        test: !isProduction,
+        test: false,
         document_type: 'pdf',
         document_content: html,
         javascript: false,
