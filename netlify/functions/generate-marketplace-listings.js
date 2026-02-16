@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
+import { enforceTagRules } from './lib/tag-validator.js';
 
 // Initialize clients
 console.log('🔧 [MARKETPLACE] Initializing Supabase client...');
@@ -180,18 +181,11 @@ ${getLanguagePromptSuffix(language)}`;
     }
     console.log('📋 [MARKETPLACE] Title length:', listing.marketplace_title?.length, 'chars');
 
-    // Ensure exactly 13 tags
+    // Enforce Etsy tag rules: exactly 13 tags, each ≤20 chars, no duplicates
     if (listing.marketplace_tags) {
-      const tags = listing.marketplace_tags.split(',').map(t => t.trim()).slice(0, 13);
-      const originalCount = tags.length;
-      while (tags.length < 13) {
-        tags.push('digital download');
-      }
-      if (originalCount < 13) {
-        console.log('⚠️ [MARKETPLACE] Only', originalCount, 'tags generated, padded to 13');
-      }
-      listing.marketplace_tags = tags.join(', ');
-      console.log('📋 [MARKETPLACE] Final tag count: 13');
+      const validatedTags = enforceTagRules(listing.marketplace_tags);
+      listing.marketplace_tags = validatedTags.join(', ');
+      console.log('📋 [MARKETPLACE] Tags validated: 13 tags, all ≤20 chars');
     }
 
     console.log('✅ [MARKETPLACE] Listing generated for:', product.name);

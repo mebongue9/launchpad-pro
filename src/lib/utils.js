@@ -79,8 +79,8 @@ function extractFormat(text) {
 
 // Get default price for product type
 function getDefaultPrice(type) {
-  const prices = { lead_magnet: 0, front_end: 17, bump: 9, upsell_1: 47, upsell_2: 67 }
-  return prices[type] || 17
+  const prices = { lead_magnet: 0, front_end: 9.99, bump: 6.99, upsell_1: 12.99, upsell_2: 19.99 }
+  return prices[type] || 9.99
 }
 
 // Parse single line of funnel text
@@ -202,10 +202,10 @@ export function parseFunnelText(text) {
  * Example paste format for user reference
  */
 export function getExamplePasteFormat() {
-  return `💰 FRONT-END: The Complete FB Group Lead Machine - Cheat Sheet ($17)
-⚡ BUMP: 7 Welcome Sequences That Convert Cold Members - Checklist ($9)
-🚀 UPSELL 1: Done-For-You FB Group Content Calendar - Planner ($47)
-🚀 UPSELL 2: 30-Day Content Calendar + Captions - Swipe File ($67)`
+  return `💰 FRONT-END: The Complete FB Group Lead Machine - Cheat Sheet ($9.99)
+⚡ BUMP: 7 Welcome Sequences That Convert Cold Members - Checklist ($6.99)
+🚀 UPSELL 1: Done-For-You FB Group Content Calendar - Planner ($12.99)
+🚀 UPSELL 2: 30-Day Content Calendar + Captions - Swipe File ($19.99)`
 }
 
 /**

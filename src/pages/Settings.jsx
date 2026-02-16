@@ -31,6 +31,7 @@ import {
 } from 'lucide-react'
 import FavoriteLanguagesManager from '../components/settings/FavoriteLanguagesManager'
 import GenerationSettingsSection from '../components/settings/GenerationSettingsSection'
+import PricingSettingsSection from '../components/settings/PricingSettingsSection'
 
 export default function Settings() {
   const { user, signOut, updatePassword } = useAuth()
@@ -278,6 +279,9 @@ export default function Settings() {
           loading={savingLanguages}
         />
       </Card>
+
+      {/* Pricing Defaults */}
+      <PricingSettingsSection />
 
       {/* Generation Settings */}
       <GenerationSettingsSection />

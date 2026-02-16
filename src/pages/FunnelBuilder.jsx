@@ -236,19 +236,19 @@ export default function FunnelBuilder() {
         funnel_name: manualFunnel.funnel_name,
         front_end: {
           name: manualFunnel.front_end.name,
-          price: parseFloat(manualFunnel.front_end.price) || 17,
+          price: parseFloat(manualFunnel.front_end.price) || 9.99,
           description: manualFunnel.front_end.description,
           format: manualFunnel.front_end.format || 'digital product'
         },
         bump: manualFunnel.bump.name ? {
           name: manualFunnel.bump.name,
-          price: parseFloat(manualFunnel.bump.price) || 9,
+          price: parseFloat(manualFunnel.bump.price) || 6.99,
           description: manualFunnel.bump.description,
           format: manualFunnel.bump.format || 'templates'
         } : null,
         upsell_1: manualFunnel.upsell_1.name ? {
           name: manualFunnel.upsell_1.name,
-          price: parseFloat(manualFunnel.upsell_1.price) || 67,
+          price: parseFloat(manualFunnel.upsell_1.price) || 12.99,
           description: manualFunnel.upsell_1.description,
           format: manualFunnel.upsell_1.format || 'course'
         } : null

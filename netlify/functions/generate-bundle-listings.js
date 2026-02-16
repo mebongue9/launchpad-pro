@@ -6,6 +6,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
+import { enforceTagRules } from './lib/tag-validator.js';
 
 // Initialize clients
 console.log('🔧 [BUNDLE] Initializing Supabase client...');
@@ -178,7 +179,24 @@ export async function handler(event) {
     }
 
     const totalIndividualPrice = products.reduce((sum, p) => sum + parseFloat(p.price || 0), 0);
-    const bundlePrice = Math.round(totalIndividualPrice * 0.45);
+
+    // Load bundle discount from app_settings
+    let discountPct = 55;
+    try {
+      const { data: discountSetting } = await supabase
+        .from('app_settings')
+        .select('value')
+        .eq('key', 'bundle_discount_percent')
+        .single();
+      if (discountSetting?.value) {
+        discountPct = parseInt(discountSetting.value) || 55;
+      }
+    } catch (e) {
+      console.log('⚠️ [BUNDLE] Could not load discount setting, using default 55%');
+    }
+
+    const payPercent = (100 - discountPct) / 100;
+    const bundlePrice = Math.round(totalIndividualPrice * payPercent);
     const savings = totalIndividualPrice - bundlePrice;
     const discountPercent = Math.round((savings / totalIndividualPrice) * 100);
 
@@ -264,6 +282,13 @@ ${getLanguagePromptSuffix(language)}`;
     }
     console.log('📋 [BUNDLE] Title:', bundleListing.title?.substring(0, 60) + '...');
     console.log('📋 [BUNDLE] Title length:', bundleListing.title?.length, 'chars');
+
+    // Enforce Etsy tag rules: exactly 13 tags, each ≤20 chars, no duplicates
+    if (bundleListing.tags) {
+      const validatedTags = enforceTagRules(bundleListing.tags);
+      bundleListing.tags = validatedTags.join(', ');
+      console.log('📋 [BUNDLE] Tags validated: 13 tags, all ≤20 chars');
+    }
 
     // Save bundle to database
     const bundleData = {

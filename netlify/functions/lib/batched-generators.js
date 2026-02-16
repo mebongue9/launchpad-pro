@@ -12,6 +12,9 @@ import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { parseClaudeJSON } from '../utils/sanitize-json.js';
 import { searchKnowledgeWithMetrics, logRagRetrieval } from './knowledge-search.js';
+import { correctProductContent } from './content-format-corrector.js';
+import { validateGeneratedContent } from './content-validator.js';
+import { enforceTagRules } from './tag-validator.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
@@ -304,6 +307,23 @@ All content must be written entirely in ${language}.
 Do not include any English unless the user's language is English.`;
 }
 
+// Content format requirement block - appended to all 9 content-generating prompts
+const CONTENT_FORMAT_REQUIREMENT = `
+
+CRITICAL FORMAT REQUIREMENT:
+The "content" field in each chapter JSON must be a plain text / markdown string.
+Write continuous readable prose — paragraphs, bullet points, checkbox items as TEXT.
+Do NOT return JSON objects, arrays, key-value pairs, or nested structures as chapter content.
+Do NOT use nested objects like { "category_name": { "items": [...] } } inside content.
+
+CORRECT: "content": "Here are the top 5 viral hook formulas:\\n\\n1. The Curiosity Hook..."
+WRONG: "content": { "hook_categories": { "emotional": ["formula1"] } }
+
+If the topic involves lists, write them as markdown text with bullet points or numbered items — NOT as JSON arrays.`;
+
+// System prompt for content generators that lack one
+const CONTENT_SYSTEM_PROMPT_BASE = `You are a digital product content writer. Generate structured chapter content as plain text/markdown strings. Each chapter's "content" field must be a readable text string — never a JSON object or array. Return valid JSON for each section separated by the exact separator.`;
+
 // Helper: Get funnel data (including Main Product for cross-promo)
 // SCHEMA-VERIFIED: front_end, bump, upsell_1, upsell_2 are JSONB columns, NOT FK relationships
 async function getFunnelData(funnelId) {
@@ -454,7 +474,7 @@ Section 4 - CHAPTER 3 (JSON):
   "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 400-600 words]"
 }
 
-IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.${getLanguagePromptSuffix(funnel.language)}`;
+IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each section. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   console.log(`🔄 ${LOG_TAG} Calling Claude API for batched generation...`);
 
@@ -477,11 +497,15 @@ IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each se
   const chapter2 = parseClaudeJSON(sections[2]);
   const chapter3 = parseClaudeJSON(sections[3]);
 
+  // Correct + validate before saving
+  const correctedData = correctProductContent({ chapters: [chapter1, chapter2, chapter3] });
+  validateGeneratedContent(correctedData, 'LeadMagnetPart1');
+
   // Save Part 1 to content column as JSON (Part 2 will read this)
   // SCHEMA-VERIFIED: lead_magnets has 'content' column, not 'cover_data' or 'chapters'
   const part1Content = JSON.stringify({
     cover: cover,
-    chapters: [chapter1, chapter2, chapter3],
+    chapters: correctedData.chapters,
     part: 1,
     generated_at: new Date().toISOString()
   });
@@ -504,7 +528,7 @@ IMPORTANT: Use ONLY the creator's knowledge above. Return valid JSON for each se
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part1', ragMetrics);
 
-  return { cover, chapter1, chapter2, chapter3 };
+  return { cover, chapter1: correctedData.chapters[0], chapter2: correctedData.chapters[1], chapter3: correctedData.chapters[2] };
 }
 
 // Task 2: Lead Magnet Part 2 (Chapters 4-5 with embedded cross-promo promoting Front-End)
@@ -584,11 +608,12 @@ Section 2 - CHAPTER 5 (JSON):
   "content": "[400-600 words following FORMAT INSTRUCTIONS - wrap up content AND include a natural cross-promo paragraph at the end promoting ${frontend.name}]"
 }
 
-Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.${getLanguagePromptSuffix(funnel.language)}`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS - structure content according to the specified format type.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 12000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -597,20 +622,27 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   const chapter4 = parseClaudeJSON(sections[0]);
   const chapter5 = parseClaudeJSON(sections[1]);
 
+  // Correct content before cross-promo check
+  const correctedPart2 = correctProductContent({ chapters: [chapter4, chapter5] });
+  const [corrCh4, corrCh5] = correctedPart2.chapters;
+
   // Ensure cross-promo WITH URL is embedded in chapter 5 content
   // Check for markdown link presence, not just product name (AI may mention name without URL)
-  if (chapter5.content && crossPromo) {
-    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter5.content);
+  if (corrCh5.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(corrCh5.content);
     if (!hasMarkdownLink) {
-      chapter5.content += crossPromo;
+      corrCh5.content += crossPromo;
     }
   }
+
+  // Validate after correction
+  validateGeneratedContent({ chapters: [corrCh4, corrCh5] }, 'LeadMagnetPart2');
 
   // Combine Part 1 + Part 2 and save complete content
   // SCHEMA-VERIFIED: save to 'content' column, not 'chapters'
   const fullContent = JSON.stringify({
     cover: existingCover,
-    chapters: [...previousChapters, chapter4, chapter5],
+    chapters: [...previousChapters, corrCh4, corrCh5],
     part: 2,
     complete: true,
     generated_at: new Date().toISOString()
@@ -634,7 +666,7 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'lead-magnet-part2', ragMetrics);
 
-  return { chapter4, chapter5 };
+  return { chapter4: corrCh4, chapter5: corrCh5 };
 }
 
 // Task 3: Front-End Part 1 (Cover + Chapters 1-3)
@@ -710,11 +742,12 @@ Section 4 - CHAPTER 3 (JSON):
   "content": "[500-800 words following FORMAT INSTRUCTIONS above]"
 }
 
-Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -726,11 +759,15 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   const chapter2 = parseClaudeJSON(sections[2]);
   const chapter3 = parseClaudeJSON(sections[3]);
 
+  // Correct + validate before saving
+  const correctedFE1 = correctProductContent({ chapters: [chapter1, chapter2, chapter3] });
+  validateGeneratedContent(correctedFE1, 'FrontendPart1');
+
   // Store content in funnel's JSONB column (front_end is JSONB, not a separate table)
   const updatedFrontend = {
     ...funnel.front_end,
     cover_data: cover,
-    chapters: [chapter1, chapter2, chapter3]
+    chapters: correctedFE1.chapters
   };
 
   await supabase.from('funnels').update({
@@ -743,7 +780,7 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'frontend-part1', ragMetrics);
 
-  return { cover, chapter1, chapter2, chapter3 };
+  return { cover, chapter1: correctedFE1.chapters[0], chapter2: correctedFE1.chapters[1], chapter3: correctedFE1.chapters[2] };
 }
 
 // Task 4: Front-End Part 2 (Chapters 4-6 with embedded cross-promo promoting Main Product)
@@ -821,11 +858,12 @@ Section 3 - CHAPTER 6 (JSON):
   "content": "[500-800 words following FORMAT INSTRUCTIONS - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
+Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow the FORMAT INSTRUCTIONS.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 14000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -836,16 +874,23 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
 
+  // Correct content before cross-promo check
+  const correctedFE2 = correctProductContent({ chapters: [chapter4, chapter5, chapter6] });
+  const [corrCh4FE, corrCh5FE, corrCh6FE] = correctedFE2.chapters;
+
   // Ensure cross-promo WITH URL is embedded in last chapter
   // Check for markdown link presence, not just product name (AI may mention name without URL)
-  if (chapter6.content && crossPromo) {
-    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter6.content);
+  if (corrCh6FE.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(corrCh6FE.content);
     if (!hasMarkdownLink) {
-      chapter6.content += crossPromo;
+      corrCh6FE.content += crossPromo;
     }
   }
 
-  const allChapters = [...previousChapters, chapter4, chapter5, chapter6];
+  // Validate after correction
+  validateGeneratedContent(correctedFE2, 'FrontendPart2');
+
+  const allChapters = [...previousChapters, corrCh4FE, corrCh5FE, corrCh6FE];
 
   // Store content in funnel's JSONB column (front_end is JSONB, not a separate table)
   const updatedFrontend = {
@@ -863,7 +908,7 @@ Use creator's knowledge. Return valid JSON. CRITICAL: The content MUST follow th
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'frontend-part2', ragMetrics);
 
-  return { chapter4, chapter5, chapter6 };
+  return { chapter4: corrCh4FE, chapter5: corrCh5FE, chapter6: corrCh6FE };
 }
 
 // Task 5: Bump Full Product (short format with embedded cross-promo promoting Main Product)
@@ -937,11 +982,12 @@ Section 3 - CHAPTER 2 (JSON):
   "content": "[300-400 words following FORMAT INSTRUCTIONS - actionable steps AND end with brief cross-promo for ${promoProductName}]"
 }
 
-Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
+Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 10000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -952,20 +998,27 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITIC
   const chapter1 = parseClaudeJSON(sections[1]);
   const chapter2 = parseClaudeJSON(sections[2]);
 
+  // Correct content before cross-promo check
+  const correctedBump = correctProductContent({ chapters: [chapter1, chapter2] });
+  const [corrCh1B, corrCh2B] = correctedBump.chapters;
+
   // Ensure cross-promo WITH URL is embedded in last chapter
   // Check for markdown link presence, not just product name (AI may mention name without URL)
-  if (chapter2.content && crossPromo) {
-    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter2.content);
+  if (corrCh2B.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(corrCh2B.content);
     if (!hasMarkdownLink) {
-      chapter2.content += crossPromo;
+      corrCh2B.content += crossPromo;
     }
   }
+
+  // Validate after correction
+  validateGeneratedContent(correctedBump, 'BumpFull');
 
   // Store content in funnel's JSONB column (bump is JSONB, not a separate table)
   const updatedBump = {
     ...funnel.bump,
     cover_data: cover,
-    chapters: [chapter1, chapter2]
+    chapters: [corrCh1B, corrCh2B]
   };
 
   await supabase.from('funnels').update({
@@ -978,7 +1031,7 @@ Keep it SHORT and ACTIONABLE. Use creator's knowledge. Return valid JSON. CRITIC
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'bump', ragMetrics);
 
-  return { cover, chapter1, chapter2 };
+  return { cover, chapter1: corrCh1B, chapter2: corrCh2B };
 }
 
 // Task 6: Upsell 1 Part 1 (Cover + First Half)
@@ -999,7 +1052,7 @@ export async function generateUpsell1Part1(funnelId) {
 
   const prompt = `${knowledge}
 
-Generate COVER and FIRST HALF for this upsell product.
+Generate COVER and FIRST 3 CHAPTERS for this upsell product.
 
 PRODUCT: ${upsell1.name} ($${upsell1.price})
 Format: ${upsell1?.format || 'General'}
@@ -1012,13 +1065,51 @@ The content structure MUST match the format above. If the format is "Checklist",
 
 Generate 4 sections separated by: ${SECTION_SEPARATOR}
 
-Section 1 - COVER (JSON), Section 2-4 - CHAPTERS 1-3 (JSON following FORMAT INSTRUCTIONS)
+Section 1 - COVER PAGE (JSON):
+{
+  "type": "cover",
+  "title": "${upsell1.name}",
+  "subtitle": "${upsell1.description?.substring(0, 60) || ''}",
+  "author": "By ${profile?.name || 'Author'}",
+  "price": "$${upsell1.price}"
+}
 
-Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JSON.${getLanguagePromptSuffix(funnel.language)}`;
+${SECTION_SEPARATOR}
+
+Section 2 - CHAPTER 1 (JSON):
+{
+  "type": "chapter",
+  "number": 1,
+  "title": "Chapter 1: [Compelling Title]",
+  "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 600-800 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 3 - CHAPTER 2 (JSON):
+{
+  "type": "chapter",
+  "number": 2,
+  "title": "Chapter 2: [Compelling Title]",
+  "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 600-800 words]"
+}
+
+${SECTION_SEPARATOR}
+
+Section 4 - CHAPTER 3 (JSON):
+{
+  "type": "chapter",
+  "number": 3,
+  "title": "Chapter 3: [Compelling Title]",
+  "content": "[Full chapter content following the FORMAT INSTRUCTIONS above - 600-800 words]"
+}
+
+Use creator's knowledge. Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 16000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1027,11 +1118,15 @@ Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JS
   const cover = parseClaudeJSON(sections[0]);
   const chapters = [parseClaudeJSON(sections[1]), parseClaudeJSON(sections[2]), parseClaudeJSON(sections[3])];
 
+  // Correct + validate before saving
+  const correctedU1P1 = correctProductContent({ chapters });
+  validateGeneratedContent(correctedU1P1, 'Upsell1Part1');
+
   // Store content in funnel's JSONB column (upsell_1 is JSONB, not a separate table)
   const updatedUpsell1 = {
     ...funnel.upsell_1,
     cover_data: cover,
-    chapters: chapters
+    chapters: correctedU1P1.chapters
   };
 
   await supabase.from('funnels').update({
@@ -1044,7 +1139,7 @@ Use 600-800 words per chapter following the FORMAT INSTRUCTIONS. Return valid JS
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell1-part1', ragMetrics);
 
-  return { cover, chapters };
+  return { cover, chapters: correctedU1P1.chapters };
 }
 
 // Task 7: Upsell 1 Part 2 (Second Half with embedded cross-promo promoting Main Product)
@@ -1117,11 +1212,12 @@ Section 3 - CHAPTER 6 (JSON):
   "content": "[600-800 words following FORMAT INSTRUCTIONS - wrap up AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
+Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 14000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1131,19 +1227,26 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffi
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
 
+  // Correct content before cross-promo check
+  const correctedU1P2 = correctProductContent({ chapters: [chapter4, chapter5, chapter6] });
+  const [corrCh4U1, corrCh5U1, corrCh6U1] = correctedU1P2.chapters;
+
   // Ensure cross-promo WITH URL is embedded in last chapter
   // Check for markdown link presence, not just product name (AI may mention name without URL)
-  if (chapter6.content && crossPromo) {
-    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter6.content);
+  if (corrCh6U1.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(corrCh6U1.content);
     if (!hasMarkdownLink) {
-      chapter6.content += crossPromo;
+      corrCh6U1.content += crossPromo;
     }
   }
+
+  // Validate after correction
+  validateGeneratedContent(correctedU1P2, 'Upsell1Part2');
 
   // Store content in funnel's JSONB column (upsell_1 is JSONB, not a separate table)
   const updatedUpsell1 = {
     ...funnel.upsell_1,
-    chapters: [...previousChapters, chapter4, chapter5, chapter6]
+    chapters: [...previousChapters, corrCh4U1, corrCh5U1, corrCh6U1]
   };
 
   await supabase.from('funnels').update({
@@ -1156,7 +1259,7 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffi
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell1-part2', ragMetrics);
 
-  return { chapter4, chapter5, chapter6 };
+  return { chapter4: corrCh4U1, chapter5: corrCh5U1, chapter6: corrCh6U1 };
 }
 
 // Task 8: Upsell 2 Part 1 (Cover + First Half)
@@ -1199,7 +1302,7 @@ Your response MUST follow this EXACT structure:
 {"type":"chapter","number":3,"title":"Chapter 3: ...","content":"..."}
 
 Each chapter content should be 600-800 words following the FORMAT INSTRUCTIONS above.
-Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== between each.${getLanguagePromptSuffix(funnel.language)}`;
+Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== between each.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
@@ -1213,11 +1316,15 @@ Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== be
   const cover = parseClaudeJSON(sections[0]);
   const chapters = [parseClaudeJSON(sections[1]), parseClaudeJSON(sections[2]), parseClaudeJSON(sections[3])];
 
+  // Correct + validate before saving
+  const correctedU2P1 = correctProductContent({ chapters });
+  validateGeneratedContent(correctedU2P1, 'Upsell2Part1');
+
   // Store content in funnel's JSONB column (upsell_2 is JSONB, not a separate table)
   const updatedUpsell2 = {
     ...funnel.upsell_2,
     cover_data: cover,
-    chapters: chapters
+    chapters: correctedU2P1.chapters
   };
 
   await supabase.from('funnels').update({
@@ -1230,7 +1337,7 @@ Do NOT wrap in markdown code blocks. Output raw JSON with ===SECTION_BREAK=== be
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell2-part1', ragMetrics);
 
-  return { cover, chapters };
+  return { cover, chapters: correctedU2P1.chapters };
 }
 
 // Task 9: Upsell 2 Part 2 (Second Half with embedded cross-promo promoting Main Product)
@@ -1304,11 +1411,12 @@ Section 3 - CHAPTER 6 (JSON):
   "content": "[600-800 words following FORMAT INSTRUCTIONS - conclusion AND include cross-promo paragraph at the end promoting ${promoProductName}]"
 }
 
-Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffix(funnel.language)}`;
+Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${CONTENT_FORMAT_REQUIREMENT}${getLanguagePromptSuffix(funnel.language)}`;
 
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 14000,
+    system: `${CONTENT_SYSTEM_PROMPT_BASE}${getLanguagePromptSuffix(funnel.language)}`,
     messages: [{ role: 'user', content: prompt }]
   });
 
@@ -1318,19 +1426,26 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffi
   const chapter5 = parseClaudeJSON(sections[1]);
   const chapter6 = parseClaudeJSON(sections[2]);
 
+  // Correct content before cross-promo check
+  const correctedU2P2 = correctProductContent({ chapters: [chapter4, chapter5, chapter6] });
+  const [corrCh4U2, corrCh5U2, corrCh6U2] = correctedU2P2.chapters;
+
   // Ensure cross-promo WITH URL is embedded in last chapter
   // Check for markdown link presence, not just product name (AI may mention name without URL)
-  if (chapter6.content && crossPromo) {
-    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(chapter6.content);
+  if (corrCh6U2.content && crossPromo) {
+    const hasMarkdownLink = /\[.*?\]\(https?:\/\/.*?\)/.test(corrCh6U2.content);
     if (!hasMarkdownLink) {
-      chapter6.content += crossPromo;
+      corrCh6U2.content += crossPromo;
     }
   }
+
+  // Validate after correction
+  validateGeneratedContent(correctedU2P2, 'Upsell2Part2');
 
   // Store content in funnel's JSONB column (upsell_2 is JSONB, not a separate table)
   const updatedUpsell2 = {
     ...funnel.upsell_2,
-    chapters: [...previousChapters, chapter4, chapter5, chapter6]
+    chapters: [...previousChapters, corrCh4U2, corrCh5U2, corrCh6U2]
   };
 
   await supabase.from('funnels').update({
@@ -1343,7 +1458,7 @@ Return valid JSON. CRITICAL: Follow FORMAT INSTRUCTIONS.${getLanguagePromptSuffi
   // Log RAG metrics
   await logRagForBatchedGen(funnelId, funnel, 'upsell2-part2', ragMetrics);
 
-  return { chapter4, chapter5, chapter6 };
+  return { chapter4: corrCh4U2, chapter5: corrCh5U2, chapter6: corrCh6U2 };
 }
 
 // ============================================================================
@@ -1623,6 +1738,10 @@ ${SECTION_SEPARATOR}
     if (parsed.marketplace_description) {
       parsed.marketplace_description = fixBulletNewlines(parsed.marketplace_description);
     }
+    // Enforce Etsy tag rules: exactly 13 tags, each ≤20 chars
+    if (parsed.marketplace_tags) {
+      parsed.marketplace_tags = enforceTagRules(parsed.marketplace_tags);
+    }
     return parsed;
   });
 
@@ -1826,6 +1945,10 @@ ${SECTION_SEPARATOR}
     if (parsed.marketplace_description) {
       parsed.marketplace_description = fixBulletNewlines(parsed.marketplace_description);
     }
+    // Enforce Etsy tag rules: exactly 13 tags, each ≤20 chars
+    if (parsed.marketplace_tags) {
+      parsed.marketplace_tags = enforceTagRules(parsed.marketplace_tags);
+    }
     return parsed;
   });
 
@@ -1988,19 +2111,19 @@ NICHE: ${funnel.niche}
 
 THE 4 PAID PRODUCTS IN THIS BUNDLE (Lead Magnet is FREE, not included in bundle):
 
-1. FRONT-END: "${frontend?.name || 'Front-End'}" ($${frontend?.price || 17})
+1. FRONT-END: "${frontend?.name || 'Front-End'}" ($${frontend?.price || 9.99})
    - Format: ${frontend?.format || 'Digital product'}
    - TLDR: ${JSON.stringify(tldrData?.front_end_tldr) || 'Entry-level product'}
 
-2. BUMP: "${bump?.name || 'Bump'}" ($${bump?.price || 9})
+2. BUMP: "${bump?.name || 'Bump'}" ($${bump?.price || 6.99})
    - Format: ${bump?.format || 'Quick-win resource'}
    - TLDR: ${JSON.stringify(tldrData?.bump_tldr) || 'Complementary add-on'}
 
-3. UPSELL 1: "${upsell1?.name || 'Upsell 1'}" ($${upsell1?.price || 47})
+3. UPSELL 1: "${upsell1?.name || 'Upsell 1'}" ($${upsell1?.price || 12.99})
    - Format: ${upsell1?.format || 'Comprehensive system'}
    - TLDR: ${JSON.stringify(tldrData?.upsell_1_tldr) || 'Premium upgrade'}
 
-4. UPSELL 2: "${upsell2?.name || 'Upsell 2'}" ($${upsell2?.price || 97})
+4. UPSELL 2: "${upsell2?.name || 'Upsell 2'}" ($${upsell2?.price || 19.99})
    - Format: ${upsell2?.format || 'Complete automation'}
    - TLDR: ${JSON.stringify(tldrData?.upsell_2_tldr) || 'Ultimate solution'}
 
@@ -2068,9 +2191,18 @@ Return valid JSON:
   "bundle_subtitle": "Short tagline",
   "bundle_description": "[The full 7-section description with proper line breaks - MUST include all 7 sections]",
   "bundle_bullets": ["Short what's included 1", "Short what's included 2", ...10-12 items],
-  "bundle_tags": ["tag1", "tag2", ...5-7 SEO tags],
+  "bundle_tags": ["digital download", "instant pdf", ...EXACTLY 13 SEO tags, each MAX 20 chars],
   "value_proposition": "2-3 sentences on why bundle > buying separately"
 }
+
+TAG REQUIREMENTS (EXACTLY 13 tags, each MAX 20 characters):
+1. "digital download" (REQUIRED - always this exact tag first)
+2. "instant pdf" OR "pdf template" OR "printable" (REQUIRED - pick one)
+3-4. Two BUNDLE tags (bundle, digital bundle)
+5-7. Three FORMAT tags (checklist bundle, worksheet pack, template bundle, etc.)
+8-10. Three NICHE tags (online business, marketing, entrepreneur, etc.)
+11-13. Three BENEFIT/AUDIENCE tags (lead generation, coach, consultant, etc.)
+CRITICAL: Tag #1 MUST be "digital download". All 13 slots filled, each ≤20 chars, no duplicates.
 
 CRITICAL FORMATTING:
 - Use Unicode bold (𝗔-𝗭) for product names and section headers - NO markdown ** symbols
@@ -2092,12 +2224,29 @@ CRITICAL FORMATTING:
   }
 
   // Calculate pricing from product prices
-  const fePrice = parseFloat(frontend?.price) || 17;
-  const bumpPrice = parseFloat(bump?.price) || 9;
-  const u1Price = parseFloat(upsell1?.price) || 47;
-  const u2Price = parseFloat(upsell2?.price) || 97;
+  const fePrice = parseFloat(frontend?.price) || 9.99;
+  const bumpPrice = parseFloat(bump?.price) || 6.99;
+  const u1Price = parseFloat(upsell1?.price) || 12.99;
+  const u2Price = parseFloat(upsell2?.price) || 19.99;
   const totalPrice = fePrice + bumpPrice + u1Price + u2Price;
-  const bundlePrice = Math.round(totalPrice * 0.45); // 55% discount
+
+  // Load bundle discount from app_settings
+  let discountPct = 55;
+  try {
+    const { data: discountSetting } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', 'bundle_discount_percent')
+      .single();
+    if (discountSetting?.value) {
+      discountPct = parseInt(discountSetting.value) || 55;
+    }
+  } catch (e) {
+    console.log(`⚠️ ${LOG_TAG} Could not load discount setting, using default 55%`);
+  }
+
+  const payPercent = (100 - discountPct) / 100;
+  const bundlePrice = Math.round(totalPrice * payPercent);
   const savings = totalPrice - bundlePrice;
 
   // Transform to match frontend expectations (BundlePreview.jsx)
@@ -2106,7 +2255,7 @@ CRITICAL FORMATTING:
     title: rawBundle.bundle_title || '',
     etsy_description: rawBundle.bundle_description || '',
     normal_description: rawBundle.bundle_description || '',
-    tags: Array.isArray(rawBundle.bundle_tags) ? rawBundle.bundle_tags.join(', ') : '',
+    tags: enforceTagRules(rawBundle.bundle_tags).join(', '),
     bundle_price: bundlePrice,
     total_individual_price: totalPrice,
     savings: savings,

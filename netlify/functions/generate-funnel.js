@@ -75,15 +75,13 @@ Critical: Each level must create desire for the next, not satisfy it.
 - Bump: Make the front-end FASTER or EASIER
 - Upsell 1: GO DEEPER on implementation
 - Upsell 2: DONE-FOR-YOU or PREMIUM elements
-- Upsell 3: TRANSFORMATION (coaching, community, or advanced system)
 
 ## PRICING GUIDELINES
 
-- Front-End: $7-17 (impulse buy)
-- Bump: $7-17 (no-brainer add-on)
-- Upsell 1: $27-47 (invested buyer)
-- Upsell 2: $47-97 (committed buyer)
-- Upsell 3: $97-297 (serious buyer)
+- Front-End: $9.99 (impulse buy)
+- Bump: $6.99 (quick add-on)
+- Upsell 1: $12.99 (higher value offer)
+- Upsell 2: $19.99 (highest value offer)
 
 ## PDF-ONLY FORMATS (Use ONLY these 6 - no exceptions)
 - Checklist (X Simple Steps to...)
@@ -102,37 +100,29 @@ Respond with ONLY valid JSON in this exact structure:
   "front_end": {
     "name": "Product name using SPECIFICITY FORMULA",
     "format": "Checklist|Worksheet|Planner|Swipe File|Blueprint|Cheat Sheet",
-    "price": 17,
+    "price": 9.99,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for the bump"
   },
   "bump": {
     "name": "Product name using SPECIFICITY FORMULA",
     "format": "format type",
-    "price": 9,
+    "price": 6.99,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for upsell 1"
   },
   "upsell_1": {
     "name": "Product name using SPECIFICITY FORMULA",
     "format": "format type",
-    "price": 47,
+    "price": 12.99,
     "description": "One sentence what they get",
     "bridges_to": "How this creates desire for upsell 2"
   },
   "upsell_2": {
     "name": "Product name using SPECIFICITY FORMULA",
     "format": "format type",
-    "price": 97,
-    "description": "One sentence what they get",
-    "bridges_to": "How this creates desire for upsell 3"
-  },
-  "upsell_3": {
-    "name": "Product name using SPECIFICITY FORMULA OR existing product name",
-    "format": "format type",
-    "price": 197,
-    "description": "One sentence what they get",
-    "is_existing_product": false
+    "price": 19.99,
+    "description": "One sentence what they get"
   }
 }
 
