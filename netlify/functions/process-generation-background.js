@@ -8,6 +8,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
 import { searchKnowledgeWithMetrics, logRagRetrieval } from './lib/knowledge-search.js';
+import { getRetrySettings } from './lib/retry-engine.js';
 
 // ============================================
 // LANGUAGE SUPPORT
@@ -30,14 +31,22 @@ Do not include any English unless the user's language is English.
 // CONFIGURATION
 // ============================================
 
-const RETRY_CONFIG = {
-  maxRetries: 3,
-  initialDelay: 5000,      // 5 seconds
-  maxDelay: 60000,         // 60 seconds max
-  backoffMultiplier: 2,    // Double delay each retry
-  retryableCodes: [429, 500, 529],
-  permanentFailureCodes: [400, 401, 403, 404, 413]
-};
+// Retry config loaded from app_settings via getRetrySettings() (default: 7 attempts)
+// Permanent failure codes that should not be retried
+const PERMANENT_FAILURE_CODES = [400, 401, 403, 404, 413];
+
+// Cached retry settings (loaded once per function invocation)
+let _cachedRetrySettings = null;
+async function loadRetrySettings() {
+  if (_cachedRetrySettings) return _cachedRetrySettings;
+  try {
+    _cachedRetrySettings = await getRetrySettings();
+  } catch (err) {
+    console.error('[PROCESS-GENERATION-BG] Failed to load retry settings, using defaults:', err.message);
+    _cachedRetrySettings = { delays: [0, 5, 30, 120, 300, 300, 300], maxAttempts: 7 };
+  }
+  return _cachedRetrySettings;
+}
 
 // Initialize clients
 const supabase = createClient(
@@ -99,16 +108,20 @@ async function generateWithRetry(prompt, systemPrompt, jobId, chunkName, maxToke
     promptLength: prompt?.length || 0
   });
 
+  // Load retry settings from app_settings (cached for this invocation)
+  const retrySettings = await loadRetrySettings();
+  const maxAttempts = retrySettings.maxAttempts;
+
   let lastError = null;
 
-  for (let attempt = 1; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`🔄 [PROCESS-GENERATION-BG] Attempt ${attempt}/${RETRY_CONFIG.maxRetries} for: ${chunkName}`);
+      console.log(`🔄 [PROCESS-GENERATION-BG] Attempt ${attempt}/${maxAttempts} for: ${chunkName}`);
 
       // Update status to show current attempt
       await updateJobStatus(jobId, {
         current_chunk_name: attempt > 1
-          ? `${chunkName} (Retry ${attempt}/${RETRY_CONFIG.maxRetries})`
+          ? `${chunkName} (Retry ${attempt}/${maxAttempts})`
           : chunkName
       });
 
@@ -138,32 +151,30 @@ async function generateWithRetry(prompt, systemPrompt, jobId, chunkName, maxToke
       console.error(`❌ [PROCESS-GENERATION-BG] Attempt ${attempt} failed (${statusCode}):`, error.message);
 
       // Check if error is retryable
-      if (RETRY_CONFIG.permanentFailureCodes.includes(statusCode)) {
+      if (PERMANENT_FAILURE_CODES.includes(statusCode)) {
         console.error('❌ [PROCESS-GENERATION-BG] Permanent failure - not retrying');
         throw error;
       }
 
       // Check if we have retries left
-      if (attempt === RETRY_CONFIG.maxRetries) {
-        console.error('❌ [PROCESS-GENERATION-BG] Max retries exhausted');
+      if (attempt === maxAttempts) {
+        console.error(`❌ [PROCESS-GENERATION-BG] Max retries exhausted (${maxAttempts} attempts)`);
         throw error;
       }
 
-      // Calculate delay with exponential backoff
-      const delay = Math.min(
-        RETRY_CONFIG.initialDelay * Math.pow(RETRY_CONFIG.backoffMultiplier, attempt - 1),
-        RETRY_CONFIG.maxDelay
-      );
+      // Get delay from app_settings (in seconds, convert to ms)
+      const delaySec = retrySettings.delays[attempt] || 300;
+      const delayMs = delaySec * 1000;
 
-      console.log(`⏳ [PROCESS-GENERATION-BG] Waiting ${delay/1000}s before retry ${attempt + 1}...`);
+      console.log(`⏳ [PROCESS-GENERATION-BG] Waiting ${delaySec}s before retry ${attempt + 1}...`);
       await updateJobStatus(jobId, {
-        current_chunk_name: `${chunkName} - Rate limited, retrying in ${delay/1000}s...`,
+        current_chunk_name: `${chunkName} - Rate limited, retrying in ${delaySec}s...`,
         last_error_code: statusCode,
         retry_count: attempt
       });
 
       // Wait before retry
-      await new Promise(resolve => setTimeout(resolve, delay));
+      await new Promise(resolve => setTimeout(resolve, delayMs));
     }
   }
 

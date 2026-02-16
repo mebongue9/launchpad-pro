@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { renderCover } from './lib/cover-renderer.js'
 import { renderInterior } from './lib/interior-renderer.js'
+import { correctChapterContent } from './lib/content-format-corrector.js'
 
 const LOG_TAG = '[VISUAL-BUILDER-GENERATE]'
 
@@ -119,6 +120,19 @@ export async function handler(event) {
         }
       }
 
+      // Crash guard: ensure all chapter content is string type
+      if (content?.chapters?.length > 0) {
+        for (const chapter of content.chapters) {
+          if (chapter.content && typeof chapter.content !== 'string') {
+            console.error(`${LOG_TAG} CRASH GUARD: Chapter "${chapter.title}" has non-string content (${typeof chapter.content}). Converting to markdown.`);
+            chapter.content = correctChapterContent(chapter.content, chapter.title || 'Unknown Chapter');
+          }
+          if (!chapter.content) {
+            chapter.content = '';
+          }
+        }
+      }
+
       // Safety net: ensure paid products have a clickable cross-promo link
       if (content?.chapters?.length > 0 && productType !== 'lead_magnet') {
         const lastChapter = content.chapters[content.chapters.length - 1]
@@ -165,6 +179,19 @@ export async function handler(event) {
           console.log(`${LOG_TAG} Found lead magnet content with ${content.chapters?.length || 0} chapters`)
         } catch (parseError) {
           console.error(`${LOG_TAG} Failed to parse lead magnet content:`, parseError)
+        }
+      }
+
+      // Crash guard: ensure all chapter content is string type (lead magnet)
+      if (content?.chapters?.length > 0) {
+        for (const chapter of content.chapters) {
+          if (chapter.content && typeof chapter.content !== 'string') {
+            console.error(`${LOG_TAG} CRASH GUARD: LM Chapter "${chapter.title}" has non-string content (${typeof chapter.content}). Converting to markdown.`);
+            chapter.content = correctChapterContent(chapter.content, chapter.title || 'Unknown Chapter');
+          }
+          if (!chapter.content) {
+            chapter.content = '';
+          }
         }
       }
 

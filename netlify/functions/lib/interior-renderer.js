@@ -3,6 +3,7 @@
 // RELEVANT FILES: visual-builder-generate.js, content-parser.js
 
 import { parseChapterContent, parseMarkdown } from './content-parser.js'
+import { correctChapterContent } from './content-format-corrector.js'
 
 // Placeholder image for missing profile photos (1x1 transparent pixel as data URI)
 const PLACEHOLDER_PHOTO = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Ccircle cx="50" cy="50" r="50" fill="%23ddd"/%3E%3Ccircle cx="50" cy="40" r="18" fill="%23999"/%3E%3Cellipse cx="50" cy="85" rx="30" ry="25" fill="%23999"/%3E%3C/svg%3E'
@@ -1259,7 +1260,11 @@ function wrapCrossPromo(html) {
  */
 function renderChapterPage(chapter, chapterNum, pageNum, profile, format = '') {
   const { handle, photoUrl, primaryColor } = profile
-  const { title, content } = chapter
+  let { title, content } = chapter
+  if (content && typeof content !== 'string') {
+    console.warn('[INTERIOR-RENDERER] Non-string content in renderChapterPage, converting');
+    content = correctChapterContent(content, title || 'unknown');
+  }
 
   // Handle display (don't show bare "@" if no handle)
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
@@ -1305,8 +1310,12 @@ function renderChapterPage(chapter, chapterNum, pageNum, profile, format = '') {
  */
 function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
   const { handle, photoUrl } = profile
-  const { title, content } = chapter
+  let { title, content } = chapter
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+  if (content && typeof content !== 'string') {
+    console.warn('[INTERIOR-RENDERER] Non-string content in renderBlueprintPage, converting');
+    content = correctChapterContent(content, title || 'unknown');
+  }
 
   // Parse content into steps (simple split by numbered patterns or paragraphs)
   const steps = parseContentToSteps(content)
@@ -1343,8 +1352,12 @@ function renderBlueprintPage(chapter, chapterNum, pageNum, profile) {
  */
 function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
   const { handle, photoUrl } = profile
-  const { title, content } = chapter
+  let { title, content } = chapter
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+  if (content && typeof content !== 'string') {
+    console.warn('[INTERIOR-RENDERER] Non-string content in renderCheatSheetPage, converting');
+    content = correctChapterContent(content, title || 'unknown');
+  }
 
   // Parse content into sections
   const sections = parseContentToSections(content)
@@ -1381,8 +1394,12 @@ function renderCheatSheetPage(chapter, chapterNum, pageNum, profile) {
  */
 function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
   const { handle, photoUrl } = profile
-  const { title, content } = chapter
+  let { title, content } = chapter
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+  if (content && typeof content !== 'string') {
+    console.warn('[INTERIOR-RENDERER] Non-string content in renderPlannerPage, converting');
+    content = correctChapterContent(content, title || 'unknown');
+  }
 
   // Parse content into tasks
   const tasks = parseContentToTasks(content)
@@ -1419,8 +1436,12 @@ function renderPlannerPage(chapter, chapterNum, pageNum, profile) {
  */
 function renderSwipeFilePage(chapter, chapterNum, pageNum, profile) {
   const { handle, photoUrl } = profile
-  const { title, content } = chapter
+  let { title, content } = chapter
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+  if (content && typeof content !== 'string') {
+    console.warn('[INTERIOR-RENDERER] Non-string content in renderSwipeFilePage, converting');
+    content = correctChapterContent(content, title || 'unknown');
+  }
 
   // For swipe file, content becomes a template card
   const templateContent = content || ''
@@ -1449,8 +1470,12 @@ function renderSwipeFilePage(chapter, chapterNum, pageNum, profile) {
  */
 function renderWorksheetPage(chapter, chapterNum, pageNum, profile) {
   const { handle, photoUrl } = profile
-  const { title, content } = chapter
+  let { title, content } = chapter
   const handleDisplay = handle ? `@${escapeHtml(handle)}` : ''
+  if (content && typeof content !== 'string') {
+    console.warn('[INTERIOR-RENDERER] Non-string content in renderWorksheetPage, converting');
+    content = correctChapterContent(content, title || 'unknown');
+  }
 
   // Parse content into worksheet elements
   const worksheetContent = parseContentToWorksheet(content)

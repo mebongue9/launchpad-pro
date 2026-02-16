@@ -2,6 +2,8 @@
 // Parses raw content into structured HTML with proper CSS classes
 // RELEVANT FILES: interior-renderer.js, visual-builder-generate.js
 
+import { correctChapterContent } from './content-format-corrector.js'
+
 /**
  * Simple markdown parser fallback (if marked library not available)
  * Handles **bold** and *italic* syntax
@@ -115,6 +117,10 @@ function detectBlockType(line) {
  */
 export function parseContentStructure(content) {
   if (!content) return []
+  if (typeof content !== 'string') {
+    console.warn('[CONTENT-PARSER] Non-string content received, converting:', typeof content);
+    content = correctChapterContent(content, 'unknown');
+  }
 
   // Split by lines, preserving paragraph breaks
   const lines = content.split('\n')
