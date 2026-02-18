@@ -19,6 +19,12 @@ function normalizeTagsToString(tags) {
   return null;
 }
 
+function cleanPrice(raw) {
+  if (raw == null) return null;
+  const num = parseFloat(raw);
+  return (!isNaN(num) && num >= 0) ? num : null;
+}
+
 export async function handler(event) {
   const headers = { 'Content-Type': 'application/json' };
 
@@ -94,9 +100,11 @@ export async function handler(event) {
 
   // 4b. Resolve bundle data from bundles table OR funnel.bundle_listing JSONB
   const bundleData = bundle
-    ? { title: bundle.title, description: bundle.etsy_description, tags: bundle.tags }
+    ? { title: bundle.title, description: bundle.etsy_description, tags: bundle.tags,
+        bundle_price: bundle.bundle_price, total_individual_price: bundle.total_individual_price }
     : funnel.bundle_listing
-      ? { title: funnel.bundle_listing.title, description: funnel.bundle_listing.etsy_description, tags: funnel.bundle_listing.tags }
+      ? { title: funnel.bundle_listing.title, description: funnel.bundle_listing.etsy_description, tags: funnel.bundle_listing.tags,
+          bundle_price: funnel.bundle_listing.bundle_price, total_individual_price: funnel.bundle_listing.total_individual_price }
       : null;
 
   // 5. Validate: only block on missing product titles
@@ -145,6 +153,7 @@ export async function handler(event) {
       source: 'launchpad_pro',
       emails: null,
       funnel_name: funnelName,
+      suggested_price: null,
     },
     ...levels.map(level => ({
       product: level.label,
@@ -161,6 +170,7 @@ export async function handler(event) {
       source: 'launchpad_pro',
       emails: null,
       funnel_name: funnelName,
+      suggested_price: cleanPrice(funnel[level.prefix]?.price),
     })),
     {
       product: 'Bundle',
@@ -172,6 +182,8 @@ export async function handler(event) {
       source: 'launchpad_pro',
       emails: null,
       funnel_name: funnelName,
+      suggested_price: cleanPrice(bundleData?.bundle_price),
+      original_price: cleanPrice(bundleData?.total_individual_price),
     },
   ];
 

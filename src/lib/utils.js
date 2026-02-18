@@ -77,14 +77,15 @@ function extractFormat(text) {
   return 'Digital Product'
 }
 
-// Get default price for product type
-function getDefaultPrice(type) {
+// Get default price for product type (accepts optional overrides from app_settings)
+export function getDefaultPrice(type, overrides = null) {
+  if (overrides && overrides[type] != null) return overrides[type]
   const prices = { lead_magnet: 0, front_end: 9.99, bump: 6.99, upsell_1: 12.99, upsell_2: 19.99 }
   return prices[type] || 9.99
 }
 
 // Parse single line of funnel text
-function parseFunnelLine(line) {
+function parseFunnelLine(line, priceOverrides = null) {
   let cleanLine = stripEmojis(line).trim()
   if (!cleanLine) return null
 
@@ -124,7 +125,7 @@ function parseFunnelLine(line) {
   return {
     type: productType,
     name,
-    price: price !== null ? price : getDefaultPrice(productType),
+    price: price !== null ? price : getDefaultPrice(productType, priceOverrides),
     format,
     description: `${format} - ${name}`
   }
@@ -133,9 +134,10 @@ function parseFunnelLine(line) {
 /**
  * Main parser function - converts pasted text into funnel data structure
  * @param {string} text - The pasted funnel text
+ * @param {object} [priceOverrides] - Optional price overrides from app_settings
  * @returns {object} Parsed funnel data with success flag
  */
-export function parseFunnelText(text) {
+export function parseFunnelText(text, priceOverrides = null) {
   if (!text || typeof text !== 'string') {
     return { success: false, error: 'No text provided' }
   }
@@ -155,7 +157,7 @@ export function parseFunnelText(text) {
 
   let foundProducts = 0
   for (const line of lines) {
-    const result = parseFunnelLine(line)
+    const result = parseFunnelLine(line, priceOverrides)
     if (result) {
       parsed[result.type] = {
         name: result.name,

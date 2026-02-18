@@ -32,7 +32,7 @@ import {
   X,
   FileText
 } from 'lucide-react'
-import { parseFunnelText, getExamplePasteFormat } from '../lib/utils'
+import { parseFunnelText, getExamplePasteFormat, getDefaultPrice } from '../lib/utils'
 import FunnelCard from '../components/funnel/FunnelCard'
 import FunnelFilters, { FunnelStats } from '../components/funnel/FunnelFilters'
 import DocumentGenerationProgress from '../components/funnel/DocumentGenerationProgress'
@@ -45,6 +45,30 @@ export default function FunnelBuilder() {
   const { products: existingProducts } = useExistingProducts()
   const { funnels, saveFunnel, deleteFunnel, loading: funnelsLoading, documentJob, generateFunnel } = useFunnels()
   const { addToast } = useToast()
+
+  // Pricing defaults from app_settings
+  const [pricingDefaults, setPricingDefaults] = useState(null)
+
+  // Load pricing defaults from app_settings on mount
+  useEffect(() => {
+    async function loadPricing() {
+      try {
+        const res = await fetch('/.netlify/functions/get-app-settings')
+        if (res.ok) {
+          const { settings } = await res.json()
+          const overrides = {}
+          if (settings?.default_price_front_end?.value) overrides.front_end = parseFloat(settings.default_price_front_end.value)
+          if (settings?.default_price_bump?.value) overrides.bump = parseFloat(settings.default_price_bump.value)
+          if (settings?.default_price_upsell_1?.value) overrides.upsell_1 = parseFloat(settings.default_price_upsell_1.value)
+          if (settings?.default_price_upsell_2?.value) overrides.upsell_2 = parseFloat(settings.default_price_upsell_2.value)
+          if (Object.keys(overrides).length > 0) setPricingDefaults(overrides)
+        }
+      } catch (err) {
+        console.warn('Failed to load pricing defaults:', err.message)
+      }
+    }
+    loadPricing()
+  }, [])
 
   // Generation state (for ideas only - not full content)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -236,19 +260,19 @@ export default function FunnelBuilder() {
         funnel_name: manualFunnel.funnel_name,
         front_end: {
           name: manualFunnel.front_end.name,
-          price: parseFloat(manualFunnel.front_end.price) || 9.99,
+          price: parseFloat(manualFunnel.front_end.price) || getDefaultPrice('front_end', pricingDefaults),
           description: manualFunnel.front_end.description,
           format: manualFunnel.front_end.format || 'digital product'
         },
         bump: manualFunnel.bump.name ? {
           name: manualFunnel.bump.name,
-          price: parseFloat(manualFunnel.bump.price) || 6.99,
+          price: parseFloat(manualFunnel.bump.price) || getDefaultPrice('bump', pricingDefaults),
           description: manualFunnel.bump.description,
           format: manualFunnel.bump.format || 'templates'
         } : null,
         upsell_1: manualFunnel.upsell_1.name ? {
           name: manualFunnel.upsell_1.name,
-          price: parseFloat(manualFunnel.upsell_1.price) || 12.99,
+          price: parseFloat(manualFunnel.upsell_1.price) || getDefaultPrice('upsell_1', pricingDefaults),
           description: manualFunnel.upsell_1.description,
           format: manualFunnel.upsell_1.format || 'course'
         } : null
@@ -301,7 +325,7 @@ export default function FunnelBuilder() {
     setParseError(null)
     setParsedFunnel(null)
 
-    const result = parseFunnelText(pasteText)
+    const result = parseFunnelText(pasteText, pricingDefaults)
 
     if (result.success) {
       setParsedFunnel(result.data)

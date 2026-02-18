@@ -6,12 +6,18 @@
 // RELEVANT FILES: src/prompts/funnel-strategist.js, src/pages/FunnelBuilder.jsx
 
 import Anthropic from '@anthropic-ai/sdk';
+import { createClient } from '@supabase/supabase-js';
 import { parseClaudeJSON } from './utils/sanitize-json.js';
 import {
   searchKnowledgeWithMetrics,
   logRagRetrieval,
   getPreviousFunnelNamesWithMetrics
 } from './lib/knowledge-search.js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // THE 6 APPROVED FORMATS - Data-proven from Maria Wendt's research
 // These are the ONLY formats allowed. No others.
@@ -251,6 +257,38 @@ Generate the funnel architecture now. Remember:
 
     console.log(LOG_TAG + ' Parsing Claude response...');
     const funnel = parseClaudeJSON(response.content[0].text);
+
+    // DETERMINISTIC PRICE OVERRIDE — AI does not decide prices
+    let pricingDefaults = { front_end: 9.99, bump: 6.99, upsell_1: 12.99, upsell_2: 19.99 };
+    try {
+      const { data: priceSettings } = await supabase
+        .from('app_settings')
+        .select('key, value')
+        .in('key', [
+          'default_price_front_end',
+          'default_price_bump',
+          'default_price_upsell_1',
+          'default_price_upsell_2'
+        ]);
+      if (priceSettings?.length > 0) {
+        for (const row of priceSettings) {
+          if (row.key === 'default_price_front_end') pricingDefaults.front_end = parseFloat(row.value) || 9.99;
+          if (row.key === 'default_price_bump') pricingDefaults.bump = parseFloat(row.value) || 6.99;
+          if (row.key === 'default_price_upsell_1') pricingDefaults.upsell_1 = parseFloat(row.value) || 12.99;
+          if (row.key === 'default_price_upsell_2') pricingDefaults.upsell_2 = parseFloat(row.value) || 19.99;
+        }
+      }
+    } catch (err) {
+      console.error(LOG_TAG + ' Failed to load pricing defaults, using hardcoded fallbacks:', err.message);
+    }
+
+    if (funnel.front_end) funnel.front_end.price = pricingDefaults.front_end;
+    if (funnel.bump) funnel.bump.price = pricingDefaults.bump;
+    if (funnel.upsell_1) funnel.upsell_1.price = pricingDefaults.upsell_1;
+    if (funnel.upsell_2) funnel.upsell_2.price = pricingDefaults.upsell_2;
+
+    console.log(LOG_TAG + ' Prices enforced from app_settings:', pricingDefaults);
+
     console.log(LOG_TAG + ' Funnel parsed successfully:', {
       funnelName: funnel.funnel_name,
       frontEnd: funnel.front_end?.name,

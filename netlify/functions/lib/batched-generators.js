@@ -1590,13 +1590,13 @@ Format: ${lead_magnet?.format || 'PDF guide'}
 TLDR (use as source of truth):
 ${JSON.stringify(leadMagnetTldr, null, 2) || 'No TLDR available - generate based on name/format'}
 
-== PRODUCT 2: FRONT-END ($${frontend?.price || '17'}) ==
+== PRODUCT 2: FRONT-END ($${frontend?.price || '9.99'}) ==
 Name: "${frontend?.name}"
 Format: ${frontend?.format || 'Digital product'}
 TLDR (use as source of truth):
 ${JSON.stringify(tldrData?.front_end_tldr, null, 2) || 'No TLDR available'}
 
-== PRODUCT 3: BUMP ($${bump?.price || '9'}) ==
+== PRODUCT 3: BUMP ($${bump?.price || '6.99'}) ==
 Name: "${bump?.name}"
 Format: ${bump?.format || 'Quick-win resource'}
 TLDR (use as source of truth):
@@ -1795,13 +1795,13 @@ Generate MARKETPLACE LISTINGS for 2 PREMIUM UPSELL products using the 7-SECTION 
 TARGET AUDIENCE: ${funnel.audience}
 NICHE: ${funnel.niche}
 
-== PRODUCT 1: UPSELL 1 ($${upsell1?.price || '47'}) ==
+== PRODUCT 1: UPSELL 1 ($${upsell1?.price || '12.99'}) ==
 Name: "${upsell1?.name}"
 Format: ${upsell1?.format || 'Comprehensive system'}
 TLDR (use as source of truth):
 ${JSON.stringify(tldrData?.upsell_1_tldr, null, 2) || 'No TLDR available'}
 
-== PRODUCT 2: UPSELL 2 ($${upsell2?.price || '97'}) ==
+== PRODUCT 2: UPSELL 2 ($${upsell2?.price || '19.99'}) ==
 Name: "${upsell2?.name}"
 Format: ${upsell2?.format || 'Complete automation'}
 TLDR (use as source of truth):
